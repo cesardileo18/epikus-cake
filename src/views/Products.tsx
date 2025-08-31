@@ -1,45 +1,26 @@
 // src/views/Products.tsx
-import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import React, { useMemo, useState } from 'react';
 import { HeartIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useCart } from '@/context/CartProvider';
-import type { Product } from '@/interfaces/Product';
+// Opción 2 (dos líneas)
+import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
+import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
 
-interface ProductWithId extends Product {
-  id: string;
-}
 
 const Products: React.FC = () => {
-  const [productos, setProductos] = useState<ProductWithId[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // 🔄 Productos y categorías en tiempo real
+  const { products, loading, categories } = useProductsLiveQuery({ onlyActive: true });
+
   const [favoritos, setFavoritos] = useState<Set<string>>(new Set());
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [procesando, setProcesando] = useState<Set<string>>(new Set()); // solo UI
 
-  // ⬇️ carrito global
+  // 🛒 carrito global
   const { items, add, updateQty, openCart } = useCart();
 
-  const categorias = ['todos', 'tortas', 'cheesecakes', 'cupcakes', 'brownies', 'muffins'];
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'productos'),
-      (snapshot) => {
-        const productosData = snapshot.docs.map(
-          (doc) => ({ id: doc.id, ...doc.data() } as ProductWithId),
-        );
-        setProductos(productosData.filter((p) => p.activo));
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error al escuchar productos:', error);
-        setLoading(false);
-      }
-    );
-    return unsubscribe;
-  }, []);
+  // Fallback si por alguna razón no hay categorías (muy raro)
+  const categorias = categories.length ? categories : ['todos'];
 
   const agregarAlCarrito = async (producto: ProductWithId): Promise<void> => {
     if (procesando.has(producto.id)) return;
@@ -52,7 +33,7 @@ const Products: React.FC = () => {
     setProcesando((prev) => new Set(prev).add(producto.id));
     try {
       await add(producto, 1);
-      // opcional: mostrar el drawer como ML
+      // Mantener cerrado; el usuario puede abrir desde Nav o "Carrito"
       // openCart();
     } catch (e) {
       console.error('add() fallo', e);
@@ -84,8 +65,9 @@ const Products: React.FC = () => {
     return Math.max(0, p.stock - enCarrito);
   };
 
-  const productosFiltrados = productos.filter(
-    (p) => filtroCategoria === 'todos' || p.categoria === filtroCategoria
+  const productosFiltrados = useMemo(
+    () => products.filter((p) => filtroCategoria === 'todos' || p.categoria === filtroCategoria),
+    [products, filtroCategoria]
   );
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
@@ -126,10 +108,11 @@ const Products: React.FC = () => {
             <button
               key={c}
               onClick={() => setFiltroCategoria(c)}
-              className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${filtroCategoria === c
+              className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
+                filtroCategoria === c
                   ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg'
                   : 'bg-white text-gray-700 border border-gray-200 hover:border-pink-300 hover:shadow-md'
-                }`}
+              }`}
               type="button"
             >
               {c === 'todos' ? 'Todos' : c.charAt(0).toUpperCase() + c.slice(1)}
@@ -148,8 +131,9 @@ const Products: React.FC = () => {
             return (
               <div
                 key={producto.id}
-                className={`group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 ${sinStock ? 'opacity-60' : ''
-                  }`}
+                className={`group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 ${
+                  sinStock ? 'opacity-60' : ''
+                }`}
               >
                 {/* Imagen */}
                 <div className="relative h-64 overflow-hidden">
@@ -157,8 +141,9 @@ const Products: React.FC = () => {
                     src={producto.imagen}
                     alt={producto.nombre}
                     onError={handleImageError}
-                    className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${sinStock ? 'grayscale' : ''
-                      }`}
+                    className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
+                      sinStock ? 'grayscale' : ''
+                    }`}
                   />
 
                   {sinStock && (
@@ -257,12 +242,13 @@ const Products: React.FC = () => {
                       <button
                         onClick={() => agregarAlCarrito(producto)}
                         disabled={sinStock || procesando.has(producto.id)}
-                        className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${sinStock
+                        className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
+                          sinStock
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : procesando.has(producto.id)
-                              ? 'bg-pink-300 text-white cursor-not-allowed'
-                              : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
-                          }`}
+                            ? 'bg-pink-300 text-white cursor-not-allowed'
+                            : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
+                        }`}
                         type="button"
                       >
                         {procesando.has(producto.id) ? 'Agregando...' : sinStock ? 'Sin Stock' : 'Agregar al Carrito'}
