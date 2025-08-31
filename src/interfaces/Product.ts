@@ -1,10 +1,11 @@
 // src/interfaces/Product.ts
 export interface Product {
-  name: string;
-  description: string;
-  price: number;
-  type: string;
-  image: string;
-  featured: boolean;
-  available: boolean;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  categoria: string;
+  imagen: string;
+  activo: boolean;
+  destacado: boolean;
+  stock: number;
 }

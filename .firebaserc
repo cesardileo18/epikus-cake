@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "epikuscake-8dc41"
+  },
+  "targets": {
+    "epikuscake-8dc41": {
+      "hosting": {
+        "epikuscake": [
+          "epikuscake"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
