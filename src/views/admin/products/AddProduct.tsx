@@ -151,8 +151,9 @@ const AddProduct = () => {
                       <option value="tortas">🍰 Tortas</option>
                       <option value="cheesecakes">🧀 Cheesecakes</option>
                       <option value="cupcakes">🧁 Cupcakes</option>
-                      <option value="brownies">🍫 Brownies</option>
-                      <option value="muffins">🫐 Muffins</option>
+                      <option value="panaderia">🥖 Panadería</option>
+                      <option value="tortas-personalizadas">🎨 Tortas a medida</option>
+
                     </select>
                   </div>
                   {/* Stock */}

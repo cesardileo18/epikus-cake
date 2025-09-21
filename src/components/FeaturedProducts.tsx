@@ -126,8 +126,8 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                     {producto.nombre}
                                 </h3>
                                 <p className="text-gray-800 text-sm leading-relaxed">
-                                    {producto.descripcion.length > (catalogMode ? 100 : 100)
-                                        ? producto.descripcion.slice(0, catalogMode ? 100 : 100) + '...'
+                                    {producto.descripcion.length > (catalogMode ? 120 : 100)
+                                        ? producto.descripcion.slice(0, catalogMode ? 120 : 100) + '...'
                                         : producto.descripcion}
                                 </p>
                             </div>

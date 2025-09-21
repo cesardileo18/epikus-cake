@@ -92,7 +92,7 @@ export default function AboutUs() {
                 <div className="flex items-start gap-4">
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-gray-100">
                     <img
-                      src="https://images.unsplash.com/photo-1562440499-64c9a111f713?q=80&w=400&auto=format&fit=crop"
+                      src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758490880/chefEpikus_ccuqiv.jpg"
                       alt="Chef Epikus"
                       className="h-full w-full object-cover"
                       loading="lazy"
@@ -129,7 +129,7 @@ export default function AboutUs() {
           <div className="mt-10 grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
               <p className="text-3xl font-extrabold bg-gradient-to-r from-[#FF7BAC] to-[#D81E77] bg-clip-text text-transparent">
-                +3
+                +6
               </p>
               <p className="text-sm text-gray-600">Años horneando profesionalmente</p>
             </div>
@@ -182,22 +182,22 @@ export default function AboutUs() {
             {/* Imagen mosaico */}
             <div className="grid grid-cols-2 gap-4">
               <img
-                className="h-44 w-full rounded-2xl object-cover shadow"
-                src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=1200&auto=format&fit=crop"
+                className="h-52 w-full rounded-2xl object-cover shadow"
+                src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758492242/chocofresa_ddkpar.jpg"
                 alt="Torta personalizada"
                 loading="lazy"
                 decoding="async"
               />
               <img
-                className="h-44 w-full rounded-2xl object-cover shadow"
-                src="https://images.unsplash.com/photo-1551024709-8f23befc6cf7?q=80&w=1200&auto=format&fit=crop"
+                className="h-52 w-full rounded-2xl object-cover shadow"
+                src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758492447/redvelvet_tlsqjf.jpg"
                 alt="Proceso artesanal"
                 loading="lazy"
                 decoding="async"
               />
               <img
                 className="col-span-2 h-56 w-full rounded-2xl object-cover shadow"
-                src="https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop"
+                src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758491703/pandejamon_yk8ve8.jpg"
                 alt="Decoración detallada"
                 loading="lazy"
                 decoding="async"
