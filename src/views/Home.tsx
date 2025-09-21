@@ -6,12 +6,12 @@ import {
   ChatBubbleBottomCenterTextIcon,
   PaintBrushIcon,
   ShoppingBagIcon,
-  ChevronRightIcon,
-  HeartIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartSolid, StarIcon as StarSolid } from '@heroicons/react/24/solid';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import useFeaturedProducts from '@/hooks/useFeaturedProducts';
-import type { ProductWithId } from '@/hooks/useFeaturedProducts';
+import FloatingWhatsApp from '@/components/FloatingWhatsApp';
+import FeaturedProducts from '@/components/FeaturedProducts';
 
 const Home: React.FC = () => {
   const [favoritos, setFavoritos] = useState<Set<string>>(new Set());
@@ -47,9 +47,9 @@ const Home: React.FC = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 text-center">
           <div className="space-y-8">
             <div className="space-y-6">
-              <h1 className="text-5xl md:text-7xl font-extralight text-gray-900 leading-tight">
-                Sabores que
-                <span className="block font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+              <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-4">
+                Sabores que{' '}
+                <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
                   Enamoran
                 </span>
               </h1>
@@ -117,87 +117,13 @@ const Home: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {loading ? (
-              Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="group relative bg-white rounded-3xl shadow-lg overflow-hidden animate-pulse">
-                  <div className="h-64 bg-gray-200" />
-                  <div className="p-6 space-y-4">
-                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                    <div className="h-3 bg-gray-200 rounded w-full" />
-                    <div className="h-3 bg-gray-200 rounded w-2/3" />
-                    <div className="flex items-center justify-between pt-4">
-                      <div className="h-6 bg-gray-200 rounded w-20" />
-                      <div className="h-8 bg-gray-200 rounded w-24" />
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : productosDestacados.length === 0 ? (
-              <div className="col-span-full text-center py-16">
-                <div className="text-6xl mb-4">🍰</div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Próximamente nuevos productos</h3>
-                <p className="text-gray-600 mb-8">Estamos preparando deliciosas sorpresas para ti</p>
-              </div>
-            ) : (
-              productosDestacados.map((producto: ProductWithId) => (
-                <div
-                  key={producto.id}
-                  className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2"
-                >
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={producto.imagen}
-                      alt={producto.nombre}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={handleImageError}
-                    />
-                    <button
-                      onClick={() => toggleFavorito(producto.id)}
-                      className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-300 transform hover:scale-110"
-                      type="button"
-                      aria-label="Agregar a favoritos"
-                    >
-                      {favoritos.has(producto.id) ? (
-                        <HeartSolid className="w-5 h-5 text-pink-500" />
-                      ) : (
-                        <HeartIcon className="w-5 h-5 text-gray-600" />
-                      )}
-                    </button>
-                    <div className="absolute bottom-4 left-4">
-                      <span className="px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-sm font-semibold rounded-full">
-                        {producto.categoria.charAt(0).toUpperCase() + producto.categoria.slice(1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-pink-600 transition-colors duration-300">
-                        {producto.nombre}
-                      </h3>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        {producto.descripcion}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4">
-                      <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-                        ${producto.precio.toLocaleString('es-AR')}
-                      </div>
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
-                      >
-                        Ver Detalles
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
+          <FeaturedProducts
+            productos={productosDestacados}
+            favoritos={favoritos}
+            loading={loading}
+            toggleFavorito={toggleFavorito}
+            handleImageError={handleImageError}
+          />
           <div className="text-center mt-12">
             <Link
               to="/products"
@@ -208,6 +134,9 @@ const Home: React.FC = () => {
             </Link>
           </div>
         </div>
+        <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-r from-pink-400 to-rose-300 rounded-full opacity-20 animate-bounce" />
+        <div className="absolute top-1/4 right-20 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-300  rounded-full opacity-30 animate-bounce" />
+        <div className="absolute bottom-1/3 right-10 w-15 h-15 bg-gradient-to-r from-green-300 to-teal-400 rounded-full opacity-25 animate-bounce" />
       </section>
 
       {/* CTA final */}
@@ -238,6 +167,7 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+      <FloatingWhatsApp />
     </div>
   );
 };
