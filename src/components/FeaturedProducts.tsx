@@ -125,11 +125,15 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                 <h3 className="text-xl font-bold  text-pink-600 transition-colors duration-300">
                                     {producto.nombre}
                                 </h3>
-                                <p className="text-gray-800 text-sm leading-relaxed">
-                                    {producto.descripcion.length > (catalogMode ? 120 : 100)
-                                        ? producto.descripcion.slice(0, catalogMode ? 120 : 100) + '...'
+                                {/* <p className="text-gray-800 text-sm leading-relaxed">
+                                    {producto.descripcion.length > (catalogMode ? 150 : 150)
+                                        ? producto.descripcion.slice(0, catalogMode ? 150 : 150) + '...'
                                         : producto.descripcion}
+                                </p> */}
+                                <p className="text-gray-800 text-sm leading-relaxed line-clamp-3">
+                                    {producto.descripcion}
                                 </p>
+
                             </div>
 
                             {/* Precio + CTA */}
@@ -202,10 +206,10 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                                 onClick={() => onAddToCart && onAddToCart(producto)}
                                                 disabled={sinStock || isProcessing || !onAddToCart}
                                                 className={`w-full sm:w-auto flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${sinStock
-                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                        : isProcessing || !onAddToCart
-                                                            ? 'bg-pink-300 text-white cursor-not-allowed'
-                                                            : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                    : isProcessing || !onAddToCart
+                                                        ? 'bg-pink-300 text-white cursor-not-allowed'
+                                                        : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
                                                     }`}
                                                 type="button"
                                             >

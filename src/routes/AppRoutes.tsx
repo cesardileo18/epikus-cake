@@ -3,6 +3,7 @@ import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthProvider";
 
+
 // ====== lazy imports (code-splitting) ======
 const Home = lazy(() => import("@/views/Home"));
 const Products = lazy(() => import("@/views/Products"));
@@ -15,6 +16,7 @@ const Checkout = lazy(() => import("@/views/Checkout"));
 const Contact = lazy(() => import("@/views/Contact"));
 const AboutUs = lazy(() => import("@/views/AboutUs"));
 const ProductDetail = lazy(() => import("@/views/ProductDetail"));
+const ConfirmOrder = lazy(() => import("@/views/ConfirmOrder"));  
 // ====== tipos de rol (mantener en sync con lo que guardás en Firestore) ======
 type Role = "admin" | "customer" | "viewer";
 
@@ -80,6 +82,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/confirm-order" element={<ConfirmOrder />} />
 
 
         {/* admin protegidas */}

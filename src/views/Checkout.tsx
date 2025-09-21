@@ -118,18 +118,25 @@ const Checkout: React.FC = () => {
                 </span>
               </div>
 
-              <button
-                type="button"
-                disabled={items.length === 0}
-                className={[
-                  'w-full py-3 rounded-xl font-semibold shadow-lg transition-all',
-                  items.length === 0
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500',
-                ].join(' ')}
-              >
-                Ir al pago
-              </button>
+              {items.length > 0 ? (
+                <Link
+                  to="/confirm-order"
+                  className="block text-center w-full py-3 rounded-xl font-semibold shadow-lg
+               bg-gradient-to-r from-pink-500 to-rose-400 text-white
+               hover:from-pink-600 hover:to-rose-500 transition-all"
+                >
+                  Realizar Pedido
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full py-3 rounded-xl font-semibold shadow-lg bg-gray-200 text-gray-500 cursor-not-allowed"
+                >
+                  Realizar Pedido
+                </button>
+              )}
+
 
               <Link
                 to="/products"
