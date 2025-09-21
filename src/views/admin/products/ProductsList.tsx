@@ -126,7 +126,7 @@ const ProductsList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-20 pb-10">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-4 md:mb-8">
@@ -175,7 +175,7 @@ const ProductsList = () => {
         ) : (
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden">
             {/* Mobile cards compactas */}
-            <div className="block md:hidden divide-y divide-gray-100">
+            <div className="block lg:hidden divide-y divide-gray-100">
               {productosFiltrados.map((p) => (
                 <div key={p.id} className="p-4">
                   <div className="grid grid-cols-[64px_1fr_auto] gap-3">
@@ -213,7 +213,7 @@ const ProductsList = () => {
             </div>
 
             {/* Desktop tabla */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50/50">
                   <tr>

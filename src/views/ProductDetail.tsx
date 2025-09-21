@@ -1,5 +1,5 @@
 // src/views/ProductDetail.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
@@ -19,7 +19,7 @@ const ProductDetail: React.FC = () => {
 
   // Productos en tiempo real (fallback y relacionados)
   const { products, loading } = useProductsLiveQuery({ onlyActive: true });
-
+  const topRef = useRef<HTMLDivElement | null>(null);
   // Resolve producto
   const product = useMemo(() => {
     if (seedProduct && seedProduct.id === id) return seedProduct;
@@ -34,7 +34,12 @@ const ProductDetail: React.FC = () => {
     if (!product) return;
     await add(product, 1);
   };
-
+  useEffect(() => {
+    // evita quedarte “abajo” cuando venís desde otra página
+    topRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    // si tu header es fijo, podés usar después scrollBy para compensar:
+    // window.scrollBy(0, -88); // <- ajustá 88 al alto real del navbar
+  }, [id]);
   const handleQty = (q: number) => {
     if (!product) return;
     if (q < 0 || q > product.stock) return;
@@ -42,35 +47,41 @@ const ProductDetail: React.FC = () => {
   };
 
   // Relacionados
+  const norm = (s?: string) => (s ?? '').toLowerCase().trim();
+
   const relacionados = useMemo(() => {
     if (!product) return [] as ProductWithId[];
-    return products.filter((p) => p.id !== product.id && p.categoria === product.categoria).slice(0, 4);
+    const cat = norm(product.categoria);
+    return products
+      .filter((p) => p.id !== product.id && norm(p.categoria) === cat)
+      .slice(0, 4);
   }, [product, products]);
+
 
   // JSON-LD
   const jsonLd = product
     ? {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.nombre,
-        description: product.descripcion,
-        image: [product.imagen],
-        sku: product.id,
-        category: product.categoria,
-        offers: {
-          '@type': 'Offer',
-          availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-          priceCurrency: 'ARS',
-          price: product.precio,
-        },
-      }
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.nombre,
+      description: product.descripcion,
+      image: [product.imagen],
+      sku: product.id,
+      category: product.categoria,
+      offers: {
+        '@type': 'Offer',
+        availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        priceCurrency: 'ARS',
+        price: product.precio,
+      },
+    }
     : null;
 
   const WA_PHONE = 'YOUR_PHONE_NUMBER'; // 54911XXXXXXXX
   const waMsg = product
     ? encodeURIComponent(
-        `Hola Epikus Cake 👋\nMe interesa la torta: ${product.nombre} (ID ${product.id}).\n¿Podemos coordinar el retiro?`
-      )
+      `Hola Epikus Cake 👋\nMe interesa la torta: ${product.nombre} (ID ${product.id}).\n¿Podemos coordinar el retiro?`
+    )
     : '';
 
   // Loading / Not found
@@ -123,7 +134,7 @@ const ProductDetail: React.FC = () => {
           {product.nombre}
         </span>
       </nav>
-
+      <div ref={topRef} className="h-0"></div>
       {/* Contenido principal — separado del header fijo */}
       <section className="max-w-7xl mx-auto px-4 md:px-6 pb-24 md:pb-12 pt-[88px] md:pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
@@ -244,11 +255,10 @@ const ProductDetail: React.FC = () => {
                   <button
                     onClick={handleAdd}
                     disabled={sinStock}
-                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${
-                      sinStock
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
-                    }`}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${sinStock
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
+                      }`}
                     type="button"
                   >
                     {sinStock ? 'Sin stock' : 'Agregar al carrito'}

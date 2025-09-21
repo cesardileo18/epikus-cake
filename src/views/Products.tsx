@@ -1,16 +1,14 @@
 // src/views/Products.tsx
 import React, { useMemo, useState } from 'react';
-import { HeartIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useCart } from '@/context/CartProvider';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
 import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
+import FeaturedProducts from '@/components/FeaturedProducts';
 
 const Products: React.FC = () => {
   // 🔄 Productos y categorías en tiempo real
   const { products, loading, categories } = useProductsLiveQuery({ onlyActive: true });
 
-  const [favoritos, setFavoritos] = useState<Set<string>>(new Set());
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [procesando, setProcesando] = useState<Set<string>>(new Set()); // solo UI
 
@@ -48,19 +46,6 @@ const Products: React.FC = () => {
     if (nueva < 0) return;
     if (nueva > stock) return; // clamp UI
     updateQty(productId, nueva);
-  };
-
-  const toggleFavorito = (productId: string): void => {
-    setFavoritos((prev) => {
-      const n = new Set(prev);
-      n.has(productId) ? n.delete(productId) : n.add(productId);
-      return n;
-    });
-  };
-
-  const getStockDisponible = (p: ProductWithId): number => {
-    const enCarrito = items.find((it) => it.productId === p.id)?.quantity ?? 0;
-    return Math.max(0, p.stock - enCarrito);
   };
 
   const productosFiltrados = useMemo(
@@ -120,144 +105,18 @@ const Products: React.FC = () => {
             ))}
           </div>
 
-          {/* Grid de productos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-8">
-            {productosFiltrados.map((producto) => {
-              const stockDisponible = getStockDisponible(producto);
-              const sinStock = stockDisponible <= 0;
-              const stockBajo = stockDisponible > 0 && stockDisponible <= 3;
-              const enCarrito = items.find((it) => it.productId === producto.id)?.quantity ?? 0;
-
-              return (
-                <div
-                  key={producto.id}
-                  className={`group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 ${
-                    sinStock ? 'opacity-60' : ''
-                  }`}
-                >
-                  {/* Imagen */}
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={producto.imagen}
-                      alt={producto.nombre}
-                      onError={handleImageError}
-                      className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
-                        sinStock ? 'grayscale' : ''
-                      }`}
-                    />
-
-                    {sinStock && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold text-lg">Agotado</span>
-                      </div>
-                    )}
-
-                    {stockBajo && (
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                          Últimas {stockDisponible} unidades
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Favorito */}
-                    <button
-                      onClick={() => toggleFavorito(producto.id)}
-                      className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-300 transform hover:scale-110"
-                      type="button"
-                      aria-label="Agregar a favoritos"
-                    >
-                      {favoritos.has(producto.id) ? (
-                        <HeartSolid className="w-5 h-5 text-pink-500" />
-                      ) : (
-                        <HeartIcon className="w-5 h-5 text-gray-600" />
-                      )}
-                    </button>
-
-                    {/* Categoría */}
-                    <div className="absolute bottom-4 left-4">
-                      <span className="px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-sm font-semibold rounded-full">
-                        {producto.categoria.charAt(0).toUpperCase() + producto.categoria.slice(1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Contenido */}
-                  <div className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-pink-600 transition-colors duration-300">
-                        {producto.nombre}
-                      </h3>
-                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">{producto.descripcion}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-                        ${producto.precio.toLocaleString('es-AR')}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Stock:{' '}
-                        <span className={stockBajo ? 'text-yellow-600 font-bold' : 'text-gray-800'}>
-                          {stockDisponible}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Controles de carrito */}
-                    <div className="pt-4">
-                      {enCarrito > 0 ? (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <button
-                              onClick={() => actualizarCantidadCarrito(producto.id, enCarrito - 1, producto.stock)}
-                              className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors duration-200"
-                              type="button"
-                            >
-                              <MinusIcon className="w-4 h-4" />
-                            </button>
-
-                            <span className="font-bold text-lg min-w-[2rem] text-center">{enCarrito}</span>
-
-                            <button
-                              onClick={() => actualizarCantidadCarrito(producto.id, enCarrito + 1, producto.stock)}
-                              disabled={enCarrito >= producto.stock}
-                              className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center transition-colors duration-200"
-                              type="button"
-                            >
-                              <PlusIcon className="w-4 h-4 text-white" />
-                            </button>
-                          </div>
-
-                          <button
-                            onClick={openCart}
-                            type="button"
-                            className="cursor-pointer text-sm font-semibold text-pink-600 hover:text-pink-700 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-pink-300 rounded"
-                          >
-                            Carrito
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => agregarAlCarrito(producto)}
-                          disabled={sinStock || procesando.has(producto.id)}
-                          className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
-                            sinStock
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              : procesando.has(producto.id)
-                              ? 'bg-pink-300 text-white cursor-not-allowed'
-                              : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
-                          }`}
-                          type="button"
-                        >
-                          {procesando.has(producto.id) ? 'Agregando...' : sinStock ? 'Sin Stock' : 'Agregar al Carrito'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {/* Grid de productos reutilizando FeaturedProducts en modo catálogo */}
+          <FeaturedProducts
+            productos={productosFiltrados}
+            loading={loading}
+            handleImageError={handleImageError}
+            catalogMode
+            items={items}
+            onAddToCart={agregarAlCarrito}
+            onUpdateQty={actualizarCantidadCarrito}
+            openCart={openCart}
+            procesando={procesando}
+          />
 
           {/* Sin productos */}
           {productosFiltrados.length === 0 && !loading && (

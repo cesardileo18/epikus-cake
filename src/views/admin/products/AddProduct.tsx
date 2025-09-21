@@ -59,7 +59,7 @@ const AddProduct = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pe-4 pt-20 pb-10">
       <div className="max-w-5xl mx-auto">
         {/* Header Elegante */}
         <div className="text-center mb-8">

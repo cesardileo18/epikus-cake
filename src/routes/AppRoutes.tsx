@@ -50,7 +50,7 @@ const AdminLayout: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* acá podrías poner <AdminSidebar/> o <AdminHeader/> */}
-      <div className="mx-auto max-w-7xl px-4 py-8">
+      <div>
         <Outlet />
       </div>
     </div>

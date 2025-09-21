@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   CalendarDaysIcon,
@@ -14,7 +14,6 @@ import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import FeaturedProducts from '@/components/FeaturedProducts';
 
 const Home: React.FC = () => {
-  const [favoritos, setFavoritos] = useState<Set<string>>(new Set());
 
   // ⬇️ destacados en tiempo real (máx 6)
   const { products: productosDestacados, loading } = useFeaturedProducts({ onlyActive: true, max: 6 });
@@ -26,13 +25,6 @@ const Home: React.FC = () => {
     { title: 'Diseños personalizados', icon: PaintBrushIcon, desc: 'Llevamos tu idea a un diseño único.' },
   ];
 
-  const toggleFavorito = (productId: string): void => {
-    setFavoritos((prev) => {
-      const n = new Set(prev);
-      n.has(productId) ? n.delete(productId) : n.add(productId);
-      return n;
-    });
-  };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
     (e.target as HTMLImageElement).src =
@@ -102,7 +94,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Destacados */}
-      <section className="py-20 bg-white/50 backdrop-blur-sm">
+      <section className="py-10 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 rounded-full font-semibold mb-6">
@@ -119,9 +111,7 @@ const Home: React.FC = () => {
 
           <FeaturedProducts
             productos={productosDestacados}
-            favoritos={favoritos}
             loading={loading}
-            toggleFavorito={toggleFavorito}
             handleImageError={handleImageError}
           />
           <div className="text-center mt-12">
