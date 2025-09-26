@@ -34,14 +34,14 @@ const Navbar: React.FC = () => {
     { name: 'Contacto', to: '/contact', icon: '📞' },
   ];
 
-  // Si mañana agregás más vistas admin, solo sumalas acá
+  // Vistas admin, acá
   const adminItems: MenuItem[] =
     role === 'admin'
       ? [
-          { name: 'Dashboard', to: '/admin/dashboard', icon: '📊' },
-          { name: 'Productos (admin)', to: '/admin/products', icon: '📦' },
-          { name: 'Agregar Producto', to: '/admin/products/add', icon: '➕' },
-        ]
+        { name: 'Dashboard', to: '/admin/dashboard', icon: '📊' },
+        { name: 'Productos (admin)', to: '/admin/products', icon: '📦' },
+        { name: 'Agregar Producto', to: '/admin/products/add', icon: '➕' },
+      ]
       : [];
 
   const accountLabel = user?.displayName ?? user?.email ?? '';
@@ -53,9 +53,8 @@ const Navbar: React.FC = () => {
     <>
       {/* Navbar */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-          scrolled ? 'bg-white/95 backdrop-blur-lg shadow-xl border-b border-pink-100' : 'bg-transparent'
-        }`}
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-lg shadow-xl border-b border-pink-100' : 'bg-transparent'
+          }`}
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -64,10 +63,14 @@ const Navbar: React.FC = () => {
               <Link to="/" className="group">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition">
-                      <span className="text-white text-xl font-bold">E</span>
+                    <div className={`w-15 h-15 flex items-center justify-center ${scrolled ? 'bg-transparent shadow-none ring-0' : 'bg-white/90 ring-1 ring-black/5 shadow-md'} rounded-2xl`}>
+                      <img
+                        className="w-12 h-12"
+                        src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758828059/epikus600x600px_redesy.png"
+                        alt="Logo Epikus Cake"
+                      />
                     </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-pulse" />
+                    {/* <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-pulse" /> */}
                   </div>
                   <div className="hidden sm:block">
                     <h1 className="text-xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
@@ -86,15 +89,13 @@ const Navbar: React.FC = () => {
                 <Link
                   key={item.name}
                   to={item.to}
-                  className={`relative group font-medium transition-colors duration-300 ${
-                    isActive(item.to) ? 'text-pink-600' : 'text-gray-700 hover:text-pink-600'
-                  }`}
+                  className={`relative group font-medium transition-colors duration-300 ${isActive(item.to) ? 'text-pink-600' : 'text-gray-700 hover:text-pink-600'
+                    }`}
                 >
                   {item.name}
                   <div
-                    className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-pink-500 to-rose-400 transition-all duration-300 ${
-                      isActive(item.to) ? 'w-full' : 'w-0 group-hover:w-full'
-                    }`}
+                    className={`absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-pink-500 to-rose-400 transition-all duration-300 ${isActive(item.to) ? 'w-full' : 'w-0 group-hover:w-full'
+                      }`}
                   />
                 </Link>
               ))}
@@ -212,10 +213,10 @@ const Navbar: React.FC = () => {
                 <span className="text-white text-lg font-bold">E</span>
               </div>
               <div>
-                <h2 className="text-white text-lg font-bold">Epikus Cake</h2>
-                <p className="text-pink-100 text-sm">
+                <h2 className="text-white text-3xl font-['Great_Vibes']">Epikus Cake</h2>
+                {/* <p className="text-pink-100 text-sm">
                   {!loading && user ? `Hola, ${user.displayName ?? user.email}` : 'Menú Principal'}
-                </p>
+                </p> */}
               </div>
             </div>
 

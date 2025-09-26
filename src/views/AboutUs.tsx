@@ -50,13 +50,13 @@ function SectionHeader({
 
 export default function AboutUs() {
   return (
-    <main className="min-h-screen bg-white text-gray-800">
+    <main className="min-h-screen bg-[#ff7bab48]  text-gray-800">
       {/* HERO */}
       <section className="pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid items-center gap-10 md:grid-cols-[1.2fr,1fr]">
             <div>
-              <Badge>Quiénes somos</Badge>
+              {/* <Badge>Quiénes somos</Badge> */}
               <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-4">
                 Repostería{' '}
                 <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">

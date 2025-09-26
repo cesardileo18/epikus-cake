@@ -7,6 +7,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        greatVibes: ['"Great Vibes"', 'cursive'], // nombre custom
+      },
       // Agregamos backdrop-blur que usa el navbar
       backdropBlur: {
         'xs': '2px',

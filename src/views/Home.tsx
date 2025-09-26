@@ -94,11 +94,11 @@ const Home: React.FC = () => {
       </section>
 
       {/* Destacados */}
-      <section className="py-10 bg-white/50 backdrop-blur-sm">
+      <section className="py-10 bg-[#ff7bab48] backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 rounded-full font-semibold mb-6">
-              <StarSolid className="w-4 h-4 mr-2" />
+              <StarSolid className="w-4 h-4 mr-2 text-amber-300" />
               Productos Destacados
             </div>
             <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-4">
