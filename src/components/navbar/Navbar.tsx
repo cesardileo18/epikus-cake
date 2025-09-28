@@ -209,14 +209,12 @@ const Navbar: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-white/20">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <span className="text-white text-lg font-bold">E</span>
-              </div>
               <div>
-                <h2 className="text-white text-3xl font-['Great_Vibes']">Epikus Cake</h2>
-                {/* <p className="text-pink-100 text-sm">
-                  {!loading && user ? `Hola, ${user.displayName ?? user.email}` : 'Menú Principal'}
-                </p> */}
+                <h2 className="text-white text-4xl font-['Great_Vibes']">Epikus Cake</h2>
+                <p className="text-pink-100 text-sm">
+                  {/* {!loading && user ? `Hola, ${user.displayName ?? user.email}` : 'Menú Principal'} */}
+                  Menú Principal
+                </p>
               </div>
             </div>
 

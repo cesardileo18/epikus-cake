@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { useCart } from '@/context/CartProvider';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
 import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
-import FeaturedProducts from '@/components/FeaturedProducts';
+import FeaturedProducts from '@/components/productos/FeaturedProducts';
 
 const Products: React.FC = () => {
   // 🔄 Productos y categorías en tiempo real

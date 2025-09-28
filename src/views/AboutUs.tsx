@@ -266,10 +266,6 @@ export default function AboutUs() {
           </div>
         </div>
       </section>
-
-      <footer className="py-10 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} Epikus Cake
-      </footer>
     </main>
   )
 }

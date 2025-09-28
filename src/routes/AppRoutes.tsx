@@ -16,7 +16,9 @@ const Checkout = lazy(() => import("@/views/Checkout"));
 const Contact = lazy(() => import("@/views/Contact"));
 const AboutUs = lazy(() => import("@/views/AboutUs"));
 const ProductDetail = lazy(() => import("@/views/ProductDetail"));
-const ConfirmOrder = lazy(() => import("@/views/ConfirmOrder"));  
+const ConfirmOrder = lazy(() => import("@/views/ConfirmOrder")); 
+const PrivacyPolicy = lazy(() => import("@/views/Privacidad")); 
+const TermsAndConditions = lazy(() => import("@/views/TermsAndConditions")); 
 // ====== tipos de rol (mantener en sync con lo que guardás en Firestore) ======
 type Role = "admin" | "customer" | "viewer";
 
@@ -83,8 +85,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/confirm-order" element={<ConfirmOrder />} />
-
-
+        <Route path="/privacidad" element={<PrivacyPolicy />} />  
+       <Route path="/terminos" element={<TermsAndConditions />} />
         {/* admin protegidas */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>
           <Route element={<AdminLayout />}>
