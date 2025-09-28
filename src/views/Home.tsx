@@ -11,6 +11,8 @@ import {
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import useFeaturedProducts from '@/hooks/useFeaturedProducts';
 import FeaturedProducts from '@/components/productos/FeaturedProducts';
+import CakeLottie from '@/components/animation/CakeLottie';
+import ConfettiBurst from '@/components/animation/ConfettiBurst';
 
 const Home: React.FC = () => {
 
@@ -71,7 +73,18 @@ const Home: React.FC = () => {
                 Consultar por WhatsApp
               </a>
             </div>
-
+            {/* Columna animación */}
+            <div className="relative">
+              {/* contenedor para confetti en overlay */}
+              <div className="relative">
+                <CakeLottie height={360} />
+                {/* Confetti: estalla una vez al montar */}
+                <div className="absolute inset-0">
+                  {/* @ts-ignore */}
+                  <ConfettiBurst intervalMs={4000} count={50} shadow={true} />
+                </div>
+              </div>
+            </div>
             {/* Features */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-10 max-w-4xl mx-auto">
               {features.map(({ title, icon: Icon, desc }) => (
