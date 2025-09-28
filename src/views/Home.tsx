@@ -81,7 +81,7 @@ const Home: React.FC = () => {
                 {/* Confetti: estalla una vez al montar */}
                 <div className="absolute inset-0">
                   {/* @ts-ignore */}
-                  <ConfettiBurst intervalMs={4000} count={50} shadow={true} />
+                  <ConfettiBurst intervalMs={4000} count={50} shadow={false} />
                 </div>
               </div>
             </div>
