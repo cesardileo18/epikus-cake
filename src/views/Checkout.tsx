@@ -2,14 +2,23 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
-
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthProvider';
 const price = (n: number) => n.toLocaleString('es-AR');
 
 const Checkout: React.FC = () => {
   const { items, updateQty, remove, total } = useCart();
-
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const handleRealizarPedido = () => {
+    if (!user) {
+      navigate('/login?redirect=/confirm-order');
+    } else {
+      navigate('/confirm-order');
+    }
+  };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-24 pb-20">
+    <div className="min-h-screen bg-[#ff7bab48] pt-24 pb-20">
       {/* padding responsive */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         {/* Título responsivo (te dejo tu clamp) */}
@@ -119,14 +128,15 @@ const Checkout: React.FC = () => {
               </div>
 
               {items.length > 0 ? (
-                <Link
-                  to="/confirm-order"
+                <button
+                  onClick={handleRealizarPedido}
                   className="block text-center w-full py-3 rounded-xl font-semibold shadow-lg
-               bg-gradient-to-r from-pink-500 to-rose-400 text-white
-               hover:from-pink-600 hover:to-rose-500 transition-all"
+    bg-gradient-to-r from-pink-500 to-rose-400 text-white
+    hover:from-pink-600 hover:to-rose-500 transition-all"
+                  type="button"
                 >
                   Realizar Pedido
-                </Link>
+                </button>
               ) : (
                 <button
                   type="button"

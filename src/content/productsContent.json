@@ -1,0 +1,24 @@
+{
+    "header": {
+        "title_prefix": "Nuestros",
+        "title_highlight": "Productos",
+        "subtitle": "Descubre nuestra selección de delicias artesanales, elaboradas con los mejores ingredientes"
+    },
+    "search": {
+        "placeholder": "Buscar productos...",
+        "clear_aria_label": "Limpiar búsqueda"
+    },
+    "filters": {
+        "button_label": "Filtros",
+        "dropdown_title": "Categorías",
+        "option_all": "Todos"
+    },
+    "loading": {
+        "message": "Cargando productos..."
+    },
+    "empty_state": {
+        "title": "No hay productos en esta categoría",
+        "description": "Probá con otra categoría o volvé más tarde"
+    },
+    "image_fallback_text": "Imagen no disponible"
+}

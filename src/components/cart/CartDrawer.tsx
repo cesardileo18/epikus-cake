@@ -27,7 +27,7 @@ export default function CartDrawer(): ReactElement | null {
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeCart} />
 
             {/* Panel */}
-            <aside className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl rounded-l-3xl flex flex-col">
+            <aside className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl rounded-l-none sm:rounded-l-3xl flex flex-col">
                 {/* Header */}
                 <div className="p-5 border-b border-gray-200 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-gray-900">Carrito</h2>
@@ -46,7 +46,7 @@ export default function CartDrawer(): ReactElement | null {
                     {items.length === 0 ? (
                         <p className="text-gray-600">Tu carrito está vacío.</p>
                     ) : items.map((i) => (
-                        <div key={i.productId} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                        <div key={i.productId} className="flex gap-3 p-3 bg-[#ff7bab48] rounded-xl">
                             <img
                                 src={i.product.imagen}
                                 alt={i.product.nombre}

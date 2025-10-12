@@ -1,0 +1,85 @@
+{
+    "hero": {
+        "title_prefix": "Repostería",
+        "title_highlight": "Familiar",
+        "subtitle": "Somos una empresa familiar dedicada a la repostería, pastelería y panadería. Hacemos piezas a medida para que tus momentos sean únicos, con ingredientes reales y procesos cuidados."
+    },
+    "cta": {
+        "whatsapp_label": "Consultar por WhatsApp",
+        "whatsapp_link": "https://wa.me/YOUR_PHONE_NUMBER",
+        "contact_label": "Ver contacto",
+        "contact_link": "/contact"
+    },
+    "chef_card": {
+        "image_src": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758490880/chefEpikus_ccuqiv.jpg",
+        "image_alt": "Chef Epikus",
+        "name": "Alejandra · Chef Epikus",
+        "bio": "Formación consolidada en el IAG (Argentina). Inspiración familiar y pasión por el detalle.",
+        "bullets": [
+            "Higiene y técnica profesional",
+            "Sabores equilibrados, terminaciones prolijas",
+            "Diseños personalizados según tu evento"
+        ]
+    },
+    "stats": [
+        {
+            "value": "+6",
+            "label": "Años horneando profesionalmente"
+        },
+        {
+            "value": "100%",
+            "label": "Pedidos a medida"
+        },
+        {
+            "value": "48–72h",
+            "label": "Anticipación recomendada"
+        }
+    ],
+    "history_section": {
+        "kicker": "Nuestra historia",
+        "title": "De Maracay a CABA, con receta familiar y estudio",
+        "desc": "Origen, formación y el presente de Epikus en una línea clara.",
+        "timeline": [
+            {
+                "title": "Origen – Maracay, Aragua (Venezuela)",
+                "desc": "Aprendizaje con su abuela y primeras recetas caseras."
+            },
+            {
+                "title": "2016 – Llegada a Argentina",
+                "desc": "Estudios en el Instituto Argentino de Gastronomía (IAG) con referente Oswaldo Gross."
+            },
+            {
+                "title": "Hoy – Epikus Cake",
+                "desc": "Piezas a medida para eventos y celebraciones."
+            }
+        ]
+    },
+    "gallery": [
+        {
+            "src": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758492242/chocofresa_ddkpar.jpg",
+            "alt": "Torta personalizada"
+        },
+        {
+            "src": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758492447/redvelvet_tlsqjf.jpg",
+            "alt": "Proceso artesanal"
+        },
+        {
+            "src": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758491703/pandejamon_yk8ve8.jpg",
+            "alt": "Decoración detallada"
+        }
+    ],
+    "principles": [
+        {
+            "title": "Ingredientes reales",
+            "desc": "Materias primas de calidad, sabores honestos y consistentes."
+        },
+        {
+            "title": "Proceso cuidadoso",
+            "desc": "Control de tiempos."
+        },
+        {
+            "title": "Diseño a medida",
+            "desc": "Se adapta a tu temática, porciones y temporada."
+        }
+    ]
+}

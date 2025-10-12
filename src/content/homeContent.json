@@ -1,0 +1,36 @@
+{
+    "hero": {
+        "title_prefix": "Sabores que",
+        "title_highlight": "Enamoran",
+        "subtitle": "Creamos momentos dulces únicos con ingredientes premium y amor artesanal en cada preparación"
+    },
+    "buttons": {
+        "view_products": "Ver Productos",
+        "view_all_products": "Ver Todos los Productos"
+    },
+    "features": [
+        {
+            "title": "Hecho a pedido (3 días)",
+            "desc": "Cada torta se prepara especialmente para vos. Tomamos pedidos con 3 días de anticipación."
+        },
+        {
+            "title": "Ingredientes premium",
+            "desc": "Materias primas reales y de primera calidad."
+        },
+        {
+            "title": "Atención personalizada",
+            "desc": "Asesoría 1:1 por WhatsApp en cada paso."
+        },
+        {
+            "title": "Diseños personalizados",
+            "desc": "Llevamos tu idea a un diseño único."
+        }
+    ],
+    "featured_section": {
+        "badge": "Productos Destacados",
+        "title_prefix": "Nuestras",
+        "title_highlight": "Especialidades",
+        "subtitle": "Cada creación es única, elaborada con ingredientes premium y el amor que caracteriza nuestra pastelería"
+    },
+    "image_fallback_text": "Imagen no disponible"
+}

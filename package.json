@@ -13,8 +13,11 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@heroicons/react": "^2.2.0",
+    "@mercadopago/sdk-react": "^1.0.6",
     "@types/react-router-dom": "^5.3.3",
     "firebase": "^12.0.0",
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.5.0",
     "flowbite": "^3.1.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -24,6 +27,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@tailwindcss/vite": "^4.1.11",
+    "@types/node": "^24.7.2",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react-swc": "^3.11.0",

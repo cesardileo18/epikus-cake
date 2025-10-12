@@ -5,7 +5,6 @@ import { useCart } from '@/context/CartProvider';
 
 import { db, auth } from '@/config/firebase';
 import { collection, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
 
 const price = (n: number) => n.toLocaleString('es-AR');
 const WA_PHONE = '5491158651170'; // <-- tu número sin + ni espacios
@@ -37,11 +36,6 @@ const ConfirmOrder: React.FC = () => {
     if (form.entrega === 'envio' && !form.direccion.trim()) return false;
     return items.length > 0;
   }, [form, items.length]);
-
-  const ensureAuth = async () => {
-    if (!auth.currentUser) await signInAnonymously(auth);
-    return auth.currentUser!;
-  };
 
   const buildWaMessage = (orderId: string) => {
     const lines = items.map(
@@ -115,7 +109,7 @@ const ConfirmOrder: React.FC = () => {
     if (!valido || enviando) return;
     setEnviando(true);
     try {
-      const user = await ensureAuth();                     // asegura request.auth para reglas
+     const user = auth.currentUser!;                    // asegura request.auth para reglas
       const orderId = await createOrderAndDecrement(user.uid); // crea /pedidos y descuenta stock
       const url = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(buildWaMessage(orderId))}`;
       window.open(url, '_blank');
@@ -141,7 +135,7 @@ const ConfirmOrder: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-24 pb-20">
+    <div className="min-h-screen bg-[#ff7bab48] pt-24 pb-20">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <h1 className="mb-8 leading-tight text-[clamp(2rem,6vw,3rem)] font-light text-gray-900">
           Confirmar <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">pedido</span>

@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
                     focus:outline-none focus:ring-2 focus:ring-[#FF7BAC]/40
                   "
                 >
-                  <FaInstagram className="h-5 w-5" />
+                  <FaInstagram className="h-7 w-7" />
                 </a>
               </div>
             </div>
