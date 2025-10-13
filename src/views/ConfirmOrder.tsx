@@ -2,9 +2,9 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartProvider';
-
 import { db, auth } from '@/config/firebase';
 import { collection, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import MercadoPagoCheckout from '@/components/mercadoPago/MercadoPagoCheckout';
 
 const price = (n: number) => n.toLocaleString('es-AR');
 const WA_PHONE = '5491158651170'; // <-- tu número sin + ni espacios
@@ -12,7 +12,7 @@ const WA_PHONE = '5491158651170'; // <-- tu número sin + ni espacios
 const ConfirmOrder: React.FC = () => {
   const { items, total, clear } = useCart();
   const nav = useNavigate();
-
+  const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'mercadopago'>('whatsapp');
   const [form, setForm] = useState({
     nombre: '',
     whatsapp: '',
@@ -26,8 +26,8 @@ const ConfirmOrder: React.FC = () => {
 
   const onChange =
     (k: keyof typeof form) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      setForm((f) => ({ ...f, [k]: e.target.value }));
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+        setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const valido = useMemo(() => {
     if (!form.nombre.trim()) return false;
@@ -109,7 +109,7 @@ const ConfirmOrder: React.FC = () => {
     if (!valido || enviando) return;
     setEnviando(true);
     try {
-     const user = auth.currentUser!;                    // asegura request.auth para reglas
+      const user = auth.currentUser!;                    // asegura request.auth para reglas
       const orderId = await createOrderAndDecrement(user.uid); // crea /pedidos y descuenta stock
       const url = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(buildWaMessage(orderId))}`;
       window.open(url, '_blank');
@@ -144,40 +144,40 @@ const ConfirmOrder: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input className="rounded-xl border border-gray-200 px-3 py-2" placeholder="Nombre y apellido"
-                   value={form.nombre} onChange={onChange('nombre')} />
+              value={form.nombre} onChange={onChange('nombre')} />
             <input className="rounded-xl border border-gray-200 px-3 py-2" placeholder="WhatsApp (solo números)"
-                   value={form.whatsapp} onChange={onChange('whatsapp')} inputMode="numeric" />
+              value={form.whatsapp} onChange={onChange('whatsapp')} inputMode="numeric" />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <label className="flex items-center gap-2 border rounded-xl px-3 py-2">
               <input type="radio" name="entrega" value="retiro"
-                     checked={form.entrega === 'retiro'} onChange={onChange('entrega')} />
+                checked={form.entrega === 'retiro'} onChange={onChange('entrega')} />
               <span>Retiro</span>
             </label>
             <label className="flex items-center gap-2 border rounded-xl px-3 py-2">
               <input type="radio" name="entrega" value="envio"
-                     checked={form.entrega === 'envio'} onChange={onChange('entrega')} />
+                checked={form.entrega === 'envio'} onChange={onChange('entrega')} />
               <span>Envío</span>
             </label>
           </div>
 
           {form.entrega === 'envio' && (
             <input className="rounded-xl border border-gray-200 px-3 py-2"
-                   placeholder="Dirección (calle y altura, barrio)"
-                   value={form.direccion} onChange={onChange('direccion')} />
+              placeholder="Dirección (calle y altura, barrio)"
+              value={form.direccion} onChange={onChange('direccion')} />
           )}
 
           <div className="grid grid-cols-2 gap-2">
             <input type="date" className="rounded-xl border border-gray-200 px-3 py-2"
-                   value={form.fecha} onChange={onChange('fecha')} />
+              value={form.fecha} onChange={onChange('fecha')} />
             <input type="time" className="rounded-xl border border-gray-200 px-3 py-2"
-                   value={form.hora} onChange={onChange('hora')} />
+              value={form.hora} onChange={onChange('hora')} />
           </div>
 
           <textarea className="w-full rounded-xl border border-gray-200 px-3 py-2"
-                    placeholder="Notas (ej: sin pasas, mensaje en la torta…)"
-                    rows={3} value={form.notas} onChange={onChange('notas')} />
+            placeholder="Notas (ej: sin pasas, mensaje en la torta…)"
+            rows={3} value={form.notas} onChange={onChange('notas')} />
 
           <div className="flex items-center justify-between border-t pt-4">
             <div className="font-semibold">Total</div>
@@ -185,21 +185,54 @@ const ConfirmOrder: React.FC = () => {
               ${price(total)}
             </div>
           </div>
-
-          <button
-            type="button"
-            disabled={!valido || enviando}
-            onClick={confirmar}
-            className={[
-              'w-full py-3 rounded-xl font-semibold shadow-lg transition-all',
-              !valido || enviando
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500',
-            ].join(' ')}
-          >
-            {enviando ? 'Abriendo WhatsApp…' : 'Confirmar por WhatsApp'}
-          </button>
-
+          <div className="border-t pt-4 space-y-3">
+            <h3 className="font-semibold">Método de pago</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <label className={`flex items-center gap-2 border-2 rounded-xl px-3 py-2 cursor-pointer transition-all ${paymentMethod === 'whatsapp' ? 'border-pink-500 bg-pink-50' : 'border-gray-200'
+                }`}>
+                <input
+                  type="radio"
+                  name="payment"
+                  value="whatsapp"
+                  checked={paymentMethod === 'whatsapp'}
+                  onChange={(e) => setPaymentMethod(e.target.value as 'whatsapp')}
+                />
+                <span>WhatsApp</span>
+              </label>
+              <label className={`flex items-center gap-2 border-2 rounded-xl px-3 py-2 cursor-pointer transition-all ${paymentMethod === 'mercadopago' ? 'border-pink-500 bg-pink-50' : 'border-gray-200'
+                }`}>
+                <input
+                  type="radio"
+                  name="payment"
+                  value="mercadopago"
+                  checked={paymentMethod === 'mercadopago'}
+                  onChange={(e) => setPaymentMethod(e.target.value as 'mercadopago')}
+                />
+                <span>MercadoPago</span>
+              </label>
+            </div>
+          </div>
+          {paymentMethod === 'whatsapp' ? (
+            <button
+              type="button"
+              disabled={!valido || enviando}
+              onClick={confirmar}
+              className={[
+                'w-full py-3 rounded-xl font-semibold shadow-lg transition-all',
+                !valido || enviando
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500',
+              ].join(' ')}
+            >
+              {enviando ? 'Abriendo WhatsApp…' : 'Confirmar por WhatsApp'}
+            </button>
+          ) : (
+            <MercadoPagoCheckout
+              amount={total}
+              description="Pedido Epikus Cake"
+              onError={(e) => alert('Error en el pago: ' + (e?.message ?? e))}
+            />
+          )}
           <Link to="/checkout" className="block text-center text-pink-600 hover:underline">Volver</Link>
         </div>
       </div>

@@ -16,6 +16,13 @@
         }
       },
       {
+        "source": "/api/create-preference",
+        "function": {
+          "functionId": "createPreference",
+          "region": "southamerica-east1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
