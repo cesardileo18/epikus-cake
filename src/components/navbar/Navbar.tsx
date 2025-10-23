@@ -170,8 +170,8 @@ const Navbar: React.FC = () => {
                                group-hover:translate-y-0 group-hover:opacity-100 group-hover:visible"
                   >
                     <div className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-xl">
-                      <Link to="/account" className="block px-4 py-3 text-sm hover:bg-pink-50">Mi perfil</Link>
-                      <Link to="/orders" className="block px-4 py-3 text-sm hover:bg-pink-50">Mis pedidos</Link>
+                      <Link to="/profile" className="block px-4 py-3 text-sm hover:bg-pink-50">Mi perfil</Link>
+                      <Link to="/my-orders" className="block px-4 py-3 text-sm hover:bg-pink-50">Mis pedidos</Link>
                       <button onClick={signOut} className="block w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50" type="button">
                         Salir
                       </button>
@@ -255,8 +255,8 @@ const Navbar: React.FC = () => {
 
                 <div className={`grid transition-[grid-template-rows] duration-300 ${mobileAccountOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                   <div className="overflow-hidden">
-                    <Link to="/account" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mi perfil</Link>
-                    <Link to="/orders" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mis pedidos</Link>
+                    <Link to="/profile" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mi perfil</Link>
+                    <Link to="/my-orders" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mis pedidos</Link>
                   </div>
                 </div>
               </div>

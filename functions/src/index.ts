@@ -1,11 +1,20 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { onCall } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 import type { Request, Response } from "express";
-// import { defineSecret } from "firebase-functions/params";
+import { defineString } from "firebase-functions/params";
+import * as nodemailer from "nodemailer";
+import { google } from "googleapis";
 
 setGlobalOptions({ region: "southamerica-east1", maxInstances: 10 });
 
 const MP_ACCESS_TOKEN = "APP_USR-3474946577848305-101116-a58950c687f436f321f334654137576b-211153688";
+
+// Define las variables de entorno para Gmail
+const gmailClientId = defineString("GMAIL_CLIENT_ID");
+const gmailClientSecret = defineString("GMAIL_CLIENT_SECRET");
+const gmailRefreshToken = defineString("GMAIL_REFRESH_TOKEN");
+const gmailEmail = defineString("GMAIL_EMAIL");
 
 // 🌐 Test endpoint
 export const ping = onRequest((req: Request, res: Response): void => {
@@ -72,7 +81,7 @@ export const createPreference = onRequest(
       res.set("Access-Control-Allow-Origin", "*");
       res.status(200).json({
         preferenceId: data?.id ?? null,
-        initPoint: data?.init_point ?? null, // ✅ esto permite abrir el popup
+        initPoint: data?.init_point ?? null,
       });
     } catch (err: any) {
       console.error("Error en createPreference:", err);
@@ -80,3 +89,62 @@ export const createPreference = onRequest(
     }
   }
 );
+
+// 📧 Función auxiliar para crear el transporter de Nodemailer
+async function createTransporter() {
+  const OAuth2 = google.auth.OAuth2;
+  
+  const oauth2Client = new OAuth2(
+    gmailClientId.value(),
+    gmailClientSecret.value(),
+    "https://developers.google.com/oauthplayground"
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: gmailRefreshToken.value(),
+  });
+
+  const accessToken = await oauth2Client.getAccessToken();
+
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: gmailEmail.value(),
+      clientId: gmailClientId.value(),
+      clientSecret: gmailClientSecret.value(),
+      refreshToken: gmailRefreshToken.value(),
+      accessToken: accessToken.token || "",
+    },
+  });
+}
+
+// 📧 Enviar email
+export const sendEmail = onCall(async (request) => {
+  const { to, subject, text, html } = request.data;
+
+  // Validación básica
+  if (!to || !subject) {
+    throw new Error("Faltan parámetros requeridos: to, subject");
+  }
+
+  try {
+    const transporter = await createTransporter();
+
+    const mailOptions = {
+      from: `Epikus Cake <${gmailEmail.value()}>`,
+      to,
+      subject,
+      text,
+      html,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log("✅ Email enviado:", result.messageId);
+
+    return { success: true, messageId: result.messageId };
+  } catch (error: any) {
+    console.error("❌ Error al enviar email:", error);
+    throw new Error(error.message || "Error al enviar email");
+  }
+});

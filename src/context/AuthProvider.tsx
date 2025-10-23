@@ -1,14 +1,25 @@
-// src/auth/AuthProvider.tsx
+// src/context/AuthProvider.tsx
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '@/config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 type Role = 'admin' | 'customer' | 'viewer';
-type AuthCtx = { user: User | null; role: Role | null; loading: boolean };
 
-const Ctx = createContext<AuthCtx>({ user: null, role: null, loading: true });
+interface AuthCtx {
+  user: User | null;
+  role: Role | null;
+  loading: boolean;
+  logout: () => Promise<void>;  // 👈 Agregamos logout
+}
+
+const Ctx = createContext<AuthCtx>({
+  user: null,
+  role: null,
+  loading: true,
+  logout: async () => {},  // 👈 Función vacía por defecto
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -34,7 +45,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsub;
   }, []);
 
-  return <Ctx.Provider value={{ user, role, loading }}>{children}</Ctx.Provider>;
+  // 👇 Nueva función logout
+  const logout = async (): Promise<void> => {
+    await signOut(auth);
+    // onAuthStateChanged se encargará de limpiar user y role automáticamente
+  };
+
+  return (
+    <Ctx.Provider value={{ user, role, loading, logout }}>
+      {children}
+    </Ctx.Provider>
+  );
 };
 
 export const useAuth = () => useContext(Ctx);

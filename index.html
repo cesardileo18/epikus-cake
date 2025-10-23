@@ -1,43 +1,64 @@
 <!doctype html>
 <html lang="en">
-  <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<title>Pastelería artesanal en CABA | Epikus Cake</title>
-<meta name="description" content="Tortas y postres artesanales en Buenos Aires. Ingredientes premium, pedidos personalizados y envíos en CABA. Conocé Epikus Cake." />
-<meta name="robots" content="index,follow,max-image-preview:large" />
-<link rel="canonical" href="https://epikuscake.web.app/" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pastelería artesanal en CABA | Epikus Cake</title>
+  <meta name="description"
+    content="Tortas y postres artesanales en Buenos Aires. Ingredientes premium, pedidos personalizados y envíos en CABA. Conocé Epikus Cake." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://epikuscake.web.app/" />
 
-<!-- Favicons -->
-<link rel="icon" href="src/assets/img/logoEpikus700x700.png">
-<!-- <link rel="apple-touch-icon" href="/img/logosEpikus/apple-touch-icon.png" /> -->
-<meta name="theme-color" content="#D81E77" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+  <!-- Favicons -->
+  <link rel="icon" href="src/assets/img/logoEpikus700x700.png">
+  <!-- <link rel="apple-touch-icon" href="/img/logosEpikus/apple-touch-icon.png" /> -->
+  <meta name="theme-color" content="#D81E77" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 
 
-<!-- Open Graph -->
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Epikus Cake" />
-<meta property="og:title" content="Pastelería artesanal en CABA | Epikus Cake" />
-<meta property="og:description" content="Tortas y postres artesanales en Buenos Aires. Pedidos personalizados y envíos en CABA." />
-<meta property="og:url" content="https://epikuscake.web.app/" />
-<!-- <meta property="og:image" content="https://epikuscake.web.app/img/og/home.jpg" /> -->
-<meta property="og:locale" content="es_AR" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Epikus Cake" />
+  <meta property="og:title" content="Pastelería artesanal en CABA | Epikus Cake" />
+  <meta property="og:description"
+    content="Tortas y postres artesanales en Buenos Aires. Pedidos personalizados y envíos en CABA." />
+  <meta property="og:url" content="https://epikuscake.web.app/" />
+  <!-- <meta property="og:image" content="https://epikuscake.web.app/img/og/home.jpg" /> -->
+  <meta property="og:locale" content="es_AR" />
 
-<!-- Twitter -->
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Pastelería artesanal en CABA | Epikus Cake" />
-<meta name="twitter:description" content="Tortas y postres artesanales con ingredientes premium." />
-<!-- <meta name="twitter:image" content="https://epikuscake.web.app/img/og/home.jpg" /> -->
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Pastelería artesanal en CABA | Epikus Cake" />
+  <meta name="twitter:description" content="Tortas y postres artesanales con ingredientes premium." />
+  <!-- <meta name="twitter:image" content="https://epikuscake.web.app/img/og/home.jpg" /> -->
 
-<!-- Hreflang -->
-<link rel="alternate" hreflang="es-AR" href="https://epikuscake.web.app/" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <!-- Hreflang -->
+  <link rel="alternate" hreflang="es-AR" href="https://epikuscake.web.app/" />
+</head>
+
+<body>
+  <div id="root"></div>
+    <script>
+    // Desregistrar cualquier service worker existente
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    
+    // Limpiar todo el caché
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) caches.delete(name);
+      });
+    }
+  </script>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
