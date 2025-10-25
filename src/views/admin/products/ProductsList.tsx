@@ -1,7 +1,9 @@
+// src/views/admin/products/ProductsList.tsx
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import type { Product } from "@/interfaces/Product";
+
 
 interface ProductWithId extends Product {
   id: string;
@@ -16,6 +18,15 @@ const ProductsList = () => {
   const [productoEditando, setProductoEditando] = useState<ProductWithId | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
+
+  // Estado para editar variantes
+  const [nuevaVariante, setNuevaVariante] = useState({
+    id: "",
+    label: "",
+    precio: 0,
+    stock: 0,
+    disponible: true
+  });
 
   useEffect(() => {
     cargarProductos();
@@ -42,9 +53,11 @@ const ProductsList = () => {
     setProductoEditando(producto);
     setModalAbierto(true);
   };
+
   const cerrarModal = () => {
     setModalAbierto(false);
     setProductoEditando(null);
+    setNuevaVariante({ id: "", label: "", precio: 0, stock: 0, disponible: true });
   };
 
   const handleCambioFormulario = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -52,18 +65,83 @@ const ProductsList = () => {
     const { name, value, type } = e.target;
     const newValue =
       type === "checkbox" ? (e.target as HTMLInputElement).checked
-      : type === "number" ? parseFloat(value) || 0
-      : value;
+        : type === "number" ? parseFloat(value) || 0
+          : value;
     setProductoEditando(prev => ({ ...prev!, [name]: newValue }));
   };
 
+  const handleTieneVariantesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!productoEditando) return;
+    const tieneVariantes = e.target.checked;
+    setProductoEditando(prev => ({
+      ...prev!,
+      tieneVariantes,
+      ...(tieneVariantes ? { precio: undefined, stock: undefined } : { variantes: [] })
+    }));
+  };
+
+  const agregarVariante = () => {
+    if (!productoEditando) return;
+    if (!nuevaVariante.id || !nuevaVariante.label || nuevaVariante.precio <= 0) {
+      alert("⚠️ Completa todos los campos de la variante");
+      return;
+    }
+    if (productoEditando.variantes?.some(v => v.id === nuevaVariante.id)) {
+      alert("⚠️ Ya existe una variante con ese ID");
+      return;
+    }
+    setProductoEditando(prev => ({
+      ...prev!,
+      variantes: [...(prev!.variantes || []), { ...nuevaVariante }]
+    }));
+    setNuevaVariante({ id: "", label: "", precio: 0, stock: 0, disponible: true });
+  };
+
+  const eliminarVariante = (id: string) => {
+    if (!productoEditando) return;
+    setProductoEditando(prev => ({
+      ...prev!,
+      variantes: prev!.variantes?.filter(v => v.id !== id)
+    }));
+  };
+
+  // Reemplaza tu función guardarCambios actual con esta versión corregida:
+
   const guardarCambios = async () => {
     if (!productoEditando) return;
+
+    // Validaciones
+    if (productoEditando.tieneVariantes && (!productoEditando.variantes || productoEditando.variantes.length === 0)) {
+      alert("⚠️ Debes agregar al menos una variante");
+      return;
+    }
+    if (!productoEditando.tieneVariantes && (!productoEditando.precio || productoEditando.precio <= 0)) {
+      alert("⚠️ Debes ingresar un precio válido");
+      return;
+    }
+
     setGuardando(true);
     try {
       const { id, ...datosProducto } = productoEditando;
-      await updateDoc(doc(db, "productos", id), datosProducto);
+
+      // 🔥 CRÍTICO: Limpiar campos según el tipo de producto
+      const datosLimpios: any = { ...datosProducto };
+
+      if (productoEditando.tieneVariantes) {
+        // Si tiene variantes, eliminar precio y stock simples
+        delete datosLimpios.precio;
+        delete datosLimpios.stock;
+      } else {
+        // Si NO tiene variantes, eliminar array de variantes
+        delete datosLimpios.variantes;
+      }
+
+      // Guardar en Firestore con datos limpios
+      await updateDoc(doc(db, "productos", id), datosLimpios);
+
+      // Actualizar estado local
       setProductos(prev => prev.map(p => (p.id === id ? productoEditando : p)));
+
       cerrarModal();
       alert("✅ Producto actualizado correctamente");
     } catch (error) {
@@ -73,7 +151,6 @@ const ProductsList = () => {
       setGuardando(false);
     }
   };
-
   const toggleActivo = async (producto: ProductWithId) => {
     try {
       const nuevoEstado = !producto.activo;
@@ -98,19 +175,45 @@ const ProductsList = () => {
     }
   };
 
-  // Métricas
+  // Helper: Calcular stock total para productos con variantes
+  const getStockTotal = (producto: ProductWithId): number => {
+    if (producto.tieneVariantes && producto.variantes) {
+      return producto.variantes.reduce((sum, v) => sum + (v.stock || 0), 0);
+    }
+    return producto.stock || 0;
+  };
+
+  // Helper: Obtener precio para mostrar
+  const getPrecioDisplay = (producto: ProductWithId): string => {
+    if (producto.tieneVariantes && producto.variantes && producto.variantes.length > 0) {
+      const precios = producto.variantes.map(v => v.precio);
+      const min = Math.min(...precios);
+      const max = Math.max(...precios);
+      if (min === max) return `$${min.toLocaleString("es-AR")}`;
+      return `$${min.toLocaleString("es-AR")} - $${max.toLocaleString("es-AR")}`;
+    }
+    return `$${(producto.precio || 0).toLocaleString("es-AR")}`;
+  };
+
+  // Métricas actualizadas
   const total = productos.length;
   const activos = productos.filter(p => p.activo).length;
-  const low = productos.filter(p => p.stock <= 5 && p.stock > 0).length;
-  const out = productos.filter(p => p.stock === 0).length;
+  const low = productos.filter(p => {
+    const stock = getStockTotal(p);
+    return stock <= 5 && stock > 0;
+  }).length;
+  const out = productos.filter(p => getStockTotal(p) === 0).length;
 
-  // Filtro mobile (y desktop también sirve)
+  // Filtro actualizado
   const productosFiltrados = useMemo(() => {
     switch (filter) {
       case "active": return productos.filter(p => p.activo);
-      case "low":    return productos.filter(p => p.stock <= 5 && p.stock > 0);
-      case "out":    return productos.filter(p => p.stock === 0);
-      default:       return productos;
+      case "low": return productos.filter(p => {
+        const stock = getStockTotal(p);
+        return stock <= 5 && stock > 0;
+      });
+      case "out": return productos.filter(p => getStockTotal(p) === 0);
+      default: return productos;
     }
   }, [productos, filter]);
 
@@ -127,7 +230,7 @@ const ProductsList = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-20 pb-10">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-4 md:mb-8">
           <h1 className="text-3xl md:text-4xl font-extralight text-gray-900 mb-2">
@@ -137,11 +240,8 @@ const ProductsList = () => {
           <div className="w-16 md:w-20 h-1 bg-gradient-to-r from-pink-500 to-rose-400 mx-auto mt-3 md:mt-4"></div>
         </div>
 
-        {/* ====== MÉTRICAS ======
-            Mobile: carrusel horizontal con snap
-            Desktop: grid de 4 columnas
-        */}
-        <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory no-scrollbar">
+        {/* Métricas Mobile */}
+        <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory no-scrollbar mb-6">
           <div className="flex gap-3 pb-2">
             <MetricCardMobile value={total} label="Total" tone="default" />
             <MetricCardMobile value={activos} label="Activos" tone="green" />
@@ -150,6 +250,7 @@ const ProductsList = () => {
           </div>
         </div>
 
+        {/* Métricas Desktop */}
         <div className="hidden md:grid md:grid-cols-4 gap-6 mb-6">
           <MetricCard value={total} label="Total Productos" />
           <MetricCard value={activos} label="Activos" color="text-green-600" />
@@ -157,7 +258,7 @@ const ProductsList = () => {
           <MetricCard value={out} label="Sin Stock" color="text-red-600" />
         </div>
 
-        {/* ====== FILTROS CHIP ====== */}
+        {/* Filtros */}
         <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-2">
           <Chip active={filter === "all"} onClick={() => setFilter("all")}>Todos ({total})</Chip>
           <Chip active={filter === "active"} onClick={() => setFilter("active")}>Activos ({activos})</Chip>
@@ -165,7 +266,7 @@ const ProductsList = () => {
           <Chip active={filter === "out"} onClick={() => setFilter("out")}>Sin stock ({out})</Chip>
         </div>
 
-        {/* ====== LISTA ====== */}
+        {/* Lista */}
         {productosFiltrados.length === 0 ? (
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-12 text-center">
             <div className="text-6xl mb-4">🛒</div>
@@ -174,7 +275,7 @@ const ProductsList = () => {
           </div>
         ) : (
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden">
-            {/* Mobile cards compactas */}
+            {/* Mobile cards */}
             <div className="block lg:hidden divide-y divide-gray-100">
               {productosFiltrados.map((p) => (
                 <div key={p.id} className="p-4">
@@ -188,21 +289,20 @@ const ProductsList = () => {
                     <div className="min-w-0">
                       <h3 className="font-semibold text-gray-900 line-clamp-1">{p.nombre}</h3>
                       <p className="text-sm text-gray-600 line-clamp-2">{p.descripcion}</p>
-                      <p className="text-base font-bold text-pink-600 mt-1">${p.precio.toLocaleString("es-AR")}</p>
+                      <p className="text-base font-bold text-pink-600 mt-1">{getPrecioDisplay(p)}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <Badge tone={p.activo ? "green" : "red"}>{p.activo ? "✅ Activo" : "❌ Inactivo"}</Badge>
-                        <Badge tone={p.stock === 0 ? "red" : p.stock <= 5 ? "amber" : "blue"}>📦 {p.stock}</Badge>
+                        <Badge tone={getStockTotal(p) === 0 ? "red" : getStockTotal(p) <= 5 ? "amber" : "blue"}>
+                          📦 {getStockTotal(p)}
+                        </Badge>
                         {p.destacado && <Badge tone="amber">⭐ Destacado</Badge>}
+                        {p.tieneVariantes && <Badge tone="purple">🎯 Variantes</Badge>}
                       </div>
                     </div>
 
-                    {/* Botones compactos */}
                     <div className="flex flex-col gap-2">
                       <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>✏️</IconBtn>
-                      <IconBtn
-                        title={p.activo ? "Desactivar" : "Activar"}
-                        onClick={() => toggleActivo(p)}
-                      >
+                      <IconBtn title={p.activo ? "Desactivar" : "Activar"} onClick={() => toggleActivo(p)}>
                         {p.activo ? "⛔" : "✅"}
                       </IconBtn>
                       <IconBtn title="Eliminar" onClick={() => eliminarProducto(p)}>🗑️</IconBtn>
@@ -239,6 +339,11 @@ const ProductsList = () => {
                           <div>
                             <h3 className="font-semibold text-gray-900">{p.nombre}</h3>
                             <p className="text-sm text-gray-600">{p.descripcion}</p>
+                            {p.tieneVariantes && (
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                🎯 Con variantes
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -248,20 +353,18 @@ const ProductsList = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-lg font-bold text-gray-900">${p.precio.toLocaleString("es-AR")}</span>
+                        <span className="text-lg font-bold text-gray-900">{getPrecioDisplay(p)}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                          p.stock === 0 ? "bg-red-100 text-red-800"
-                          : p.stock <= 5 ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-800"
-                        }`}>📦 {p.stock}</span>
+                        <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStockTotal(p) === 0 ? "bg-red-100 text-red-800"
+                            : getStockTotal(p) <= 5 ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-800"
+                          }`}>📦 {getStockTotal(p)}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          <span className={`block px-2 py-1 text-xs font-semibold rounded-full ${
-                            p.activo ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                          }`}>{p.activo ? "✅ Activo" : "❌ Inactivo"}</span>
+                          <span className={`block px-2 py-1 text-xs font-semibold rounded-full ${p.activo ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                            }`}>{p.activo ? "✅ Activo" : "❌ Inactivo"}</span>
                           {p.destacado && (
                             <span className="block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">⭐ Destacado</span>
                           )}
@@ -270,9 +373,8 @@ const ProductsList = () => {
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           <button onClick={() => abrirModalEdicion(p)} className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600">Editar</button>
-                          <button onClick={() => toggleActivo(p)} className={`px-3 py-1 text-sm rounded-lg ${
-                            p.activo ? "bg-yellow-500 text-white hover:bg-yellow-600" : "bg-green-500 text-white hover:bg-green-600"
-                          }`}>{p.activo ? "Desactivar" : "Activar"}</button>
+                          <button onClick={() => toggleActivo(p)} className={`px-3 py-1 text-sm rounded-lg ${p.activo ? "bg-yellow-500 text-white hover:bg-yellow-600" : "bg-green-500 text-white hover:bg-green-600"
+                            }`}>{p.activo ? "Desactivar" : "Activar"}</button>
                           <button onClick={() => eliminarProducto(p)} className="px-3 py-1 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600">Eliminar</button>
                         </div>
                       </td>
@@ -281,14 +383,13 @@ const ProductsList = () => {
                 </tbody>
               </table>
             </div>
-
           </div>
         )}
 
-        {/* ====== MODAL EDICIÓN ====== */}
+        {/* MODAL EDICIÓN */}
         {modalAbierto && productoEditando && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">Editar Producto</h2>
                 <button onClick={cerrarModal} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
@@ -298,55 +399,119 @@ const ProductsList = () => {
                 {/* Nombre */}
                 <Field label="Nombre del Producto *">
                   <input type="text" name="nombre" value={productoEditando.nombre} onChange={handleCambioFormulario}
-                         className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"/>
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
                 </Field>
 
                 {/* Descripción */}
                 <Field label="Descripción">
                   <textarea name="descripcion" value={productoEditando.descripcion} onChange={handleCambioFormulario} rows={3}
-                            className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent resize-none"/>
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent resize-none" />
                 </Field>
 
-                {/* Precio/Categoría/Stock */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label="Precio (ARS) *">
-                    <input type="number" name="precio" value={productoEditando.precio || ""} onChange={handleCambioFormulario} min={0}
-                           className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"/>
-                  </Field>
-                  <Field label="Categoría *">
-                    <select name="categoria" value={productoEditando.categoria} onChange={handleCambioFormulario}
-                            className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent">
-                      <option value="">Seleccionar categoría</option>
-                      <option value="tortas">🍰 Tortas</option>
-                      <option value="cheesecakes">🧀 Cheesecakes</option>
-                      <option value="cupcakes">🧁 Cupcakes</option>
-                      <option value="brownies">🍫 Brownies</option>
-                      <option value="muffins">🫐 Muffins</option>
-                    </select>
-                  </Field>
-                  <Field label="Stock *">
-                    <input type="number" name="stock" value={productoEditando.stock || ""} onChange={handleCambioFormulario} min={0}
-                           className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"/>
-                  </Field>
-                </div>
+                {/* Categoría */}
+                <Field label="Categoría *">
+                  <select name="categoria" value={productoEditando.categoria} onChange={handleCambioFormulario}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent">
+                    <option value="">Seleccionar categoría</option>
+                    <option value="tortas">🍰 Tortas</option>
+                    <option value="cheesecakes">🧀 Cheesecakes</option>
+                    <option value="cupcakes">🧁 Cupcakes</option>
+                    <option value="panaderia">🥖 Panadería</option>
+                    <option value="tortas-personalizadas">🎨 Tortas a medida</option>
+                  </select>
+                </Field>
 
                 {/* Imagen */}
                 <Field label="URL de la Imagen *">
                   <input type="url" name="imagen" value={productoEditando.imagen} onChange={handleCambioFormulario}
-                         className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"/>
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
                 </Field>
+
+                {/* Toggle Variantes */}
+                <div className="border-2 border-dashed border-purple-200 rounded-xl p-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={productoEditando.tieneVariantes} onChange={handleTieneVariantesChange}
+                      className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
+                    <div>
+                      <span className="text-sm font-bold text-purple-900">🎯 Producto con variantes</span>
+                      <p className="text-xs text-purple-700">Para tortas con diferentes porciones</p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* CASO 1: Sin variantes */}
+                {!productoEditando.tieneVariantes && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Precio (ARS) *">
+                      <input type="number" name="precio" value={productoEditando.precio || ""} onChange={handleCambioFormulario} min={0}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
+                    </Field>
+                    <Field label="Stock *">
+                      <input type="number" name="stock" value={productoEditando.stock || ""} onChange={handleCambioFormulario} min={0}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
+                    </Field>
+                  </div>
+                )}
+
+                {/* CASO 2: Con variantes */}
+                {productoEditando.tieneVariantes && (
+                  <div className="space-y-4">
+                    <div className="border border-purple-200 rounded-xl p-4">
+                      <h4 className="font-bold text-gray-900 mb-3">Agregar Variante</h4>
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <input type="text" placeholder="ID (ej: 10-12)" value={nuevaVariante.id}
+                          onChange={(e) => setNuevaVariante(p => ({ ...p, id: e.target.value }))}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                        <input type="text" placeholder="Etiqueta" value={nuevaVariante.label}
+                          onChange={(e) => setNuevaVariante(p => ({ ...p, label: e.target.value }))}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                        <input type="number" placeholder="Precio" value={nuevaVariante.precio || ""}
+                          onChange={(e) => setNuevaVariante(p => ({ ...p, precio: parseFloat(e.target.value) || 0 }))}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                        <input type="number" placeholder="Stock" value={nuevaVariante.stock || ""}
+                          onChange={(e) => setNuevaVariante(p => ({ ...p, stock: parseFloat(e.target.value) || 0 }))}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                      </div>
+                      <button type="button" onClick={agregarVariante}
+                        className="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 text-sm font-semibold">
+                        ➕ Agregar Variante
+                      </button>
+                    </div>
+
+                    {/* Lista de variantes */}
+                    {productoEditando.variantes && productoEditando.variantes.length > 0 && (
+                      <div className="border border-gray-200 rounded-xl p-4">
+                        <h4 className="font-bold text-gray-900 mb-3">Variantes ({productoEditando.variantes.length})</h4>
+                        <div className="space-y-2">
+                          {productoEditando.variantes.map((v) => (
+                            <div key={v.id} className="flex items-center justify-between bg-purple-50 p-3 rounded-lg">
+                              <div>
+                                <p className="font-semibold text-sm">{v.label}</p>
+                                <p className="text-xs text-gray-600">ID: {v.id} | ${v.precio.toLocaleString('es-AR')} | Stock: {v.stock || 0}</p>
+                              </div>
+                              <button type="button" onClick={() => eliminarVariante(v.id)}
+                                className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">
+                                🗑️
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Configuración */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-900">Configuración</h3>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" name="activo" checked={productoEditando.activo} onChange={handleCambioFormulario}
-                           className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500"/>
+                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500" />
                     <span className="text-sm font-semibold text-gray-800">Producto activo</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" name="destacado" checked={productoEditando.destacado} onChange={handleCambioFormulario}
-                           className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500"/>
+                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500" />
                     <span className="text-sm font-semibold text-gray-800">Producto destacado</span>
                   </label>
                 </div>
@@ -354,11 +519,11 @@ const ProductsList = () => {
 
               <div className="p-6 border-t border-gray-200 flex gap-4">
                 <button onClick={cerrarModal}
-                        className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50">
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50">
                   Cancelar
                 </button>
                 <button onClick={guardarCambios} disabled={guardando}
-                        className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-500 disabled:opacity-50">
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-500 disabled:opacity-50">
                   {guardando ? "Guardando..." : "Guardar Cambios"}
                 </button>
               </div>
@@ -370,7 +535,7 @@ const ProductsList = () => {
   );
 };
 
-/* ---------- UI helpers pequeños ---------- */
+/* ---------- UI helpers ---------- */
 const MetricCard: React.FC<{ value: number; label: string; color?: string }> = ({ value, label, color }) => (
   <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/50 text-center">
     <p className={`text-3xl font-bold ${color ?? "text-gray-900"}`}>{value}</p>
@@ -378,7 +543,6 @@ const MetricCard: React.FC<{ value: number; label: string; color?: string }> = (
   </div>
 );
 
-// Card de métrica para mobile (scroll horizontal + snap)
 const MetricCardMobile: React.FC<{ value: number; label: string; tone: "default" | "green" | "amber" | "red" }> = ({ value, label, tone }) => {
   const toneMap: Record<string, string> = {
     default: "text-gray-900",
@@ -397,21 +561,21 @@ const MetricCardMobile: React.FC<{ value: number; label: string; tone: "default"
 const Chip: React.FC<{ active?: boolean; onClick?: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 rounded-full text-sm border transition ${
-      active ? "bg-pink-100 text-pink-700 border-pink-200" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-    }`}
+    className={`px-3 py-1.5 rounded-full text-sm border transition ${active ? "bg-pink-100 text-pink-700 border-pink-200" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+      }`}
     type="button"
   >
     {children}
   </button>
 );
 
-const Badge: React.FC<{ tone: "green" | "red" | "amber" | "blue"; children: React.ReactNode }> = ({ tone, children }) => {
+const Badge: React.FC<{ tone: "green" | "red" | "amber" | "blue" | "purple"; children: React.ReactNode }> = ({ tone, children }) => {
   const map: Record<string, string> = {
     green: "bg-green-100 text-green-800",
     red: "bg-red-100 text-red-800",
     amber: "bg-yellow-100 text-yellow-800",
     blue: "bg-blue-100 text-blue-800",
+    purple: "bg-purple-100 text-purple-800",
   };
   return <span className={`px-2 py-0.5 text-xs rounded-full ${map[tone]}`}>{children}</span>;
 };

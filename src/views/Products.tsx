@@ -15,25 +15,46 @@ const Products: React.FC = () => {
   const { products, loading, categories } = useProductsLiveQuery({ onlyActive: true });
 
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
-  const [procesando, setProcesando] = useState<Set<string>>(new Set()); // solo UI
+  const [procesando, setProcesando] = useState<Set<string>>(new Set());
 
   // 🛒 carrito global
   const { items, add, updateQty, openCart } = useCart();
 
-  // Fallback si por alguna razón no hay categorías (muy raro)
+  // Fallback si por alguna razón no hay categorías
   const categorias = categories.length ? categories : ['todos'];
 
-  const agregarAlCarrito = async (producto: ProductWithId): Promise<void> => {
+  // 🔥 ACTUALIZADO: Ahora recibe variantId opcional
+  const agregarAlCarrito = async (producto: ProductWithId, variantId?: string): Promise<void> => {
     if (procesando.has(producto.id)) return;
 
-    // validar stock disponible respecto a lo que ya hay en el carrito
-    const enCarrito = items.find((it) => it.productId === producto.id)?.quantity ?? 0;
-    const disponible = producto.stock - enCarrito;
-    if (disponible <= 0) return;
+    // Si tiene variantes pero no se seleccionó ninguna
+    if (producto.tieneVariantes && !variantId) {
+      alert('⚠️ Debes seleccionar un tamaño/porciones');
+      return;
+    }
+
+    // Obtener stock según tipo de producto
+    let stockDisponible = 0;
+    if (producto.tieneVariantes && producto.variantes && variantId) {
+      const variante = producto.variantes.find(v => v.id === variantId);
+      stockDisponible = variante?.stock ?? 0;
+    } else {
+      stockDisponible = producto.stock ?? 0;
+    }
+
+    // Validar stock disponible respecto a lo que ya hay en el carrito
+    const itemKey = variantId ? `${producto.id}-${variantId}` : producto.id;
+    const enCarrito = items.find((it) => it.productId === itemKey)?.quantity ?? 0;
+    const disponible = stockDisponible - enCarrito;
+
+    if (disponible <= 0) {
+      alert('❌ No hay stock disponible');
+      return;
+    }
 
     setProcesando((prev) => new Set(prev).add(producto.id));
     try {
-      await add(producto, 1);
+       await add(producto, 1, variantId);  
       // openCart(); // si querés abrir el carrito automáticamente
     } catch (e) {
       console.error('add() fallo', e);
@@ -46,9 +67,10 @@ const Products: React.FC = () => {
     }
   };
 
-  const actualizarCantidadCarrito = (productId: string, nueva: number, stock: number): void => {
+  // 🔥 ACTUALIZADO: stock ahora es el disponible real, no producto.stock directo
+  const actualizarCantidadCarrito = (productId: string, nueva: number, stockDisponible: number): void => {
     if (nueva < 0) return;
-    if (nueva > stock) return; // clamp UI
+    if (nueva > stockDisponible) return; // clamp UI
     updateQty(productId, nueva);
   };
 
@@ -180,7 +202,7 @@ const Products: React.FC = () => {
             </div>
           </div>
 
-          {/* Grid de productos reutilizando FeaturedProducts en modo catálogo */}
+          {/* Grid de productos */}
           <FeaturedProducts
             productos={productosFiltrados}
             loading={loading}

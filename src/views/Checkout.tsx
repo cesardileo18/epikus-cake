@@ -4,12 +4,14 @@ import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthProvider';
+
 const price = (n: number) => n.toLocaleString('es-AR');
 
 const Checkout: React.FC = () => {
   const { items, updateQty, remove, total } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const handleRealizarPedido = () => {
     if (!user) {
       navigate('/login?redirect=/confirm-order');
@@ -17,11 +19,10 @@ const Checkout: React.FC = () => {
       navigate('/confirm-order');
     }
   };
+
   return (
     <div className="min-h-screen bg-[#ff7bab48] pt-24 pb-20">
-      {/* padding responsive */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
-        {/* Título responsivo (te dejo tu clamp) */}
         <h1 className="mb-8 leading-tight text-[clamp(2rem,6vw,3.5rem)] font-light text-gray-900">
           Tu{' '}
           <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
@@ -40,82 +41,94 @@ const Checkout: React.FC = () => {
             </Link>
           </div>
         ) : (
-          // 👉 1 col en móvil, 2 cols en desktop
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
             {/* Lista */}
             <div className="space-y-3 sm:space-y-4">
-              {items.map((it) => (
-                <div
-                  key={it.product.id}
-                  // 👉 permite envolver contenido en móvil
-                  className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 bg-white rounded-2xl p-4 shadow"
-                >
-                  <img
-                    src={it.product.imagen}
-                    alt={it.product.nombre}
-                    className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://via.placeholder.com/64x64/f8fafc/64748b?text=–';
-                    }}
-                  />
+              {items.map((it) => {
+                // 🔥 NUEVO: Obtener stock máximo según si tiene variante o no
+                const stockMaximo = it.variantId && it.product.tieneVariantes && it.product.variantes
+                  ? (it.product.variantes.find(v => v.id === it.variantId)?.stock ?? 0)
+                  : (it.product.stock ?? 0);
 
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 truncate">
-                      {it.product.nombre}
-                    </div>
-                    <div className="text-pink-600 font-bold text-sm sm:text-base">
-                      ${price(it.product.precio)}
-                    </div>
-
-                    {/* Total del ítem en móvil */}
-                    <div className="sm:hidden mt-1 font-bold text-gray-900">
-                      ${price(it.quantity * it.product.precio)}
-                    </div>
-                  </div>
-
-                  {/* Controles cantidad (ocupan ancho completo en móvil si hace falta) */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 order-3 sm:order-none w-full sm:w-auto justify-between sm:justify-start">
-                    <button
-                      onClick={() => updateQty(it.product.id, it.quantity - 1)}
-                      className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-                      type="button"
-                      aria-label="Disminuir"
-                    >
-                      <MinusIcon className="w-4 h-4" />
-                    </button>
-
-                    <span className="min-w-[2rem] text-center font-semibold">
-                      {it.quantity}
-                    </span>
-
-                    <button
-                      onClick={() => updateQty(it.product.id, it.quantity + 1)}
-                      disabled={it.quantity >= it.product.stock}
-                      className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 flex items-center justify-center"
-                      type="button"
-                      aria-label="Aumentar"
-                    >
-                      <PlusIcon className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-
-                  {/* Total del ítem en escritorio */}
-                  <div className="hidden sm:block w-24 text-right font-bold text-gray-900">
-                    ${price(it.quantity * it.product.precio)}
-                  </div>
-
-                  {/* Eliminar (se mantiene al final en móvil) */}
-                  <button
-                    onClick={() => remove(it.product.id)}
-                    className="ml-auto sm:ml-0 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center order-2 sm:order-none"
-                    type="button"
-                    aria-label="Eliminar"
+                return (
+                  <div
+                    key={it.productId}  // 🔥 ACTUALIZADO: usar productId (que incluye variantId)
+                    className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 bg-white rounded-2xl p-4 shadow"
                   >
-                    <TrashIcon className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-              ))}
+                    <img
+                      src={it.product.imagen}
+                      alt={it.product.nombre}
+                      className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          'https://via.placeholder.com/64x64/f8fafc/64748b?text=–';
+                      }}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 truncate">
+                        {it.product.nombre}
+                      </div>
+                      {/* 🔥 NUEVO: Mostrar variante si existe */}
+                      {it.variantLabel && (
+                        <div className="text-xs text-gray-600 mt-0.5">
+                          📦 {it.variantLabel}
+                        </div>
+                      )}
+                      {/* 🔥 ACTUALIZADO: Usar it.precio en lugar de it.product.precio */}
+                      <div className="text-pink-600 font-bold text-sm sm:text-base">
+                        ${price(it.precio)}
+                      </div>
+
+                      {/* Total del ítem en móvil */}
+                      <div className="sm:hidden mt-1 font-bold text-gray-900">
+                        ${price(it.quantity * it.precio)}
+                      </div>
+                    </div>
+
+                    {/* Controles cantidad */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 order-3 sm:order-none w-full sm:w-auto justify-between sm:justify-start">
+                      <button
+                        onClick={() => updateQty(it.productId, it.quantity - 1)}
+                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                        type="button"
+                        aria-label="Disminuir"
+                      >
+                        <MinusIcon className="w-4 h-4" />
+                      </button>
+
+                      <span className="min-w-[2rem] text-center font-semibold">
+                        {it.quantity}
+                      </span>
+
+                      <button
+                        onClick={() => updateQty(it.productId, it.quantity + 1)}
+                        disabled={it.quantity >= stockMaximo}  // 🔥 ACTUALIZADO: usar stockMaximo
+                        className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 flex items-center justify-center"
+                        type="button"
+                        aria-label="Aumentar"
+                      >
+                        <PlusIcon className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+
+                    {/* Total del ítem en escritorio */}
+                    <div className="hidden sm:block w-24 text-right font-bold text-gray-900">
+                      ${price(it.quantity * it.precio)}
+                    </div>
+
+                    {/* Eliminar */}
+                    <button
+                      onClick={() => remove(it.productId)}  // 🔥 ACTUALIZADO: usar productId
+                      className="ml-auto sm:ml-0 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center order-2 sm:order-none"
+                      type="button"
+                      aria-label="Eliminar"
+                    >
+                      <TrashIcon className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Resumen */}
@@ -131,8 +144,8 @@ const Checkout: React.FC = () => {
                 <button
                   onClick={handleRealizarPedido}
                   className="block text-center w-full py-3 rounded-xl font-semibold shadow-lg
-    bg-gradient-to-r from-pink-500 to-rose-400 text-white
-    hover:from-pink-600 hover:to-rose-500 transition-all"
+                    bg-gradient-to-r from-pink-500 to-rose-400 text-white
+                    hover:from-pink-600 hover:to-rose-500 transition-all"
                   type="button"
                 >
                   Realizar Pedido
@@ -146,7 +159,6 @@ const Checkout: React.FC = () => {
                   Realizar Pedido
                 </button>
               )}
-
 
               <Link
                 to="/products"

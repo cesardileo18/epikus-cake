@@ -37,9 +37,10 @@ const ConfirmOrder: React.FC = () => {
     return items.length > 0;
   }, [form, items.length]);
 
+  // 🔥 ACTUALIZADO: incluye variantLabel en el mensaje
   const buildWaMessage = (orderId: string) => {
     const lines = items.map(
-      (it) => `• ${it.product.nombre} x${it.quantity} — $${price(it.product.precio * it.quantity)}`
+      (it) => `• ${it.product.nombre}${it.variantLabel ? ` (${it.variantLabel})` : ''} x${it.quantity} — $${price(it.precio * it.quantity)}`
     );
     const datosEntrega =
       form.entrega === 'retiro'
@@ -59,9 +60,9 @@ const ConfirmOrder: React.FC = () => {
     );
   };
 
-  // ✅ Crea ticket en /pedidos y descuenta stock en /productos (transacción)
+  // 🔥 ACTUALIZADO: descuenta stock por variante si aplica
   const createOrderAndDecrement = async (userUid: string): Promise<string> => {
-    const orderRef = doc(collection(db, 'pedidos')); // colección raíz "pedidos"
+    const orderRef = doc(collection(db, 'pedidos'));
 
     await runTransaction(db, async (tx) => {
       // 1) Validar y descontar stock actual
@@ -69,15 +70,33 @@ const ConfirmOrder: React.FC = () => {
         const pRef = doc(db, 'productos', it.product.id);
         const snap = await tx.get(pRef);
         if (!snap.exists()) throw new Error(`Producto inexistente: ${it.product.nombre}`);
-        const data = snap.data() as { stock?: number };
-        const stock = Number(data.stock ?? 0);
-        if (stock < it.quantity) {
-          throw new Error(`Sin stock suficiente de "${it.product.nombre}". Quedan ${stock}.`);
+        
+        const producto = snap.data();
+        
+        // Si tiene variante, descontar stock de la variante específica
+        if (it.variantId && producto.tieneVariantes && Array.isArray(producto.variantes)) {
+          const variantes = producto.variantes;
+          const idx = variantes.findIndex((v: any) => v.id === it.variantId);
+          if (idx === -1) throw new Error(`Variante no encontrada: ${it.variantLabel}`);
+          
+          const stockVariante = Number(variantes[idx].stock ?? 0);
+          if (stockVariante < it.quantity) {
+            throw new Error(`Sin stock suficiente de "${it.product.nombre} (${it.variantLabel})". Quedan ${stockVariante}.`);
+          }
+          
+          variantes[idx].stock = stockVariante - it.quantity;
+          tx.update(pRef, { variantes });
+        } else {
+          // Producto sin variantes, descontar stock simple
+          const stock = Number(producto.stock ?? 0);
+          if (stock < it.quantity) {
+            throw new Error(`Sin stock suficiente de "${it.product.nombre}". Quedan ${stock}.`);
+          }
+          tx.update(pRef, { stock: stock - it.quantity });
         }
-        tx.update(pRef, { stock: stock - it.quantity });
       }
 
-      // 2) Crear el pedido
+      // 2) Crear el pedido - 🔥 ACTUALIZADO: incluye variantId y variantLabel
       tx.set(orderRef, {
         status: 'pendiente',
         createdAt: serverTimestamp(),
@@ -92,10 +111,12 @@ const ConfirmOrder: React.FC = () => {
         notas: form.notas || null,
         items: items.map((it) => ({
           productId: it.product.id,
+          variantId: it.variantId || null,
+          variantLabel: it.variantLabel || null,
           nombre: it.product.nombre,
-          precio: it.product.precio,
+          precio: it.precio,
           cantidad: it.quantity,
-          subtotal: it.product.precio * it.quantity,
+          subtotal: it.precio * it.quantity,
         })),
         total,
         source: 'web',
@@ -109,8 +130,8 @@ const ConfirmOrder: React.FC = () => {
     if (!valido || enviando) return;
     setEnviando(true);
     try {
-      const user = auth.currentUser!;                    // asegura request.auth para reglas
-      const orderId = await createOrderAndDecrement(user.uid); // crea /pedidos y descuenta stock
+      const user = auth.currentUser!;
+      const orderId = await createOrderAndDecrement(user.uid);
       const url = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(buildWaMessage(orderId))}`;
       window.open(url, '_blank');
       clear();

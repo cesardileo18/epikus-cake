@@ -16,9 +16,11 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-// Interfaces
+// 🔥 ACTUALIZADO: OrderItem ahora incluye variantes
 interface OrderItem {
   productId: string;
+  variantId?: string | null;
+  variantLabel?: string | null;
   nombre: string;
   precio: number;
   cantidad: number;
@@ -63,7 +65,6 @@ const MyOrders: React.FC = () => {
       try {
         console.log('🔍 Buscando pedidos para user.uid:', user.uid);
 
-        // Opción 1: Buscar en colección principal con userUid
         let q = query(
           collection(db, 'pedidos'),
           where('userUid', '==', user.uid)
@@ -73,7 +74,6 @@ const MyOrders: React.FC = () => {
         
         console.log('📦 Documentos encontrados (método 1):', snapshot.size);
         
-        // Si no encuentra nada, intentar con la subcolección del usuario
         if (snapshot.empty) {
           console.log('⚠️ Intentando con subcolección users/{uid}/pedidos...');
           q = query(
@@ -83,7 +83,6 @@ const MyOrders: React.FC = () => {
           console.log('📦 Documentos encontrados (método 2):', snapshot.size);
         }
 
-        // Si aún no encuentra, buscar todos los pedidos y filtrar por customer.whatsapp o email
         if (snapshot.empty && user.phoneNumber) {
           console.log('⚠️ Intentando buscar por número de teléfono...');
           const allOrdersQuery = query(collection(db, 'pedidos'));
@@ -120,7 +119,6 @@ const MyOrders: React.FC = () => {
           };
         }) as Order[];
 
-        // Ordenar manualmente por createdAt
         ordersData.sort((a, b) => {
           if (!a.createdAt || !b.createdAt) return 0;
           return b.createdAt.toMillis() - a.createdAt.toMillis();
@@ -177,34 +175,46 @@ const MyOrders: React.FC = () => {
     return configs[status] || configs.pendiente;
   };
 
-  // 🛒 FUNCIÓN PARA VOLVER A COMPRAR
+  // 🔥 ACTUALIZADO: handleReorder ahora maneja variantes
   const handleReorder = async (order: Order) => {
     setReordering(order.id);
     try {
       for (const item of order.items) {
-        // Obtener el producto actual de Firestore para verificar stock
         const productRef = doc(db, 'productos', item.productId);
         const productSnap = await getDoc(productRef);
 
         if (!productSnap.exists()) continue;
 
         const productData = productSnap.data();
-        const currentStock = productData.stock || 0;
         const isActive = productData.activo !== false;
 
-        // Si hay stock suficiente y está activo, agregar al carrito
-        if (currentStock >= item.cantidad && isActive) {
+        if (!isActive) continue;
+
+        // Verificar stock según si tiene variante o no
+        let stockDisponible = 0;
+        if (item.variantId && productData.tieneVariantes && Array.isArray(productData.variantes)) {
+          const variante = productData.variantes.find((v: any) => v.id === item.variantId);
+          if (!variante) continue;
+          stockDisponible = variante.stock || 0;
+        } else {
+          stockDisponible = productData.stock || 0;
+        }
+
+        // Si hay stock suficiente, agregar al carrito
+        if (stockDisponible >= item.cantidad) {
           add({
             id: item.productId,
             nombre: item.nombre,
-            precio: item.precio,
+            precio: productData.precio,
             imagen: productData.imagen || '',
             descripcion: productData.descripcion || '',
             categoria: productData.categoria || '',
-            stock: currentStock,
+            stock: productData.stock,
             activo: isActive,
             destacado: productData.destacado || false,
-          }, item.cantidad);
+            tieneVariantes: productData.tieneVariantes || false,
+            variantes: productData.variantes || [],
+          }, item.cantidad, item.variantId || undefined);
         }
       }
 
@@ -216,7 +226,6 @@ const MyOrders: React.FC = () => {
     }
   };
 
-  // Usuario no logueado
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center px-4">
@@ -239,7 +248,6 @@ const MyOrders: React.FC = () => {
     );
   }
 
-  // Loading
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
@@ -323,7 +331,7 @@ const MyOrders: React.FC = () => {
 
                   {/* Contenido del pedido */}
                   <div className="p-6 space-y-6">
-                    {/* Productos */}
+                    {/* Productos - 🔥 ACTUALIZADO: muestra variantLabel */}
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <ShoppingBagIcon className="w-5 h-5 text-pink-500" />
@@ -339,6 +347,12 @@ const MyOrders: React.FC = () => {
                               <p className="font-medium text-gray-900">
                                 {item.nombre}
                               </p>
+                              {/* 🔥 NUEVO: Mostrar variante si existe */}
+                              {item.variantLabel && (
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  📦 {item.variantLabel}
+                                </p>
+                              )}
                               <p className="text-sm text-gray-600">
                                 Cantidad: {item.cantidad} × ${formatPrice(item.precio)}
                               </p>

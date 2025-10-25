@@ -4,6 +4,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import type { Product } from "@/interfaces/Product";
 
+
 interface ProductWithId extends Product {
   id: string;
 }
@@ -33,17 +34,28 @@ const Dashboard = () => {
     }
   };
 
+  // Helper: Calcular stock total (con o sin variantes)
+  const getStockTotal = (producto: ProductWithId): number => {
+    if (producto.tieneVariantes && producto.variantes) {
+      return producto.variantes.reduce((sum, v) => sum + (v.stock || 0), 0);
+    }
+    return producto.stock || 0;
+  };
+
   // Calcular estadísticas
   const totalProductos = productos.length;
   const productosActivos = productos.filter(p => p.activo).length;
-  const stockBajo = productos.filter(p => p.stock <= 5 && p.stock > 0).length;
-  const sinStock = productos.filter(p => p.stock === 0).length;
+  const stockBajo = productos.filter(p => {
+    const stock = getStockTotal(p);
+    return stock <= 5 && stock > 0;
+  }).length;
+  const sinStock = productos.filter(p => getStockTotal(p) === 0).length;
   const productosDestacados = productos.filter(p => p.destacado).length;
 
   // Productos con stock más bajo
   const productosStockBajo = productos
-    .filter(p => p.stock <= 5)
-    .sort((a, b) => a.stock - b.stock)
+    .filter(p => getStockTotal(p) <= 5)
+    .sort((a, b) => getStockTotal(a) - getStockTotal(b))
     .slice(0, 5);
 
   // Productos inactivos
@@ -185,33 +197,39 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {productosStockBajo.map((producto) => (
-                  <div key={producto.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl hover:bg-gray-100/50 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <img 
-                        src={producto.imagen} 
-                        alt={producto.nombre}
-                        className="w-12 h-12 object-cover rounded-lg"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/48x48/f8fafc/64748b?text=No+img';
-                        }}
-                      />
-                      <div>
-                        <p className="font-semibold text-gray-900">{producto.nombre}</p>
-                        <p className="text-sm text-gray-600">{producto.categoria}</p>
+                {productosStockBajo.map((producto) => {
+                  const stockTotal = getStockTotal(producto);
+                  return (
+                    <div key={producto.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl hover:bg-gray-100/50 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <img 
+                          src={producto.imagen} 
+                          alt={producto.nombre}
+                          className="w-12 h-12 object-cover rounded-lg"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/48x48/f8fafc/64748b?text=No+img';
+                          }}
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-900">{producto.nombre}</p>
+                          <p className="text-sm text-gray-600">
+                            {producto.categoria}
+                            {producto.tieneVariantes && <span className="ml-2 text-purple-600">🎯</span>}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          stockTotal === 0 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          📦 {stockTotal}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                        producto.stock === 0 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        📦 {producto.stock}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -243,7 +261,10 @@ const Dashboard = () => {
                       />
                       <div>
                         <p className="font-semibold text-gray-900">{producto.nombre}</p>
-                        <p className="text-sm text-gray-600">{producto.categoria}</p>
+                        <p className="text-sm text-gray-600">
+                          {producto.categoria}
+                          {producto.tieneVariantes && <span className="ml-2 text-purple-600">🎯</span>}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">

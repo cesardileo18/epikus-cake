@@ -1,5 +1,5 @@
 // src/views/ProductDetail.tsx
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
@@ -17,33 +17,69 @@ const ProductDetail: React.FC = () => {
   const { state } = useLocation() as { state?: LocationState };
   const seedProduct = state?.product;
 
+  // 🔥 NUEVO: Estado para variante seleccionada
+  const [varianteSeleccionada, setVarianteSeleccionada] = useState<string | undefined>(undefined);
+
   // Productos en tiempo real (fallback y relacionados)
   const { products, loading } = useProductsLiveQuery({ onlyActive: true });
   const topRef = useRef<HTMLDivElement | null>(null);
+
   // Resolve producto
   const product = useMemo(() => {
     if (seedProduct && seedProduct.id === id) return seedProduct;
     return products.find((p) => p.id === id);
   }, [seedProduct, id, products]);
 
+  // 🔥 NUEVO: Calcular precio según variante
+  const precioActual = useMemo(() => {
+    if (!product) return 0;
+    if (product.tieneVariantes && product.variantes && varianteSeleccionada) {
+      const variante = product.variantes.find(v => v.id === varianteSeleccionada);
+      return variante?.precio ?? 0;
+    }
+    return product.precio ?? 0;
+  }, [product, varianteSeleccionada]);
+
+  // 🔥 NUEVO: Calcular stock según variante
+  const stockActual = useMemo(() => {
+    if (!product) return 0;
+    if (product.tieneVariantes && product.variantes && varianteSeleccionada) {
+      const variante = product.variantes.find(v => v.id === varianteSeleccionada);
+      return variante?.stock ?? 0;
+    }
+    return product.stock ?? 0;
+  }, [product, varianteSeleccionada]);
+
+  const sinStock = stockActual <= 0;
+
   // Carrito
   const { items, add, updateQty, openCart } = useCart();
-  const enCarrito = items.find((it) => it.productId === product?.id)?.quantity ?? 0;
+  
+  // 🔥 ACTUALIZADO: enCarrito usa key compuesta
+  const itemKey = varianteSeleccionada ? `${product?.id}-${varianteSeleccionada}` : product?.id ?? '';
+  const enCarrito = items.find((it) => it.productId === itemKey)?.quantity ?? 0;
 
+  // 🔥 ACTUALIZADO: handleAdd con validación de variante
   const handleAdd = async () => {
     if (!product) return;
-    await add(product, 1);
+    
+    if (product.tieneVariantes && !varianteSeleccionada) {
+      alert('⚠️ Por favor seleccioná un tamaño/porciones');
+      return;
+    }
+    
+    await add(product, 1, varianteSeleccionada);
   };
+
   useEffect(() => {
-    // evita quedarte “abajo” cuando venís desde otra página
     topRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
-    // si tu header es fijo, podés usar después scrollBy para compensar:
-    // window.scrollBy(0, -88); // <- ajustá 88 al alto real del navbar
   }, [id]);
+
+  // 🔥 ACTUALIZADO: handleQty con stockActual y key compuesta
   const handleQty = (q: number) => {
     if (!product) return;
-    if (q < 0 || q > product.stock) return;
-    updateQty(product.id, q);
+    if (q < 0 || q > stockActual) return;
+    updateQty(itemKey, q);
   };
 
   // Relacionados
@@ -57,31 +93,42 @@ const ProductDetail: React.FC = () => {
       .slice(0, 4);
   }, [product, products]);
 
-
-  // JSON-LD
+  // 🔥 ACTUALIZADO: JSON-LD con soporte para variantes
   const jsonLd = product
     ? {
-      '@context': 'https://schema.org',
-      '@type': 'Product',
-      name: product.nombre,
-      description: product.descripcion,
-      image: [product.imagen],
-      sku: product.id,
-      category: product.categoria,
-      offers: {
-        '@type': 'Offer',
-        availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-        priceCurrency: 'ARS',
-        price: product.precio,
-      },
-    }
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.nombre,
+        description: product.descripcion,
+        image: [product.imagen],
+        sku: product.id,
+        category: product.categoria,
+        offers: product.tieneVariantes && product.variantes
+          ? {
+              '@type': 'AggregateOffer',
+              priceCurrency: 'ARS',
+              lowPrice: Math.min(...product.variantes.map(v => v.precio)),
+              highPrice: Math.max(...product.variantes.map(v => v.precio)),
+              availability: product.variantes.some(v => (v.stock ?? 0) > 0)
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+            }
+          : {
+              '@type': 'Offer',
+              availability: (product.stock ?? 0) > 0
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+              priceCurrency: 'ARS',
+              price: product.precio,
+            },
+      }
     : null;
 
-  const WA_PHONE = 'YOUR_PHONE_NUMBER'; // 54911XXXXXXXX
+  const WA_PHONE = 'YOUR_PHONE_NUMBER';
   const waMsg = product
     ? encodeURIComponent(
-      `Hola Epikus Cake 👋\nMe interesa la torta: ${product.nombre} (ID ${product.id}).\n¿Podemos coordinar el retiro?`
-    )
+        `Hola Epikus Cake 👋\nMe interesa: ${product.nombre} (ID ${product.id})${varianteSeleccionada ? `\nTamaño: ${product.variantes?.find(v => v.id === varianteSeleccionada)?.label}` : ''}.\n¿Podemos coordinar el retiro?`
+      )
     : '';
 
   // Loading / Not found
@@ -114,7 +161,10 @@ const ProductDetail: React.FC = () => {
     );
   }
 
-  const sinStock = product.stock <= 0;
+  // 🔥 NUEVO: Helper para precio display
+  const precioDisplay = product.tieneVariantes && !varianteSeleccionada && product.variantes
+    ? `Desde ${currency(Math.min(...product.variantes.map(v => v.precio)))}`
+    : currency(precioActual);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-20">
@@ -135,10 +185,11 @@ const ProductDetail: React.FC = () => {
         </span>
       </nav>
       <div ref={topRef} className="h-0"></div>
-      {/* Contenido principal — separado del header fijo */}
+
+      {/* Contenido principal */}
       <section className="max-w-7xl mx-auto px-4 md:px-6 pb-24 md:pb-12 pt-[88px] md:pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
-          {/* Galería con límites de alto */}
+          {/* Galería */}
           <div>
             <div className="rounded-2xl md:rounded-3xl overflow-hidden bg-white shadow-md md:shadow-xl border border-white/70 flex items-center justify-center">
               <img
@@ -163,15 +214,51 @@ const ProductDetail: React.FC = () => {
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs md:text-sm font-semibold">
                 {product.categoria.charAt(0).toUpperCase() + product.categoria.slice(1)}
               </span>
-              {product.stock > 0 ? (
+              {stockActual > 0 || (product.tieneVariantes && product.variantes?.some(v => (v.stock ?? 0) > 0)) ? (
                 <span className="text-emerald-600 text-xs md:text-sm font-semibold">En stock</span>
               ) : (
                 <span className="text-red-600 text-xs md:text-sm font-semibold">Sin stock</span>
               )}
             </div>
 
+            {/* 🔥 NUEVO: Selector de variantes */}
+            {product.tieneVariantes && product.variantes && product.variantes.length > 0 && (
+              <div className="mb-4 md:mb-6 space-y-3">
+                <h3 className="text-sm md:text-base font-bold text-gray-900">
+                  Seleccioná tamaño / porciones:
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {product.variantes.map((variant) => {
+                    const isSelected = varianteSeleccionada === variant.id;
+                    const sinStockVariant = (variant.stock ?? 0) === 0;
+                    return (
+                      <button
+                        key={variant.id}
+                        onClick={() => setVarianteSeleccionada(variant.id)}
+                        disabled={sinStockVariant}
+                        className={`px-4 py-3 rounded-xl text-sm md:text-base font-semibold transition-all ${
+                          sinStockVariant
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : isSelected
+                            ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg'
+                            : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
+                        }`}
+                        type="button"
+                      >
+                        <div>{variant.label}</div>
+                        <div className="text-xs mt-1">
+                          {sinStockVariant ? 'Sin stock' : `${currency(variant.precio)}`}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 🔥 ACTUALIZADO: Precio display */}
             <div className="text-3xl md:text-4xl font-extrabold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text mb-3 md:mb-4">
-              {currency(product.precio)}
+              {precioDisplay}
             </div>
 
             {/* Políticas compactas */}
@@ -212,7 +299,7 @@ const ProductDetail: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600">
                     En el carrito: <span className="font-semibold text-gray-800">{enCarrito}</span> /{' '}
-                    <span className="text-gray-700">Stock {product.stock}</span>
+                    <span className="text-gray-700">Stock {stockActual}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -226,7 +313,7 @@ const ProductDetail: React.FC = () => {
                     <span className="min-w-[2rem] text-center font-semibold">{enCarrito}</span>
                     <button
                       onClick={() => handleQty(enCarrito + 1)}
-                      disabled={enCarrito >= product.stock}
+                      disabled={enCarrito >= stockActual}
                       className="w-10 h-10 rounded-full bg-pink-500 text-white hover:bg-pink-600 disabled:bg-gray-300 transition"
                       type="button"
                       aria-label="Más"
@@ -254,14 +341,19 @@ const ProductDetail: React.FC = () => {
                   </a>
                   <button
                     onClick={handleAdd}
-                    disabled={sinStock}
-                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${sinStock
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
-                      }`}
+                    disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${
+                      sinStock || (product.tieneVariantes && !varianteSeleccionada)
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
+                    }`}
                     type="button"
                   >
-                    {sinStock ? 'Sin stock' : 'Agregar al carrito'}
+                    {sinStock 
+                      ? 'Sin stock' 
+                      : (product.tieneVariantes && !varianteSeleccionada)
+                      ? 'Seleccioná tamaño'
+                      : 'Agregar al carrito'}
                   </button>
                 </div>
               )}
@@ -280,33 +372,39 @@ const ProductDetail: React.FC = () => {
           <div className="mt-10 md:mt-16">
             <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">También te puede gustar</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
-              {relacionados.map((p) => (
-                <Link
-                  key={p.id}
-                  to={`/products/${p.id}`}
-                  state={{ product: p }}
-                  className="group relative rounded-2xl md:rounded-3xl bg-white shadow-md md:shadow-lg hover:shadow-xl border border-white/70 overflow-hidden transition transform hover:-translate-y-0.5"
-                >
-                  <div className="aspect-[4/5] md:aspect-[4/3] overflow-hidden">
-                    <img
-                      src={p.imagen}
-                      alt={p.nombre}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          'https://via.placeholder.com/600x450/f8fafc/94a3b8?text=Imagen+no+disponible';
-                      }}
-                    />
-                  </div>
-                  <div className="p-3 md:p-4">
-                    <div className="text-[11px] md:text-sm text-gray-500 mb-0.5 md:mb-1">
-                      {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
+              {relacionados.map((p) => {
+                const precioRelacionado = p.tieneVariantes && p.variantes
+                  ? `Desde ${currency(Math.min(...p.variantes.map(v => v.precio)))}`
+                  : currency(p.precio ?? 0);
+                
+                return (
+                  <Link
+                    key={p.id}
+                    to={`/products/${p.id}`}
+                    state={{ product: p }}
+                    className="group relative rounded-2xl md:rounded-3xl bg-white shadow-md md:shadow-lg hover:shadow-xl border border-white/70 overflow-hidden transition transform hover:-translate-y-0.5"
+                  >
+                    <div className="aspect-[4/5] md:aspect-[4/3] overflow-hidden">
+                      <img
+                        src={p.imagen}
+                        alt={p.nombre}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://via.placeholder.com/600x450/f8fafc/94a3b8?text=Imagen+no+disponible';
+                        }}
+                      />
                     </div>
-                    <div className="text-sm md:text-base font-semibold text-gray-900 line-clamp-1">{p.nombre}</div>
-                    <div className="text-pink-600 font-bold text-sm md:text-base">{currency(p.precio)}</div>
-                  </div>
-                </Link>
-              ))}
+                    <div className="p-3 md:p-4">
+                      <div className="text-[11px] md:text-sm text-gray-500 mb-0.5 md:mb-1">
+                        {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
+                      </div>
+                      <div className="text-sm md:text-base font-semibold text-gray-900 line-clamp-1">{p.nombre}</div>
+                      <div className="text-pink-600 font-bold text-sm md:text-base">{precioRelacionado}</div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -319,15 +417,20 @@ const ProductDetail: React.FC = () => {
             <div className="flex-1">
               <div className="text-xs text-gray-500 leading-none mb-0.5">Precio</div>
               <div className="text-xl font-extrabold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-                {currency(product.precio)}
+                {precioDisplay}
               </div>
             </div>
             <button
               onClick={handleAdd}
-              className="flex-[2] px-5 py-3 rounded-xl font-bold bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl transition"
+              disabled={product.tieneVariantes && !varianteSeleccionada}
+              className={`flex-[2] px-5 py-3 rounded-xl font-bold transition ${
+                product.tieneVariantes && !varianteSeleccionada
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
+              }`}
               type="button"
             >
-              Agregar
+              {product.tieneVariantes && !varianteSeleccionada ? 'Seleccioná tamaño' : 'Agregar'}
             </button>
           </div>
         </div>

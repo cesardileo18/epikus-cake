@@ -12,6 +12,7 @@ export default function CartDrawer(): ReactElement | null {
     const { isOpen, closeCart, items, updateQty, remove, total } = useCart();
     const isEmpty = items.length === 0;
     const navigate = useNavigate();
+
     // Bloquear scroll cuando el drawer está abierto
     useEffect(() => {
         if (isOpen) document.body.classList.add('overflow-hidden');
@@ -51,13 +52,25 @@ export default function CartDrawer(): ReactElement | null {
                                 src={i.product.imagen}
                                 alt={i.product.nombre}
                                 className="w-16 h-16 rounded-lg object-cover"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://via.placeholder.com/64x64/f3f4f6/9ca3af?text=No+img'; }}
+                                onError={(e) => { 
+                                    (e.currentTarget as HTMLImageElement).src = 
+                                        'https://via.placeholder.com/64x64/f3f4f6/9ca3af?text=No+img'; 
+                                }}
                             />
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">{i.product.nombre}</h3>
-                                        <p className="text-pink-600 font-bold">${price(i.product.precio)}</p>
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-gray-900">
+                                            {i.product.nombre}
+                                        </h3>
+                                        {/* 🔥 NUEVO: Mostrar variante si existe */}
+                                        {i.variantLabel && (
+                                            <p className="text-xs text-gray-600 mt-0.5">
+                                                📦 {i.variantLabel}
+                                            </p>
+                                        )}
+                                        {/* 🔥 ACTUALIZADO: Usar i.precio en lugar de i.product.precio */}
+                                        <p className="text-pink-600 font-bold">${price(i.precio)}</p>
                                     </div>
                                     <button
                                         onClick={() => remove(i.productId)}
@@ -86,8 +99,9 @@ export default function CartDrawer(): ReactElement | null {
                                         <PlusIcon className="w-4 h-4" />
                                     </button>
 
+                                    {/* 🔥 ACTUALIZADO: Usar i.precio en lugar de i.product.precio */}
                                     <div className="ml-auto font-semibold">
-                                        ${(i.product.precio * i.quantity).toLocaleString('es-AR')}
+                                        ${(i.precio * i.quantity).toLocaleString('es-AR')}
                                     </div>
                                 </div>
                             </div>
@@ -108,9 +122,9 @@ export default function CartDrawer(): ReactElement | null {
                         disabled={isEmpty}
                         aria-disabled={isEmpty}
                         onClick={() => {
-                            if (isEmpty) return;          // doble seguro
+                            if (isEmpty) return;
                             closeCart();
-                            navigate('/checkout');        // si ya usás navigate aquí
+                            navigate('/checkout');
                         }}
                         className={[
                             'w-full py-4 rounded-xl font-bold transition-all duration-300',
@@ -121,7 +135,6 @@ export default function CartDrawer(): ReactElement | null {
                     >
                         Continuar compra
                     </button>
-
                 </div>
             </aside>
         </div>

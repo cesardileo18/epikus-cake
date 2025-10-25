@@ -12,10 +12,14 @@ import type { Product } from '@/interfaces/Product';
 
 export interface ProductWithId extends Product { id: string; }
 
+// 🔥 ACTUALIZADO: CartItem ahora incluye variantId y precio específico
 export type CartItem = {
-  productId: string;
+  productId: string; // Ahora puede ser "producto-id" o "producto-id-variant-id"
   quantity: number;
   product: ProductWithId;
+  variantId?: string; // 🆕 ID de la variante si aplica
+  variantLabel?: string; // 🆕 Label para mostrar (ej: "10-12 porciones")
+  precio: number; // 🆕 Precio específico (del producto o de la variante)
 };
 
 type CartCtx = {
@@ -23,7 +27,7 @@ type CartCtx = {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  add: (p: ProductWithId, qty?: number) => void;
+  add: (p: ProductWithId, qty?: number, variantId?: string) => void; // 🔥 ACTUALIZADO
   updateQty: (productId: string, qty: number) => void;
   remove: (productId: string) => void;
   clear: () => void;
@@ -34,7 +38,7 @@ type CartCtx = {
 const Ctx = createContext<CartCtx | null>(null);
 
 // clave de storage (versionada por si cambias estructura)
-const CART_STORAGE_KEY = 'epikus:cart:v1';
+const CART_STORAGE_KEY = 'epikus:cart:v2'; // 🔥 CAMBIADO: v2 para nueva estructura
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -47,8 +51,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!raw) return;
       const parsed = JSON.parse(raw) as { items?: CartItem[] };
       if (Array.isArray(parsed?.items)) {
-        // defensivo: solo cantidades > 0
-        setItems(parsed.items.filter(it => it && it.quantity > 0));
+        // defensivo: solo cantidades > 0 y con precio válido
+        setItems(parsed.items.filter(it => it && it.quantity > 0 && it.precio > 0));
       }
     } catch {
       // si falla parsing, ignoramos y seguimos vacío
@@ -68,19 +72,52 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   // ---- Acciones
-  const add: CartCtx['add'] = useCallback((p, qty = 1) => {
+  // 🔥 ACTUALIZADO: add ahora recibe variantId opcional
+  const add: CartCtx['add'] = useCallback((p, qty = 1, variantId?: string) => {
     if (qty <= 0) return;
+
+    // Obtener precio y otros datos según si tiene variante o no
+    let precio = 0;
+    let variantLabel: string | undefined;
+
+    if (p.tieneVariantes && p.variantes && variantId) {
+      const variante = p.variantes.find(v => v.id === variantId);
+      if (!variante) {
+        console.error('Variante no encontrada:', variantId);
+        return;
+      }
+      precio = variante.precio;
+      variantLabel = variante.label;
+    } else {
+      precio = p.precio ?? 0;
+    }
+
+    if (precio <= 0) {
+      console.error('Precio inválido para producto:', p.id, variantId);
+      return;
+    }
+
+    // Key única: si tiene variante, concatenar con guión
+    const itemKey = variantId ? `${p.id}-${variantId}` : p.id;
+
     setItems(prev => {
-      const cur = prev.find(i => i.productId === p.id);
+      const cur = prev.find(i => i.productId === itemKey);
       if (cur) {
+        // Ya existe, incrementar cantidad
         return prev.map(i =>
-          i.productId === p.id ? { ...i, quantity: i.quantity + qty } : i
+          i.productId === itemKey ? { ...i, quantity: i.quantity + qty } : i
         );
       }
-      return [...prev, { productId: p.id, product: p, quantity: qty }];
+      // Nuevo item
+      return [...prev, { 
+        productId: itemKey, 
+        product: p, 
+        quantity: qty,
+        variantId,
+        variantLabel,
+        precio
+      }];
     });
-    // No abrir automáticamente:
-    // setIsOpen(true);
   }, []);
 
   const updateQty: CartCtx['updateQty'] = useCallback((productId, qty) => {
@@ -107,8 +144,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => items.reduce((n, i) => n + i.quantity, 0),
     [items]
   );
+
+  // 🔥 ACTUALIZADO: total ahora usa i.precio en lugar de i.product.precio
   const total = useMemo(
-    () => items.reduce((n, i) => n + i.quantity * i.product.precio, 0),
+    () => items.reduce((n, i) => n + i.quantity * i.precio, 0),
     [items]
   );
 
