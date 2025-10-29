@@ -37,7 +37,7 @@ const Profile: React.FC = () => {
 
   const getAuthMethod = (): string => {
     if (!user) return 'Desconocido';
-    
+
     const providers = user.providerData;
     if (providers && providers.length > 0) {
       const hasGoogle = providers.some(p => p.providerId === 'google.com');
@@ -51,7 +51,6 @@ const Profile: React.FC = () => {
   const email = user?.email || 'No disponible';
   const photoURL = user?.photoURL;
   const createdAt = (user?.metadata as any)?.creationTime;
-
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center px-4">
@@ -96,7 +95,9 @@ const Profile: React.FC = () => {
                   <img
                     src={photoURL}
                     alt={displayName}
+                    referrerPolicy="no-referrer"
                     className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover"
+                    onError={(e) => {console.error('Error cargando imagen:', e)}}
                   />
                 ) : (
                   <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-pink-400 to-rose-300 flex items-center justify-center">

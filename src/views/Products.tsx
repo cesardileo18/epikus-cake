@@ -54,7 +54,7 @@ const Products: React.FC = () => {
 
     setProcesando((prev) => new Set(prev).add(producto.id));
     try {
-       await add(producto, 1, variantId);  
+       add(producto, 1, variantId);  
       // openCart(); // si querés abrir el carrito automáticamente
     } catch (e) {
       console.error('add() fallo', e);

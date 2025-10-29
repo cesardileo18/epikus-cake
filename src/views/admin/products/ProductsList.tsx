@@ -73,11 +73,30 @@ const ProductsList = () => {
   const handleTieneVariantesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!productoEditando) return;
     const tieneVariantes = e.target.checked;
-    setProductoEditando(prev => ({
-      ...prev!,
-      tieneVariantes,
-      ...(tieneVariantes ? { precio: undefined, stock: undefined } : { variantes: [] })
-    }));
+
+    // 🔥 Si ACTIVA variantes y el producto tenía precio/stock previo
+    if (tieneVariantes && productoEditando.precio && productoEditando.stock) {
+      setProductoEditando(prev => ({
+        ...prev!,
+        tieneVariantes: true,
+        precio: undefined,
+        stock: undefined,
+        variantes: [{
+          id: "unico",
+          label: "Unitario",
+          precio: prev!.precio || 0,
+          stock: prev!.stock || 0,
+          disponible: true
+        }]
+      }));
+    } else {
+      // Si DESACTIVA variantes o no había datos previos
+      setProductoEditando(prev => ({
+        ...prev!,
+        tieneVariantes,
+        ...(tieneVariantes ? { precio: undefined, stock: undefined } : { variantes: [] })
+      }));
+    }
   };
 
   const agregarVariante = () => {
@@ -357,8 +376,8 @@ const ProductsList = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStockTotal(p) === 0 ? "bg-red-100 text-red-800"
-                            : getStockTotal(p) <= 5 ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-800"
+                          : getStockTotal(p) <= 5 ? "bg-yellow-100 text-yellow-800"
+                            : "bg-green-100 text-green-800"
                           }`}>📦 {getStockTotal(p)}</span>
                       </td>
                       <td className="px-6 py-4">
