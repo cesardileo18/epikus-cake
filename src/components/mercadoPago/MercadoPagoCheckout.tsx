@@ -1,5 +1,6 @@
 // src/components/mercadoPago/MercadoPagoCheckout.tsx
 import React, { useState } from "react";
+import { showToast } from "../Toast/ToastProvider";
 
 interface MercadoPagoCheckoutProps {
   amount: number;
@@ -35,7 +36,7 @@ const MercadoPagoCheckout: React.FC<MercadoPagoCheckoutProps> = ({
     } catch (err: any) {
       console.error("Checkout error:", err);
       onError?.(err);
-      alert("No se pudo iniciar el pago.");
+       showToast.error("No se pudo iniciar el pago.");
     } finally {
       setLoading(false);
     }

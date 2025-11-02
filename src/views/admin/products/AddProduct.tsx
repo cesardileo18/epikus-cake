@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import type { Product } from "@/interfaces/Product"; 
+import type { Product } from "@/interfaces/Product";
+import { showToast } from "@/components/Toast/ToastProvider";
 
 const AddProduct = () => {
   const [form, setForm] = useState<Product>({
@@ -19,7 +20,7 @@ const AddProduct = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  
+
   // Estado para gestionar nueva variante
   const [nuevaVariante, setNuevaVariante] = useState({
     id: "",
@@ -52,13 +53,13 @@ const AddProduct = () => {
 
   const agregarVariante = () => {
     if (!nuevaVariante.id || !nuevaVariante.label || nuevaVariante.precio <= 0) {
-      alert("⚠️ Completa todos los campos de la variante");
+      showToast.error("⚠️ Completa todos los campos de la variante");
       return;
     }
 
     // Validar que no exista el ID
     if (form.variantes?.some(v => v.id === nuevaVariante.id)) {
-      alert("⚠️ Ya existe una variante con ese ID");
+      showToast.error("⚠️ Ya existe una variante con ese ID");
       return;
     }
 
@@ -89,12 +90,12 @@ const AddProduct = () => {
 
     // Validaciones
     if (form.tieneVariantes && (!form.variantes || form.variantes.length === 0)) {
-      alert("⚠️ Debes agregar al menos una variante");
+      showToast.error("⚠️ Debes agregar al menos una variante");
       return;
     }
 
     if (!form.tieneVariantes && (!form.precio || form.precio <= 0)) {
-      alert("⚠️ Debes ingresar un precio válido");
+      showToast.error("⚠️ Debes ingresar un precio válido");
       return;
     }
 
@@ -103,7 +104,7 @@ const AddProduct = () => {
     try {
       // CRÍTICO: Limpiar campos según el tipo de producto
       const datosLimpios: any = { ...form };
-      
+
       if (form.tieneVariantes) {
         // Si tiene variantes, eliminar precio y stock simples
         delete datosLimpios.precio;
@@ -112,14 +113,13 @@ const AddProduct = () => {
         // Si NO tiene variantes, eliminar array de variantes
         delete datosLimpios.variantes;
       }
-      
+
       // Agregar fecha de creación
       datosLimpios.fechaCreacion = new Date();
 
       await addDoc(collection(db, "productos"), datosLimpios);
-      
-      alert("✅ Producto guardado exitosamente");
-      
+
+      showToast.success("✅ Producto guardado exitosamente");
       // Resetear formulario
       setForm({
         nombre: "",
@@ -135,7 +135,7 @@ const AddProduct = () => {
       });
     } catch (error) {
       console.error(error);
-      alert("❌ Error al guardar el producto");
+      showToast.error("❌ Error al guardar el producto");
     } finally {
       setLoading(false);
     }
@@ -300,7 +300,7 @@ const AddProduct = () => {
                   <div className="space-y-4">
                     <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
                       <h3 className="text-lg font-bold text-purple-900 mb-4">⚡ Agregar Variante</h3>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                           <label className="block text-sm font-semibold text-gray-800 mb-2">

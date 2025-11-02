@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import type { Product } from "@/interfaces/Product";
+import { showToast } from "@/components/Toast/ToastProvider";
 
 
 interface ProductWithId extends Product {
@@ -43,7 +44,7 @@ const ProductsList = () => {
       setProductos(productosData);
     } catch (error) {
       console.error("Error al cargar productos:", error);
-      alert("❌ Error al cargar productos");
+      showToast.error("❌ Error al cargar productos");
     } finally {
       setLoading(false);
     }
@@ -102,11 +103,11 @@ const ProductsList = () => {
   const agregarVariante = () => {
     if (!productoEditando) return;
     if (!nuevaVariante.id || !nuevaVariante.label || nuevaVariante.precio <= 0) {
-      alert("⚠️ Completa todos los campos de la variante");
+      showToast.error("⚠️ Completa todos los campos de la variante");
       return;
     }
     if (productoEditando.variantes?.some(v => v.id === nuevaVariante.id)) {
-      alert("⚠️ Ya existe una variante con ese ID");
+      showToast.error("⚠️ Ya existe una variante con ese ID");
       return;
     }
     setProductoEditando(prev => ({
@@ -131,11 +132,11 @@ const ProductsList = () => {
 
     // Validaciones
     if (productoEditando.tieneVariantes && (!productoEditando.variantes || productoEditando.variantes.length === 0)) {
-      alert("⚠️ Debes agregar al menos una variante");
+      showToast.error("⚠️ Debes agregar al menos una variante");
       return;
     }
     if (!productoEditando.tieneVariantes && (!productoEditando.precio || productoEditando.precio <= 0)) {
-      alert("⚠️ Debes ingresar un precio válido");
+      showToast.error("⚠️ Debes ingresar un precio válido");
       return;
     }
 
@@ -162,10 +163,10 @@ const ProductsList = () => {
       setProductos(prev => prev.map(p => (p.id === id ? productoEditando : p)));
 
       cerrarModal();
-      alert("✅ Producto actualizado correctamente");
+      showToast.success("✅ Producto actualizado correctamente");
     } catch (error) {
       console.error("Error al actualizar:", error);
-      alert("❌ Error al actualizar el producto");
+      showToast.error("❌ Error al actualizar el producto");
     } finally {
       setGuardando(false);
     }
@@ -175,10 +176,10 @@ const ProductsList = () => {
       const nuevoEstado = !producto.activo;
       await updateDoc(doc(db, "productos", producto.id), { activo: nuevoEstado });
       setProductos(prev => prev.map(p => (p.id === producto.id ? { ...p, activo: nuevoEstado } : p)));
-      alert(`✅ Producto ${nuevoEstado ? "activado" : "desactivado"}`);
+      showToast.success(`✅ Producto ${nuevoEstado ? "activado" : "desactivado"}`);
     } catch (error) {
       console.error("Error al cambiar estado:", error);
-      alert("❌ Error al cambiar estado");
+      showToast.error("❌ Error al cambiar estado");
     }
   };
 
@@ -187,10 +188,10 @@ const ProductsList = () => {
     try {
       await deleteDoc(doc(db, "productos", producto.id));
       setProductos(prev => prev.filter(p => p.id !== producto.id));
-      alert("✅ Producto eliminado");
+      showToast.success("✅ Producto eliminado");
     } catch (error) {
       console.error("Error al eliminar:", error);
-      alert("❌ Error al eliminar producto");
+      showToast.error("❌ Error al eliminar producto");
     }
   };
 

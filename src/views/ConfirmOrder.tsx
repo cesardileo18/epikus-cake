@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import ReCaptchaInvisible from '@/components/security/ReCaptchaInvisible';
 import { sendEmail } from '@/config/emailjs';
+import { showToast } from '@/components/Toast/ToastProvider';
 
 const price = (n: number) => n.toLocaleString('es-AR');
 const WA_PHONE = '5491158651170';
@@ -308,7 +309,8 @@ const ConfirmOrder: React.FC = () => {
       Promise.allSettled(tasks).then(() => { }).catch(() => { });
     } catch (e: any) {
       console.error(e);
-      alert(e?.message || 'No se pudo confirmar el pedido.');
+      showToast.error(e?.message || 'No se pudo confirmar el pedido.');
+
     } finally {
       setEnviando(false);
       enviandoRef.current = false;
@@ -578,7 +580,7 @@ const ConfirmOrder: React.FC = () => {
                 <MercadoPagoCheckout
                   amount={total} // sin descuento en MP
                   description="Pedido Epikus Cake"
-                  onError={(e) => alert('Error en el pago: ' + (e?.message ?? e))}
+                  onError={(e) => showToast.error('Error en el pago: ' + (e?.message ?? e))}
                 />
               )}
 

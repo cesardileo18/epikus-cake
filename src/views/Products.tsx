@@ -6,6 +6,7 @@ import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
 import FeaturedProducts from '@/components/productos/FeaturedProducts';
 import productsContent from '@/content/productsContent.json';
 import type { ProductsTextContent } from '@/interfaces/ProductsContent';
+import { showToast } from '@/components/Toast/ToastProvider';
 const content: ProductsTextContent = productsContent as ProductsTextContent;
 
 const Products: React.FC = () => {
@@ -29,7 +30,8 @@ const Products: React.FC = () => {
 
     // Si tiene variantes pero no se seleccionó ninguna
     if (producto.tieneVariantes && !variantId) {
-      alert('⚠️ Debes seleccionar un tamaño/porciones');
+    
+      showToast.error('⚠️ Debes seleccionar un tamaño/porciones');
       return;
     }
 
@@ -48,7 +50,7 @@ const Products: React.FC = () => {
     const disponible = stockDisponible - enCarrito;
 
     if (disponible <= 0) {
-      alert('❌ No hay stock disponible');
+      showToast.error('❌ No hay stock disponible');
       return;
     }
 
