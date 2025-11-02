@@ -1,7 +1,7 @@
 // src/components/FeaturedProducts.tsx
 import React, { useState } from 'react';
 import type { ProductWithId } from '@/hooks/useFeaturedProducts';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 type CartItem = { productId: string; quantity: number };
@@ -69,6 +69,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 }) => {
     // 🔥 NUEVO: Estado para variante seleccionada por producto
     const [variantesSeleccionadas, setVariantesSeleccionadas] = useState<Record<string, string>>({});
+    const navigate = useNavigate();
 
     const seleccionarVariante = (productId: string, variantId: string) => {
         setVariantesSeleccionadas(prev => ({ ...prev, [productId]: variantId }));
@@ -183,13 +184,12 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                                     key={variant.id}
                                                     onClick={() => seleccionarVariante(producto.id, variant.id)}
                                                     disabled={sinStockVariant}
-                                                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                                                        sinStockVariant
+                                                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${sinStockVariant
                                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                             : isSelected
-                                                            ? 'bg-pink-500 text-white shadow-md'
-                                                            : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
-                                                    }`}
+                                                                ? 'bg-pink-500 text-white shadow-md'
+                                                                : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
+                                                        }`}
                                                     type="button"
                                                 >
                                                     {variant.label}
@@ -260,7 +260,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 
                                                 {openCart && (
                                                     <button
-                                                        onClick={openCart}
+                                                        onClick={() => navigate('/checkout')}
                                                         type="button"
                                                         className="cursor-pointer text-sm font-semibold text-pink-600 hover:text-pink-700 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-pink-300 rounded"
                                                     >
@@ -278,24 +278,23 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                                     onAddToCart && onAddToCart(producto, varianteSeleccionada);
                                                 }}
                                                 disabled={sinStock || isProcessing || !onAddToCart || (producto.tieneVariantes && !varianteSeleccionada)}
-                                                className={`w-full sm:w-auto flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
-                                                    sinStock || !tieneAlgunStock
+                                                className={`w-full sm:w-auto flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${sinStock || !tieneAlgunStock
                                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                                         : isProcessing || !onAddToCart
-                                                        ? 'bg-pink-300 text-white cursor-not-allowed'
-                                                        : (producto.tieneVariantes && !varianteSeleccionada)
-                                                        ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
-                                                        : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
-                                                }`}
+                                                            ? 'bg-pink-300 text-white cursor-not-allowed'
+                                                            : (producto.tieneVariantes && !varianteSeleccionada)
+                                                                ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                                                                : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
+                                                    }`}
                                                 type="button"
                                             >
-                                                {isProcessing 
-                                                    ? 'Agregando...' 
-                                                    : !tieneAlgunStock 
-                                                    ? 'Sin Stock' 
-                                                    : (producto.tieneVariantes && !varianteSeleccionada)
-                                                    ? 'Seleccioná tamaño'
-                                                    : 'Agregar al Carrito'}
+                                                {isProcessing
+                                                    ? 'Agregando...'
+                                                    : !tieneAlgunStock
+                                                        ? 'Sin Stock'
+                                                        : (producto.tieneVariantes && !varianteSeleccionada)
+                                                            ? 'Seleccioná tamaño'
+                                                            : 'Agregar al Carrito'}
                                             </button>
                                         )}
 

@@ -14,6 +14,7 @@ const currency = (n: number) =>
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
   const { state } = useLocation() as { state?: LocationState };
   const seedProduct = state?.product;
 
@@ -53,8 +54,8 @@ const ProductDetail: React.FC = () => {
   const sinStock = stockActual <= 0;
 
   // Carrito
-  const { items, add, updateQty, openCart } = useCart();
-  
+  const { items, add, updateQty } = useCart();
+
   // 🔥 ACTUALIZADO: enCarrito usa key compuesta
   const itemKey = varianteSeleccionada ? `${product?.id}-${varianteSeleccionada}` : product?.id ?? '';
   const enCarrito = items.find((it) => it.productId === itemKey)?.quantity ?? 0;
@@ -62,12 +63,12 @@ const ProductDetail: React.FC = () => {
   // 🔥 ACTUALIZADO: handleAdd con validación de variante
   const handleAdd = async () => {
     if (!product) return;
-    
+
     if (product.tieneVariantes && !varianteSeleccionada) {
       alert('⚠️ Por favor seleccioná un tamaño/porciones');
       return;
     }
-    
+
     await add(product, 1, varianteSeleccionada);
   };
 
@@ -96,39 +97,39 @@ const ProductDetail: React.FC = () => {
   // 🔥 ACTUALIZADO: JSON-LD con soporte para variantes
   const jsonLd = product
     ? {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.nombre,
-        description: product.descripcion,
-        image: [product.imagen],
-        sku: product.id,
-        category: product.categoria,
-        offers: product.tieneVariantes && product.variantes
-          ? {
-              '@type': 'AggregateOffer',
-              priceCurrency: 'ARS',
-              lowPrice: Math.min(...product.variantes.map(v => v.precio)),
-              highPrice: Math.max(...product.variantes.map(v => v.precio)),
-              availability: product.variantes.some(v => (v.stock ?? 0) > 0)
-                ? 'https://schema.org/InStock'
-                : 'https://schema.org/OutOfStock',
-            }
-          : {
-              '@type': 'Offer',
-              availability: (product.stock ?? 0) > 0
-                ? 'https://schema.org/InStock'
-                : 'https://schema.org/OutOfStock',
-              priceCurrency: 'ARS',
-              price: product.precio,
-            },
-      }
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.nombre,
+      description: product.descripcion,
+      image: [product.imagen],
+      sku: product.id,
+      category: product.categoria,
+      offers: product.tieneVariantes && product.variantes
+        ? {
+          '@type': 'AggregateOffer',
+          priceCurrency: 'ARS',
+          lowPrice: Math.min(...product.variantes.map(v => v.precio)),
+          highPrice: Math.max(...product.variantes.map(v => v.precio)),
+          availability: product.variantes.some(v => (v.stock ?? 0) > 0)
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+        }
+        : {
+          '@type': 'Offer',
+          availability: (product.stock ?? 0) > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+          priceCurrency: 'ARS',
+          price: product.precio,
+        },
+    }
     : null;
 
   const WA_PHONE = 'YOUR_PHONE_NUMBER';
   const waMsg = product
     ? encodeURIComponent(
-        `Hola Epikus Cake 👋\nMe interesa: ${product.nombre} (ID ${product.id})${varianteSeleccionada ? `\nTamaño: ${product.variantes?.find(v => v.id === varianteSeleccionada)?.label}` : ''}.\n¿Podemos coordinar el retiro?`
-      )
+      `Hola Epikus Cake 👋\nMe interesa: ${product.nombre} (ID ${product.id})${varianteSeleccionada ? `\nTamaño: ${product.variantes?.find(v => v.id === varianteSeleccionada)?.label}` : ''}.\n¿Podemos coordinar el retiro?`
+    )
     : '';
 
   // Loading / Not found
@@ -236,13 +237,12 @@ const ProductDetail: React.FC = () => {
                         key={variant.id}
                         onClick={() => setVarianteSeleccionada(variant.id)}
                         disabled={sinStockVariant}
-                        className={`px-4 py-3 rounded-xl text-sm md:text-base font-semibold transition-all ${
-                          sinStockVariant
+                        className={`px-4 py-3 rounded-xl text-sm md:text-base font-semibold transition-all ${sinStockVariant
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : isSelected
-                            ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg'
-                            : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
-                        }`}
+                              ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg'
+                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
+                          }`}
                         type="button"
                       >
                         <div>{variant.label}</div>
@@ -321,7 +321,7 @@ const ProductDetail: React.FC = () => {
                       +
                     </button>
                     <button
-                      onClick={openCart}
+                      onClick={() => navigate('/checkout')}
                       className="ml-2 px-4 py-2 rounded-xl border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50 transition"
                       type="button"
                     >
@@ -331,29 +331,20 @@ const ProductDetail: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-stretch gap-3">
-                  <a
-                    href={`https://wa.me/${WA_PHONE}?text=${waMsg}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-6 py-4 rounded-2xl bg-white text-gray-800 border-2 border-pink-200 hover:border-pink-300 font-bold shadow hover:shadow-lg transition text-center"
-                  >
-                    WhatsApp
-                  </a>
                   <button
                     onClick={handleAdd}
                     disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
-                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${
-                      sinStock || (product.tieneVariantes && !varianteSeleccionada)
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${sinStock || (product.tieneVariantes && !varianteSeleccionada)
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
-                    }`}
+                      }`}
                     type="button"
                   >
-                    {sinStock 
-                      ? 'Sin stock' 
+                    {sinStock
+                      ? 'Sin stock'
                       : (product.tieneVariantes && !varianteSeleccionada)
-                      ? 'Seleccioná tamaño'
-                      : 'Agregar al carrito'}
+                        ? 'Seleccioná tamaño'
+                        : 'Agregar al carrito'}
                   </button>
                 </div>
               )}
@@ -376,7 +367,7 @@ const ProductDetail: React.FC = () => {
                 const precioRelacionado = p.tieneVariantes && p.variantes
                   ? `Desde ${currency(Math.min(...p.variantes.map(v => v.precio)))}`
                   : currency(p.precio ?? 0);
-                
+
                 return (
                   <Link
                     key={p.id}
@@ -423,11 +414,10 @@ const ProductDetail: React.FC = () => {
             <button
               onClick={handleAdd}
               disabled={product.tieneVariantes && !varianteSeleccionada}
-              className={`flex-[2] px-5 py-3 rounded-xl font-bold transition ${
-                product.tieneVariantes && !varianteSeleccionada
+              className={`flex-[2] px-5 py-3 rounded-xl font-bold transition ${product.tieneVariantes && !varianteSeleccionada
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
-              }`}
+                }`}
               type="button"
             >
               {product.tieneVariantes && !varianteSeleccionada ? 'Seleccioná tamaño' : 'Agregar'}

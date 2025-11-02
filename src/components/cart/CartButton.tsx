@@ -1,5 +1,6 @@
 // src/components/cart/CartButton.tsx
 import { ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom'; // 🔥 NUEVO
 import { useCart } from '@/context/CartProvider';
 
 type Props = {
@@ -13,12 +14,13 @@ const sizes = {
 };
 
 export default function CartButton({ className = '', size = 'md' }: Props) {
-  const { openCart, count } = useCart();
+  const navigate = useNavigate(); // 🔥 NUEVO
+  const { count } = useCart(); // 🔥 REMOVIDO: openCart
   const s = sizes[size];
 
   return (
     <button
-      onClick={openCart}
+      onClick={() => navigate('/checkout')} // 🔥 CAMBIADO: ahora navega directamente
       type="button"
       className={[
         'relative rounded-2xl bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg',
@@ -26,7 +28,7 @@ export default function CartButton({ className = '', size = 'md' }: Props) {
         s.btn,
         className,
       ].join(' ')}
-      aria-label="Abrir carrito"
+      aria-label="Ir al carrito"
     >
       <ShoppingBagIcon className={s.icon} />
       <span
