@@ -1,41 +1,97 @@
 <!doctype html>
-<html lang="en">
+<html lang="es-AR">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pastelería artesanal en CABA | Epikus Cake</title>
+  
+  <!-- Google Search Console Verification -->
+  <meta name="google-site-verification" content="V05V470tczo85kyf2XDwsv5tZKzaAEi8erxUTRf_6mg" />
+
+  <!-- SEO Básico -->
+  <title>Pastelería Artesanal en CABA | Epikus Cake - Tortas y Postres Premium</title>
   <meta name="description"
-    content="Tortas y postres artesanales en Buenos Aires. Ingredientes premium, pedidos personalizados y envíos en CABA. Conocé Epikus Cake." />
-  <meta name="robots" content="index,follow,max-image-preview:large" />
+    content="Tortas y postres artesanales en Buenos Aires. Ingredientes premium, pedidos personalizados y envíos en CABA. Descubrí la calidad de Epikus Cake." />
+  <meta name="keywords" content="pastelería artesanal, tortas CABA, postres Buenos Aires, tortas personalizadas, envío de tortas, Epikus Cake" />
+  <meta name="author" content="Epikus Cake" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <link rel="canonical" href="https://epikuscake.web.app/" />
 
   <!-- Favicons -->
-  <link rel="icon" href="src/assets/img/logoEpikus700x700.png">
+  <link rel="icon" type="image/png" href="/src/assets/img/logoEpikus700x700.png" />
+  <link rel="apple-touch-icon" href="/src/assets/img/logoEpikus700x700.png" />
   <meta name="theme-color" content="#D81E77" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 
-  <!-- Open Graph -->
+  <!-- Fonts (preconnect para mejor performance) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet" />
+
+  <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Epikus Cake" />
-  <meta property="og:title" content="Pastelería artesanal en CABA | Epikus Cake" />
+  <meta property="og:title" content="Pastelería Artesanal en CABA | Epikus Cake" />
   <meta property="og:description"
-    content="Tortas y postres artesanales en Buenos Aires. Pedidos personalizados y envíos en CABA." />
+    content="Tortas y postres artesanales en Buenos Aires. Pedidos personalizados y envíos en CABA. Ingredientes premium." />
   <meta property="og:url" content="https://epikuscake.web.app/" />
+  <meta property="og:image" content="https://epikuscake.web.app/src/assets/img/logoEpikus700x700.png" />
+  <meta property="og:image:width" content="700" />
+  <meta property="og:image:height" content="700" />
+  <meta property="og:image:alt" content="Logo Epikus Cake - Pastelería Artesanal" />
   <meta property="og:locale" content="es_AR" />
 
-  <!-- Twitter -->
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Pastelería artesanal en CABA | Epikus Cake" />
-  <meta name="twitter:description" content="Tortas y postres artesanales con ingredientes premium." />
+  <meta name="twitter:title" content="Pastelería Artesanal en CABA | Epikus Cake" />
+  <meta name="twitter:description" content="Tortas y postres artesanales con ingredientes premium en Buenos Aires." />
+  <meta name="twitter:image" content="https://epikuscake.web.app/src/assets/img/logoEpikus700x700.png" />
+  <meta name="twitter:image:alt" content="Logo Epikus Cake" />
 
   <!-- Hreflang -->
   <link rel="alternate" hreflang="es-AR" href="https://epikuscake.web.app/" />
+  <link rel="alternate" hreflang="x-default" href="https://epikuscake.web.app/" />
+
+  <!-- Redes Sociales -->
+  <meta property="social:instagram" content="https://www.instagram.com/epikuscake" />
+  <link rel="me" href="https://www.instagram.com/epikuscake" />
+
+  <!-- Structured Data (JSON-LD) - MUY IMPORTANTE PARA SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Bakery",
+    "name": "Epikus Cake",
+    "description": "Pastelería artesanal especializada en tortas y postres premium en Buenos Aires",
+    "url": "https://epikuscake.web.app/",
+    "logo": "https://epikuscake.web.app/src/assets/img/logoEpikus700x700.png",
+    "image": "https://epikuscake.web.app/src/assets/img/logoEpikus700x700.png",
+    "telephone": "+54-11-XXXX-XXXX",
+    "sameAs": [
+      "https://www.instagram.com/epikuscake"
+    ],
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Buenos Aires",
+      "addressRegion": "CABA",
+      "addressCountry": "AR"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": "-34.6037",
+      "longitude": "-58.3816"
+    },
+    "priceRange": "$",
+    "servesCuisine": "Pastelería",
+    "areaServed": {
+      "@type": "City",
+      "name": "Buenos Aires"
+    }
+  }
+  </script>
 </head>
 
 <body>
   <div id="root"></div>
+  
   <script>
     // Desregistrar cualquier service worker existente
     if ('serviceWorker' in navigator) {
@@ -53,6 +109,7 @@
       });
     }
   </script>
+  
   <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

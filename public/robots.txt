@@ -1,0 +1,24 @@
+# robots.txt - Epikus Cake
+
+# Permitir a todos los bots rastrear todo el sitio
+User-agent: *
+Allow: /
+
+# Bloquear acceso a carpetas sensibles o innecesarias
+Disallow: /admin/
+Disallow: /private/
+Disallow: /*.json$
+Disallow: /src/
+
+# Permitir a los bots de Google e imágenes
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+# Velocidad de rastreo (opcional, solo para Google)
+# Crawl-delay: 1
+
+# Ubicación del sitemap
+Sitemap: https://epikuscake.web.app/sitemap.xml
