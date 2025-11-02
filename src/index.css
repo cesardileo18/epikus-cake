@@ -1,3 +1,8 @@
 @import "tailwindcss";
 
-
+/* Ocultar el badge flotante de reCAPTCHA */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

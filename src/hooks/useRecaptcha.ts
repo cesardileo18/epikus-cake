@@ -19,10 +19,15 @@ interface RecaptchaResult {
   error?: string;
 }
 
-export const useRecaptcha = () => {
+// NUEVA OPCIÓN: autoLoad = false por defecto
+export const useRecaptcha = (autoLoad: boolean = false) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(autoLoad);
 
   useEffect(() => {
+    // Solo cargar si shouldLoad es true
+    if (!shouldLoad) return;
+
     if (!RECAPTCHA_SITE_KEY) {
       console.error("VITE_RECAPTCHA_SITE_KEY no está definido");
       return;
@@ -52,15 +57,18 @@ export const useRecaptcha = () => {
 
     document.head.appendChild(script);
 
-    return () => {
-      const scriptElement = document.querySelector(`script[src*="recaptcha"]`);
-      scriptElement?.remove();
-    };
-  }, []);
+    // No hacer cleanup aquí porque puede estar en uso en otra página
+  }, [shouldLoad]);
 
   const executeRecaptcha = useCallback(async (action: string = "submit"): Promise<RecaptchaResult> => {
-    if (!isLoaded || !window.grecaptcha) {
-      return { ok: false, error: "reCAPTCHA no está cargado" };
+    // Si no está cargado, intentar cargarlo
+    if (!isLoaded) {
+      setShouldLoad(true);
+      return { ok: false, error: "reCAPTCHA se está cargando..." };
+    }
+
+    if (!window.grecaptcha) {
+      return { ok: false, error: "reCAPTCHA no está disponible" };
     }
 
     try {
