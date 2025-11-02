@@ -5,6 +5,7 @@ import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
 import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
+import { showToast } from '@/components/Toast/ToastProvider';
 
 type LocationState = { product?: ProductWithId };
 
@@ -18,20 +19,16 @@ const ProductDetail: React.FC = () => {
   const { state } = useLocation() as { state?: LocationState };
   const seedProduct = state?.product;
 
-  // 🔥 NUEVO: Estado para variante seleccionada
   const [varianteSeleccionada, setVarianteSeleccionada] = useState<string | undefined>(undefined);
 
-  // Productos en tiempo real (fallback y relacionados)
   const { products, loading } = useProductsLiveQuery({ onlyActive: true });
   const topRef = useRef<HTMLDivElement | null>(null);
 
-  // Resolve producto
   const product = useMemo(() => {
     if (seedProduct && seedProduct.id === id) return seedProduct;
     return products.find((p) => p.id === id);
   }, [seedProduct, id, products]);
 
-  // 🔥 NUEVO: Calcular precio según variante
   const precioActual = useMemo(() => {
     if (!product) return 0;
     if (product.tieneVariantes && product.variantes && varianteSeleccionada) {
@@ -41,7 +38,6 @@ const ProductDetail: React.FC = () => {
     return product.precio ?? 0;
   }, [product, varianteSeleccionada]);
 
-  // 🔥 NUEVO: Calcular stock según variante
   const stockActual = useMemo(() => {
     if (!product) return 0;
     if (product.tieneVariantes && product.variantes && varianteSeleccionada) {
@@ -53,37 +49,38 @@ const ProductDetail: React.FC = () => {
 
   const sinStock = stockActual <= 0;
 
-  // Carrito
   const { items, add, updateQty } = useCart();
 
-  // 🔥 ACTUALIZADO: enCarrito usa key compuesta
   const itemKey = varianteSeleccionada ? `${product?.id}-${varianteSeleccionada}` : product?.id ?? '';
   const enCarrito = items.find((it) => it.productId === itemKey)?.quantity ?? 0;
 
-  // 🔥 ACTUALIZADO: handleAdd con validación de variante
   const handleAdd = async () => {
     if (!product) return;
 
     if (product.tieneVariantes && !varianteSeleccionada) {
-      alert('⚠️ Por favor seleccioná un tamaño/porciones');
+      showToast.error('Por favor seleccioná un tamaño/porciones');
       return;
     }
 
     await add(product, 1, varianteSeleccionada);
+
+    const variant = varianteSeleccionada && product.variantes
+      ? product.variantes.find(v => v.id === varianteSeleccionada)?.label
+      : undefined;
+
+    showToast.productAdded(product.nombre, variant);
   };
 
   useEffect(() => {
     topRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
   }, [id]);
 
-  // 🔥 ACTUALIZADO: handleQty con stockActual y key compuesta
   const handleQty = (q: number) => {
     if (!product) return;
     if (q < 0 || q > stockActual) return;
     updateQty(itemKey, q);
   };
 
-  // Relacionados
   const norm = (s?: string) => (s ?? '').toLowerCase().trim();
 
   const relacionados = useMemo(() => {
@@ -94,7 +91,6 @@ const ProductDetail: React.FC = () => {
       .slice(0, 4);
   }, [product, products]);
 
-  // 🔥 ACTUALIZADO: JSON-LD con soporte para variantes
   const jsonLd = product
     ? {
       '@context': 'https://schema.org',
@@ -125,14 +121,6 @@ const ProductDetail: React.FC = () => {
     }
     : null;
 
-  const WA_PHONE = 'YOUR_PHONE_NUMBER';
-  const waMsg = product
-    ? encodeURIComponent(
-      `Hola Epikus Cake 👋\nMe interesa: ${product.nombre} (ID ${product.id})${varianteSeleccionada ? `\nTamaño: ${product.variantes?.find(v => v.id === varianteSeleccionada)?.label}` : ''}.\n¿Podemos coordinar el retiro?`
-    )
-    : '';
-
-  // Loading / Not found
   if (loading && !product) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
@@ -162,16 +150,14 @@ const ProductDetail: React.FC = () => {
     );
   }
 
-  // 🔥 NUEVO: Helper para precio display
   const precioDisplay = product.tieneVariantes && !varianteSeleccionada && product.variantes
     ? `Desde ${currency(Math.min(...product.variantes.map(v => v.precio)))}`
     : currency(precioActual);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-20">
+    <div className="min-h-screen bg-[#ff7bab48] pt-20">
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
 
-      {/* Migas compactas */}
       <nav className="max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 text-xs md:text-sm text-gray-600 truncate">
         <Link to="/" className="hover:text-pink-600">Inicio</Link>
         <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle text-gray-400" />
@@ -187,8 +173,7 @@ const ProductDetail: React.FC = () => {
       </nav>
       <div ref={topRef} className="h-0"></div>
 
-      {/* Contenido principal */}
-      <section className="max-w-7xl mx-auto px-4 md:px-6 pb-24 md:pb-12 pt-[88px] md:pt-10">
+      <section className="max-w-7xl mx-auto px-4 md:px-6 pb-24 md:pb-12 pt-[22px] md:pt-5">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
           {/* Galería */}
           <div>
@@ -196,7 +181,7 @@ const ProductDetail: React.FC = () => {
               <img
                 src={product.imagen}
                 alt={product.nombre}
-                className="w-full h-auto max-h-[55vh] md:max-h-[70vh] object-contain"
+                className="w-full h-auto max-h-[55vh] md:max-h-[70vh] object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
                     'https://via.placeholder.com/800x800/f8fafc/94a3b8?text=Imagen+no+disponible';
@@ -222,13 +207,13 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            {/* 🔥 NUEVO: Selector de variantes */}
+            {/* Selector de variantes */}
             {product.tieneVariantes && product.variantes && product.variantes.length > 0 && (
               <div className="mb-4 md:mb-6 space-y-3">
                 <h3 className="text-sm md:text-base font-bold text-gray-900">
                   Seleccioná tamaño / porciones:
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   {product.variantes.map((variant) => {
                     const isSelected = varianteSeleccionada === variant.id;
                     const sinStockVariant = (variant.stock ?? 0) === 0;
@@ -237,17 +222,17 @@ const ProductDetail: React.FC = () => {
                         key={variant.id}
                         onClick={() => setVarianteSeleccionada(variant.id)}
                         disabled={sinStockVariant}
-                        className={`px-4 py-3 rounded-xl text-sm md:text-base font-semibold transition-all ${sinStockVariant
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${sinStockVariant
+                            ? 'bg-gray-50 text-gray-400 cursor-not-allowed line-through'
                             : isSelected
-                              ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg'
-                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
+                              ? 'bg-pink-500 text-white shadow-md'
+                              : 'bg-white border border-gray-200 text-gray-700 hover:border-pink-300'
                           }`}
                         type="button"
                       >
-                        <div>{variant.label}</div>
-                        <div className="text-xs mt-1">
-                          {sinStockVariant ? 'Sin stock' : `${currency(variant.precio)}`}
+                        <div className="font-bold mb-0.5">{variant.label}</div>
+                        <div className="text-xs opacity-90">
+                          {sinStockVariant ? 'Sin stock' : currency(variant.precio)}
                         </div>
                       </button>
                     );
@@ -256,12 +241,12 @@ const ProductDetail: React.FC = () => {
               </div>
             )}
 
-            {/* 🔥 ACTUALIZADO: Precio display */}
+            {/* Precio */}
             <div className="text-3xl md:text-4xl font-extrabold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text mb-3 md:mb-4">
               {precioDisplay}
             </div>
 
-            {/* Políticas compactas */}
+            {/* Políticas */}
             <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
               <div className="flex items-start gap-2">
                 <div className="mt-1 w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-pink-500" />
@@ -278,20 +263,65 @@ const ProductDetail: React.FC = () => {
               <div className="flex items-start gap-2">
                 <div className="mt-1 w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-purple-400" />
                 <p className="text-gray-700 text-sm md:text-base">
-                  <strong>Hecho a pedido:</strong> <span className="font-semibold">72 hs</span> de anticipación.
+                  <strong>Hecho a pedido:</strong> <span className="font-semibold">48 hs</span> de anticipación.
                 </p>
               </div>
             </div>
 
-            {/* WhatsApp arriba en mobile */}
-            <a
-              href={`https://wa.me/${WA_PHONE}?text=${waMsg}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block md:hidden mb-4 px-5 py-3 rounded-xl bg-white text-gray-800 border-2 border-pink-200 hover:border-pink-300 font-bold shadow hover:shadow-lg transition text-center"
-            >
-              Consultar por WhatsApp
-            </a>
+            {/* Controles de compra en mobile (arriba) */}
+            <div className="block md:hidden rounded-2xl bg-white/80 backdrop-blur border border-white/70 shadow-lg p-4 mb-4">
+              {enCarrito > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600">
+                    En el carrito: <span className="font-semibold text-gray-800">{enCarrito}</span> /{' '}
+                    <span className="text-gray-700">Stock {stockActual}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      onClick={() => handleQty(enCarrito - 1)}
+                      className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 transition font-bold"
+                      type="button"
+                      aria-label="Menos"
+                    >
+                      −
+                    </button>
+                    <span className="text-xl font-semibold">{enCarrito}</span>
+                    <button
+                      onClick={() => handleQty(enCarrito + 1)}
+                      disabled={enCarrito >= stockActual}
+                      className="w-10 h-10 rounded-full bg-pink-500 text-white hover:bg-pink-600 disabled:bg-gray-300 transition font-bold"
+                      type="button"
+                      aria-label="Más"
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => navigate('/checkout')}
+                      className="flex-1 px-4 py-2 rounded-xl border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50 transition"
+                      type="button"
+                    >
+                      Ver carrito
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAdd}
+                  disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
+                  className={`w-full px-6 py-3 rounded-xl font-bold transition ${sinStock || (product.tieneVariantes && !varianteSeleccionada)
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
+                    }`}
+                  type="button"
+                >
+                  {sinStock
+                    ? 'Sin stock'
+                    : (product.tieneVariantes && !varianteSeleccionada)
+                      ? 'Seleccioná tamaño'
+                      : 'Agregar al carrito'}
+                </button>
+              )}
+            </div>
 
             {/* Controles compra (desktop/tablet) */}
             <div className="hidden md:block rounded-3xl bg-white/80 backdrop-blur border border-white/70 shadow-xl p-5 mb-6">
@@ -335,8 +365,8 @@ const ProductDetail: React.FC = () => {
                     onClick={handleAdd}
                     disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
                     className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${sinStock || (product.tieneVariantes && !varianteSeleccionada)
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
                       }`}
                     type="button"
                   >
@@ -401,30 +431,7 @@ const ProductDetail: React.FC = () => {
         )}
       </section>
 
-      {/* Barra fija inferior (mobile) */}
-      {!sinStock && (
-        <div className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 backdrop-blur border-t border-pink-100">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-            <div className="flex-1">
-              <div className="text-xs text-gray-500 leading-none mb-0.5">Precio</div>
-              <div className="text-xl font-extrabold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-                {precioDisplay}
-              </div>
-            </div>
-            <button
-              onClick={handleAdd}
-              disabled={product.tieneVariantes && !varianteSeleccionada}
-              className={`flex-[2] px-5 py-3 rounded-xl font-bold transition ${product.tieneVariantes && !varianteSeleccionada
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
-                }`}
-              type="button"
-            >
-              {product.tieneVariantes && !varianteSeleccionada ? 'Seleccioná tamaño' : 'Agregar'}
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import type { ProductWithId } from '@/hooks/useFeaturedProducts';
 import { Link, useNavigate } from 'react-router-dom';
 import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { showToast } from '../Toast/ToastProvider';
 
 type CartItem = { productId: string; quantity: number };
 
@@ -14,7 +15,7 @@ interface FeaturedProductsProps {
     /** Opcionales para Products */
     catalogMode?: boolean;
     items?: CartItem[];
-    onAddToCart?: (p: ProductWithId, variantId?: string) => Promise<void> | void; // 🔥 CAMBIO
+    onAddToCart?: (p: ProductWithId, variantId?: string) => Promise<void> | void;
     onUpdateQty?: (productId: string, newQty: number, stock: number) => void;
     openCart?: () => void;
     procesando?: Set<string>;
@@ -23,7 +24,6 @@ interface FeaturedProductsProps {
 const currency = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 
-// 🔥 NUEVO: Helper para obtener stock según variante
 const getStockDisponible = (p: ProductWithId, variantId?: string, items?: CartItem[]) => {
     let stockTotal = 0;
 
@@ -42,7 +42,6 @@ const getStockDisponible = (p: ProductWithId, variantId?: string, items?: CartIt
     return Math.max(0, stockTotal - enCarrito);
 };
 
-// 🔥 NUEVO: Helper para mostrar precio
 const getPrecioDisplay = (p: ProductWithId, variantId?: string): string => {
     if (p.tieneVariantes && p.variantes) {
         if (variantId) {
@@ -67,7 +66,6 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
     openCart,
     procesando,
 }) => {
-    // 🔥 NUEVO: Estado para variante seleccionada por producto
     const [variantesSeleccionadas, setVariantesSeleccionadas] = useState<Record<string, string>>({});
     const navigate = useNavigate();
 
@@ -117,7 +115,6 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                 const enCarrito = items?.find((it) => it.productId === itemKey)?.quantity ?? 0;
                 const isProcessing = procesando?.has(producto.id) ?? false;
 
-                // 🔥 NUEVO: Verificar si tiene stock en alguna variante
                 const tieneAlgunStock = producto.tieneVariantes && producto.variantes
                     ? producto.variantes.some(v => (v.stock ?? 0) > 0)
                     : (producto.stock ?? 0) > 0;
@@ -171,7 +168,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                 </p>
                             </div>
 
-                            {/* 🔥 NUEVO: Selector de variantes */}
+                            {/* Selector de variantes */}
                             {catalogMode && producto.tieneVariantes && producto.variantes && producto.variantes.length > 0 && (
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-gray-700">Tamaño / Porciones:</label>
@@ -185,10 +182,10 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                                     onClick={() => seleccionarVariante(producto.id, variant.id)}
                                                     disabled={sinStockVariant}
                                                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${sinStockVariant
-                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                            : isSelected
-                                                                ? 'bg-pink-500 text-white shadow-md'
-                                                                : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                        : isSelected
+                                                            ? 'bg-pink-500 text-white shadow-md'
+                                                            : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-300'
                                                         }`}
                                                     type="button"
                                                 >
@@ -203,15 +200,15 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 
                             {/* Precio + CTA */}
                             {!catalogMode ? (
-                                // === Modo Home/featured
+                                // === Modo Home/featured - 🔥 MEJORADO
                                 <div className="flex items-center justify-between pt-4">
-                                    <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+                                    <div className="text-lg font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
                                         {getPrecioDisplay(producto)}
                                     </div>
                                     <Link
                                         to={`/products/${producto.id}`}
                                         state={{ product: producto }}
-                                        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                                        className="px-4 py-2 text-sm whitespace-nowrap bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
                                     >
                                         Ver Detalles
                                     </Link>
@@ -272,19 +269,24 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                             <button
                                                 onClick={() => {
                                                     if (producto.tieneVariantes && !varianteSeleccionada) {
-                                                        alert('⚠️ Seleccioná un tamaño/porción primero');
+                                                        // Validación silenciosa: el botón ya está disabled
                                                         return;
                                                     }
                                                     onAddToCart && onAddToCart(producto, varianteSeleccionada);
+                                                    const variant = varianteSeleccionada && producto.variantes
+                                                        ? producto.variantes.find(v => v.id === varianteSeleccionada)?.label
+                                                        : undefined;
+
+                                                    showToast.productAdded(producto.nombre, variant);
                                                 }}
                                                 disabled={sinStock || isProcessing || !onAddToCart || (producto.tieneVariantes && !varianteSeleccionada)}
                                                 className={`w-full sm:w-auto flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${sinStock || !tieneAlgunStock
-                                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                        : isProcessing || !onAddToCart
-                                                            ? 'bg-pink-300 text-white cursor-not-allowed'
-                                                            : (producto.tieneVariantes && !varianteSeleccionada)
-                                                                ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
-                                                                : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                    : isProcessing || !onAddToCart
+                                                        ? 'bg-pink-300 text-white cursor-not-allowed'
+                                                        : (producto.tieneVariantes && !varianteSeleccionada)
+                                                            ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                                                            : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
                                                     }`}
                                                 type="button"
                                             >

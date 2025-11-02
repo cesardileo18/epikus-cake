@@ -7,6 +7,7 @@ import ScrollToTopButton from './components/buttons/ScrollToTopButton';
 import Footer from './components/footer/Footer';
 import FloatingWhatsApp from './components/buttons/FloatingWhatsApp';
 import ScrollToTop from './components/scroll/ScrollToTop';
+import ToastProvider from './components/Toast/ToastProvider';
 function App() {
   return (
     <BrowserRouter>
@@ -16,6 +17,7 @@ function App() {
         <AppRoutes />
         <Footer />
         <CartDrawer />
+        <ToastProvider />
         <ScrollToTopButton />
         <FloatingWhatsApp />
       </div>
