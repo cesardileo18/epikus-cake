@@ -33,7 +33,7 @@ export default function useContactForm() {
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
   }, [whatsappNumber]);
 
-  const submit = async (e?: React.FormEvent) => {
+const submit = async (e?: React.FormEvent, recipientEmail?: string) => {
     if (e) e.preventDefault();
     if (!valid || sending) return;
 
@@ -42,13 +42,19 @@ export default function useContactForm() {
     try {
       // Variables alineadas con tu template de EmailJS (Subject usa {{from_name}} y Reply-To usa {{from_email}})
       await sendEmail({
-        from_name: form.name,
-        from_email: form.email,
-        phone: form.phone,
-        message: form.message,
+        to: recipientEmail || import.meta.env.VITE_CONTACT_EMAIL,
+        subject: `Nuevo mensaje de ${form.name}`,
+        html: `<p><strong>Nombre:</strong> ${form.name}</p>
+         <p><strong>Email:</strong> ${form.email}</p>
+         <p><strong>Teléfono:</strong> ${form.phone}</p>
+         <p><strong>Mensaje:</strong></p>
+         <p>${form.message}</p>`,
+        text: `Nombre: ${form.name}\nEmail: ${form.email}\nTeléfono: ${form.phone}\n\nMensaje:\n${form.message}`
       });
-      setStatus({ type: 'success',
-         msg: '¡Gracias! Tu mensaje fue enviado. Te respondemos a la brevedad.' });
+      setStatus({
+        type: 'success',
+        msg: '¡Gracias! Tu mensaje fue enviado. Te respondemos a la brevedad.'
+      });
       setForm(INITIAL);
       setTimeout(() => nameRef.current?.focus(), 0);
     } catch (err) {

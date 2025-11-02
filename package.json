@@ -19,6 +19,8 @@
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.5.0",
     "flowbite": "^3.1.2",
+    "framer-motion": "^12.23.24",
+    "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

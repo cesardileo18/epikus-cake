@@ -41,6 +41,7 @@ const Navbar: React.FC = () => {
         { name: 'Dashboard', to: '/admin/dashboard', icon: '📊' },
         { name: 'Productos (admin)', to: '/admin/products', icon: '📦' },
         { name: 'Agregar Producto', to: '/admin/products/add', icon: '➕' },
+        { name: 'Ventas / Pedidos', to: '/admin/sells', icon: '🧾' },
       ]
       : [];
 

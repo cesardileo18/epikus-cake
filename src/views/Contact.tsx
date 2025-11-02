@@ -1,9 +1,12 @@
 // src/pages/Contact.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import useContactForm from '@/hooks/useContactForm';
+import { useRecaptcha } from '@/hooks/useRecaptcha';
+import ReCaptchaInvisible from '@/components/security/ReCaptchaInvisible';
 
 import contactJson from '@/content/contactContent.json';
-import type { ContactContent } from '@/interfaces/ContactContent'; 
+import type { ContactContent } from '@/interfaces/ContactContent';
+
 
 const content: ContactContent = contactJson as ContactContent;
 
@@ -21,8 +24,32 @@ const Contact: React.FC = () => {
   const {
     form, onChange, valid, submit, sending, status, whatsappLink, nameRef,
   } = useContactForm();
+  const [errorRecaptcha, setErrorRecaptcha] = useState<string | null>(null);
+  const { executeRecaptcha } = useRecaptcha();
 
   const submitDisabled = !valid || sending;
+
+  // Nuevo handler que incluye reCAPTCHA
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrorRecaptcha(null);
+    // Ejecutar reCAPTCHA
+    const recaptchaResult = await executeRecaptcha("contact_form");
+
+    if (!recaptchaResult.ok) {
+      console.error("reCAPTCHA falló:", recaptchaResult.error);
+      return;
+    }
+
+    if (recaptchaResult.score && recaptchaResult.score < 0.5) {
+      console.error("Score reCAPTCHA muy bajo:", recaptchaResult.score);
+      setErrorRecaptcha('No pudimos verificar que sos humano. Intentá de nuevo.');
+      return;
+    }
+
+    // Si pasó reCAPTCHA, enviar formulario
+    submit(e);
+  };
 
   return (
     <div className="min-h-screen bg-[#ff7bab48]">
@@ -42,7 +69,7 @@ const Contact: React.FC = () => {
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-pink-100 p-6 md:p-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">{content.form.title}</h2>
 
-              <form onSubmit={submit} className="space-y-5" noValidate>
+              <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                     {content.form.fields.name.label}
@@ -114,27 +141,32 @@ const Contact: React.FC = () => {
                   <div
                     role="status"
                     aria-live="polite"
-                    className={`rounded-xl px-4 py-3 text-sm ${
-                      status.type === 'success'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-rose-50 text-rose-700 border border-rose-200'
-                    }`}
+                    className={`rounded-xl px-4 py-3 text-sm ${status.type === 'success'
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}
                   >
                     {status.msg}
                   </div>
                 )}
 
+                {/* Badge reCAPTCHA */}
+                <ReCaptchaInvisible />
+                {errorRecaptcha && (
+                  <div className="rounded-xl px-4 py-3 text-sm bg-rose-50 text-rose-700 border border-rose-200">
+                    {errorRecaptcha}
+                  </div>
+                )}
                 {/* Botones */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <button
                     type="submit"
                     disabled={submitDisabled}
                     aria-busy={sending}
-                    className={`flex-1 py-3 rounded-xl font-semibold text-white shadow-lg transition-all ${
-                      submitDisabled
-                        ? 'bg-pink-300 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:shadow-xl'
-                    }`}
+                    className={`flex-1 py-3 rounded-xl font-semibold text-white shadow-lg transition-all ${submitDisabled
+                      ? 'bg-pink-300 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:shadow-xl'
+                      }`}
                   >
                     {sending ? content.form.buttons.submitting : content.form.buttons.submit}
                   </button>
@@ -174,7 +206,6 @@ const Contact: React.FC = () => {
               <div className="mt-8 grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
                 <div className="rounded-xl bg-[#e70ee71c] p-4">
                   <p className="font-semibold text-gray-900 mb-1">{content.quick_info.email.label}</p>
-                  {/* si querés link clickeable, usá <a href={mdHref(...)}>{mdText(...)} </a> */}
                   <p>{mdText(content.quick_info.email.value)}</p>
                 </div>
                 <div className="rounded-xl bg-[#e70ee71c] p-4">

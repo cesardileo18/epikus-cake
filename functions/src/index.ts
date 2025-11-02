@@ -15,6 +15,7 @@ const gmailClientId = defineString("GMAIL_CLIENT_ID");
 const gmailClientSecret = defineString("GMAIL_CLIENT_SECRET");
 const gmailRefreshToken = defineString("GMAIL_REFRESH_TOKEN");
 const gmailEmail = defineString("GMAIL_EMAIL");
+const recaptchaSecret = defineString("RECAPTCHA_SECRET");
 
 // 🌐 Test endpoint
 export const ping = onRequest((req: Request, res: Response): void => {
@@ -40,8 +41,8 @@ export const createPreference = onRequest(
     }
 
     try {
-      const { amount, description } = req.body || {};
-      if (!amount || !description) {
+      const { amount, description, orderId } = req.body || {}; // ← Agregado orderId
+      if (!amount || !description || !orderId) { // ← Validación
         res.status(400).json({ error: "Faltan parámetros" });
         return;
       }
@@ -61,10 +62,11 @@ export const createPreference = onRequest(
           },
         ],
         back_urls: {
-          success: "https://epikuscake.web.app/products",
+          success: `https://epikuscake.web.app/payment-success?orderId=${orderId}`, // ← Usa orderId
           failure: "https://epikuscake.web.app/confirm-order",
         },
         auto_return: "approved",
+        external_reference: orderId, // ← Opcional pero recomendado
       };
 
       const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
@@ -93,7 +95,7 @@ export const createPreference = onRequest(
 // 📧 Función auxiliar para crear el transporter de Nodemailer
 async function createTransporter() {
   const OAuth2 = google.auth.OAuth2;
-  
+
   const oauth2Client = new OAuth2(
     gmailClientId.value(),
     gmailClientSecret.value(),
@@ -146,5 +148,45 @@ export const sendEmail = onCall(async (request) => {
   } catch (error: any) {
     console.error("❌ Error al enviar email:", error);
     throw new Error(error.message || "Error al enviar email");
+  }
+});
+
+// 🛡️ Verificar reCAPTCHA
+export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Promise<void> => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+  if (req.method !== "POST") {
+    res.status(405).json({ ok: false, error: "method-not-allowed" });
+    return;
+  }
+
+  try {
+    const token = req.body?.token as string | undefined;
+    if (!token) {
+      res.status(400).json({ ok: false, error: "missing-token" });
+      return;
+    }
+
+    const secret = recaptchaSecret.value();
+    const verifyResp = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret, response: token }),
+    });
+    const data = await verifyResp.json(); // { success, score, action, ... }
+
+    const score = typeof data.score === "number" ? data.score : 0;
+    const ok = !!data.success && score >= 0.5; // umbral ajustable
+
+    res.status(200).json({ ok, score });
+  } catch (err: any) {
+    console.error("reCAPTCHA verify error:", err);
+    res.status(500).json({ ok: false, error: err?.message ?? "internal-error" });
   }
 });

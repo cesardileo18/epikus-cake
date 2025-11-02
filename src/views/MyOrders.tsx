@@ -16,15 +16,19 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-// 🔥 ACTUALIZADO: OrderItem ahora incluye variantes
+// === Soporte para ambos esquemas (viejo y nuevo) ===
 interface OrderItem {
   productId: string;
   variantId?: string | null;
   variantLabel?: string | null;
   nombre: string;
-  precio: number;
   cantidad: number;
-  subtotal: number;
+  // viejo esquema
+  precio?: number;
+  subtotal?: number;
+  // nuevo esquema
+  precioUnitario?: number;
+  subtotalItem?: number;
 }
 
 interface Order {
@@ -33,7 +37,7 @@ interface Order {
   createdAt: Timestamp;
   customer: {
     nombre: string;
-    whatsapp: string;
+    whatsapp?: string; // puede faltar en algunos docs
   };
   entrega: {
     tipo: 'retiro' | 'envio';
@@ -42,7 +46,14 @@ interface Order {
     hora: string;
   };
   items: OrderItem[];
-  total: number;
+  // viejo esquema
+  total?: number;
+  // nuevo esquema
+  pricing?: {
+    total?: number;
+    subtotal?: number;
+    descuentoMonto?: number;
+  };
   notas?: string | null;
   userUid?: string;
 }
@@ -63,62 +74,36 @@ const MyOrders: React.FC = () => {
 
     const fetchOrders = async () => {
       try {
-        console.log('🔍 Buscando pedidos para user.uid:', user.uid);
-
-        let q = query(
-          collection(db, 'pedidos'),
-          where('userUid', '==', user.uid)
-        );
-
+        let q = query(collection(db, 'pedidos'), where('userUid', '==', user.uid));
         let snapshot = await getDocs(q);
-        
-        console.log('📦 Documentos encontrados (método 1):', snapshot.size);
-        
+
         if (snapshot.empty) {
-          console.log('⚠️ Intentando con subcolección users/{uid}/pedidos...');
-          q = query(
-            collection(db, `users/${user.uid}/pedidos`)
-          );
+          // fallback: subcolección users/{uid}/pedidos
+          q = query(collection(db, `users/${user.uid}/pedidos`));
           snapshot = await getDocs(q);
-          console.log('📦 Documentos encontrados (método 2):', snapshot.size);
         }
 
+        // fallback: buscar por número de teléfono si no hay nada y el user tiene phoneNumber
         if (snapshot.empty && user.phoneNumber) {
-          console.log('⚠️ Intentando buscar por número de teléfono...');
           const allOrdersQuery = query(collection(db, 'pedidos'));
           const allOrdersSnapshot = await getDocs(allOrdersQuery);
-          
-          const filteredOrders = allOrdersSnapshot.docs.filter(doc => {
-            const data = doc.data();
+
+          const filteredOrders = allOrdersSnapshot.docs.filter(d => {
+            const data = d.data() as any;
             return data.customer?.whatsapp === user.phoneNumber?.replace('+', '');
           });
-          
-          console.log('📦 Documentos encontrados (método 3):', filteredOrders.length);
-          
-          const ordersData = filteredOrders.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Order[];
 
+          const ordersData = filteredOrders.map(d => ({ id: d.id, ...(d.data() as any) })) as Order[];
           ordersData.sort((a, b) => {
             if (!a.createdAt || !b.createdAt) return 0;
             return b.createdAt.toMillis() - a.createdAt.toMillis();
           });
-
           setOrders(ordersData);
           setLoading(false);
           return;
         }
-        
-        const ordersData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          console.log('📄 Pedido:', doc.id);
-          return {
-            id: doc.id,
-            ...data,
-          };
-        }) as Order[];
 
+        const ordersData = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Order[];
         ordersData.sort((a, b) => {
           if (!a.createdAt || !b.createdAt) return 0;
           return b.createdAt.toMillis() - a.createdAt.toMillis();
@@ -135,7 +120,26 @@ const MyOrders: React.FC = () => {
     fetchOrders();
   }, [user]);
 
-  const formatPrice = (n: number) => n.toLocaleString('es-AR');
+  // === Helpers robustos (evitan undefined y soportan ambos esquemas) ===
+  const formatPrice = (n: number | undefined | null) =>
+    Number(n ?? 0).toLocaleString('es-AR');
+
+  const getItemUnitPrice = (it: OrderItem) =>
+    typeof it.precio === 'number'
+      ? it.precio
+      : typeof it.precioUnitario === 'number'
+      ? it.precioUnitario
+      : 0;
+
+  const getItemSubtotal = (it: OrderItem) =>
+    typeof it.subtotal === 'number'
+      ? it.subtotal
+      : typeof it.subtotalItem === 'number'
+      ? it.subtotalItem
+      : getItemUnitPrice(it) * (it.cantidad ?? 0);
+
+  const getOrderTotal = (o: Order) =>
+    typeof o.total === 'number' ? o.total : (o.pricing?.total ?? 0);
 
   const formatDate = (timestamp: Timestamp | undefined): string => {
     if (!timestamp) return 'Fecha no disponible';
@@ -171,26 +175,24 @@ const MyOrders: React.FC = () => {
         color: 'bg-red-100 text-red-800 border-red-200',
         icon: ClockIcon,
       },
-    };
+    } as const;
     return configs[status] || configs.pendiente;
   };
 
-  // 🔥 ACTUALIZADO: handleReorder ahora maneja variantes
+  // Reorder (compatibles con variantes)
   const handleReorder = async (order: Order) => {
     setReordering(order.id);
     try {
       for (const item of order.items) {
         const productRef = doc(db, 'productos', item.productId);
         const productSnap = await getDoc(productRef);
-
         if (!productSnap.exists()) continue;
 
-        const productData = productSnap.data();
+        const productData: any = productSnap.data();
         const isActive = productData.activo !== false;
-
         if (!isActive) continue;
 
-        // Verificar stock según si tiene variante o no
+        // stock según variante o base
         let stockDisponible = 0;
         if (item.variantId && productData.tieneVariantes && Array.isArray(productData.variantes)) {
           const variante = productData.variantes.find((v: any) => v.id === item.variantId);
@@ -200,21 +202,24 @@ const MyOrders: React.FC = () => {
           stockDisponible = productData.stock || 0;
         }
 
-        // Si hay stock suficiente, agregar al carrito
         if (stockDisponible >= item.cantidad) {
-          add({
-            id: item.productId,
-            nombre: item.nombre,
-            precio: productData.precio,
-            imagen: productData.imagen || '',
-            descripcion: productData.descripcion || '',
-            categoria: productData.categoria || '',
-            stock: productData.stock,
-            activo: isActive,
-            destacado: productData.destacado || false,
-            tieneVariantes: productData.tieneVariantes || false,
-            variantes: productData.variantes || [],
-          }, item.cantidad, item.variantId || undefined);
+          add(
+            {
+              id: item.productId,
+              nombre: item.nombre,
+              precio: productData.precio, // precio actual del producto
+              imagen: productData.imagen || '',
+              descripcion: productData.descripcion || '',
+              categoria: productData.categoria || '',
+              stock: productData.stock,
+              activo: isActive,
+              destacado: productData.destacado || false,
+              tieneVariantes: productData.tieneVariantes || false,
+              variantes: productData.variantes || [],
+            },
+            item.cantidad,
+            item.variantId || undefined
+          );
         }
       }
 
@@ -231,12 +236,8 @@ const MyOrders: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center px-4">
         <div className="text-center">
           <ClipboardDocumentListIcon className="w-20 h-20 mx-auto text-gray-300 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Debes iniciar sesión
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Para ver tus pedidos necesitas estar logueado
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Debes iniciar sesión</h2>
+          <p className="text-gray-600 mb-6">Para ver tus pedidos necesitas estar logueado</p>
           <Link
             to="/login?redirect=/my-orders"
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
@@ -270,21 +271,15 @@ const MyOrders: React.FC = () => {
               Pedidos
             </span>
           </h1>
-          <p className="text-lg text-gray-600">
-            Historial completo de tus compras
-          </p>
+          <p className="text-lg text-gray-600">Historial completo de tus compras</p>
         </div>
 
         {/* Sin pedidos */}
         {orders.length === 0 ? (
           <div className="bg-white rounded-3xl shadow-lg p-12 text-center">
             <ShoppingBagIcon className="w-20 h-20 mx-auto text-gray-300 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Aún no tienes pedidos
-            </h2>
-            <p className="text-gray-600 mb-6">
-              ¡Empieza a explorar nuestros deliciosos productos!
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Aún no tienes pedidos</h2>
+            <p className="text-gray-600 mb-6">¡Empieza a explorar nuestros deliciosos productos!</p>
             <Link
               to="/products"
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
@@ -311,12 +306,8 @@ const MyOrders: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <ClipboardDocumentListIcon className="w-6 h-6 text-white" />
                         <div>
-                          <p className="text-white font-semibold">
-                            Pedido #{order.id}
-                          </p>
-                          <p className="text-pink-100 text-sm">
-                            {formatDate(order.createdAt)}
-                          </p>
+                          <p className="text-white font-semibold">Pedido #{order.id}</p>
+                          <p className="text-pink-100 text-sm">{formatDate(order.createdAt)}</p>
                         </div>
                       </div>
 
@@ -331,7 +322,7 @@ const MyOrders: React.FC = () => {
 
                   {/* Contenido del pedido */}
                   <div className="p-6 space-y-6">
-                    {/* Productos - 🔥 ACTUALIZADO: muestra variantLabel */}
+                    {/* Productos */}
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <ShoppingBagIcon className="w-5 h-5 text-pink-500" />
@@ -344,21 +335,16 @@ const MyOrders: React.FC = () => {
                             className="flex justify-between items-center bg-gray-50 rounded-xl p-3"
                           >
                             <div className="flex-1">
-                              <p className="font-medium text-gray-900">
-                                {item.nombre}
-                              </p>
-                              {/* 🔥 NUEVO: Mostrar variante si existe */}
+                              <p className="font-medium text-gray-900">{item.nombre}</p>
                               {item.variantLabel && (
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  📦 {item.variantLabel}
-                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">📦 {item.variantLabel}</p>
                               )}
                               <p className="text-sm text-gray-600">
-                                Cantidad: {item.cantidad} × ${formatPrice(item.precio)}
+                                Cantidad: {item.cantidad} × ${formatPrice(getItemUnitPrice(item))}
                               </p>
                             </div>
                             <p className="font-bold text-pink-600">
-                              ${formatPrice(item.subtotal)}
+                              ${formatPrice(getItemSubtotal(item))}
                             </p>
                           </div>
                         ))}
@@ -377,14 +363,10 @@ const MyOrders: React.FC = () => {
                           {order.entrega.tipo === 'retiro' ? 'Retiro' : 'Envío'}
                         </h4>
                         {order.entrega.tipo === 'envio' && order.entrega.direccion && (
-                          <p className="text-sm text-gray-600">
-                            {order.entrega.direccion}
-                          </p>
+                          <p className="text-sm text-gray-600">{order.entrega.direccion}</p>
                         )}
                         {order.entrega.tipo === 'retiro' && (
-                          <p className="text-sm text-gray-600">
-                            En nuestro local
-                          </p>
+                          <p className="text-sm text-gray-600">En nuestro local</p>
                         )}
                       </div>
 
@@ -402,20 +384,16 @@ const MyOrders: React.FC = () => {
                     {/* Notas */}
                     {order.notas && (
                       <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200">
-                        <h4 className="font-semibold text-gray-900 mb-1">
-                          Notas adicionales
-                        </h4>
+                        <h4 className="font-semibold text-gray-900 mb-1">Notas adicionales</h4>
                         <p className="text-sm text-gray-600">{order.notas}</p>
                       </div>
                     )}
 
                     {/* Total */}
                     <div className="border-t pt-4 flex justify-between items-center">
-                      <span className="text-lg font-semibold text-gray-900">
-                        Total
-                      </span>
+                      <span className="text-lg font-semibold text-gray-900">Total</span>
                       <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-                        ${formatPrice(order.total)}
+                        ${formatPrice(getOrderTotal(order))}
                       </span>
                     </div>
 
