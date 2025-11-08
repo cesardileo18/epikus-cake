@@ -12,7 +12,7 @@
     "gallery_fallback": "https://via.placeholder.com/800x800/f8fafc/94a3b8?text=Imagen+no+disponible",
     "related_fallback": "https://via.placeholder.com/600x450/f8fafc/94a3b8?text=Imagen+no+disponible"
   },
-  "stock": { "in_stock": "En stock", "out_of_stock": "Sin stock" },
+  "stock": { "in_stock": "En stock", "out_of_stock": "Seleccioná tamaño" },
   "variants": {
     "title": "Seleccioná tamaño / porciones:",
     "no_stock_label": "Sin stock",

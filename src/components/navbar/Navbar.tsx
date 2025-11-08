@@ -4,12 +4,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthProvider';
 import { signOut } from '@/auth/auth';
 import CartButton from '@/components/cart/CartButton';
+import { useStoreStatus } from "@/context/StoreStatusContext";
 
 type MenuItem = { name: string; to: string; icon?: string };
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const { user, role, loading } = useAuth(); // <- ahora tomamos role también
+  const { isStoreOpen, closedMessage } = useStoreStatus();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -134,8 +136,26 @@ const Navbar: React.FC = () => {
               )}
 
               {/* Carrito Desktop */}
-              <CartButton size="md" />
+              {!isStoreOpen ? (
+                <div
+                  title={closedMessage || "Tienda cerrada"}
+                 className="flex items-center gap-2 px-4 py-2 rounded-full 
+bg-white text-pink-600 font-semibold shadow-[0_2px_8px_rgba(216,30,119,0.25)] 
+border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0.35)] transition-all duration-300"
 
+                >
+                  <span className="text-pink-500 text-sm">🕒</span>
+                  <span className="text-sm truncate max-w-[120px]" title={closedMessage || "Tienda cerrada"}>
+                    {closedMessage && closedMessage.length > 7
+                      ? closedMessage.slice(0, 7) + "..."
+                      : closedMessage?.includes("mantenimiento")
+                        ? closedMessage
+                        : "Cerrada"}
+                  </span>
+                </div>
+              ) : (
+                <CartButton size="md" />
+              )}
               {/* Auth Desktop */}
               {!loading && !user && (
                 <Link
@@ -184,7 +204,25 @@ const Navbar: React.FC = () => {
 
             {/* Mobile actions */}
             <div className="flex items-center space-x-3 lg:hidden">
-              <CartButton size="sm" />
+              {!isStoreOpen ? (
+                <div
+                  title={closedMessage || "Tienda cerrada"}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full 
+                bg-white text-pink-600 font-semibold shadow-[0_2px_8px_rgba(216,30,119,0.25)] 
+                border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0.35)] transition-all duration-300"
+                >
+                  <span className="text-pink-500 text-sm">🕒</span>
+                  <span className="text-sm truncate max-w-[120px]" title={closedMessage || "Tienda cerrada"}>
+                    {closedMessage && closedMessage.length > 25
+                      ? closedMessage.slice(0, 25) + "..."
+                      : closedMessage?.includes("mantenimiento")
+                        ? closedMessage
+                        : "Tienda cerrada"}
+                  </span>
+                </div>
+              ) : (
+                <CartButton size="sm" />
+              )}
               <button
                 onClick={toggleMenu}
                 className="relative w-10 h-10 rounded-xl bg-white/80 backdrop-blur-sm border border-pink-100 shadow-lg flex flex-col items-center justify-center space-y-1.5 hover:bg-white transition-all duration-300"

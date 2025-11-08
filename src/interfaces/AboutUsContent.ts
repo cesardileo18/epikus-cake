@@ -47,7 +47,15 @@ export interface AboutUsPrinciple {
   title: string;
   desc: string;
 }
-
+export interface AboutUsInstagram {
+  kicker?: string;
+  title: string;
+  subtitle?: string;
+  handle: string;
+  url: string;
+  qr_src: string;
+  cta_label: string;
+}
 export interface AboutUsContent {
   hero: AboutUsHero;
   cta: AboutUsCta;
@@ -56,4 +64,5 @@ export interface AboutUsContent {
   history_section: AboutUsHistorySection;
   gallery: AboutUsGalleryItem[];
   principles: AboutUsPrinciple[];
+   instagram: AboutUsInstagram;
 }

@@ -6,7 +6,7 @@
     },
     "cta": {
         "whatsapp_label": "Consultar por WhatsApp",
-        "whatsapp_link": "https://wa.me/YOUR_PHONE_NUMBER",
+        "whatsapp_link": "https://wa.me/+5491158651170",
         "contact_label": "Ver contacto",
         "contact_link": "/contact"
     },
@@ -81,5 +81,14 @@
             "title": "Diseño a medida",
             "desc": "Se adapta a tu temática, porciones y temporada."
         }
-    ]
+    ],
+    "instagram": {
+        "kicker": "Comunidad",
+        "title": "Seguinos en Instagram",
+        "subtitle": "Procesos, estrenos y sorteos semanales.",
+        "handle": "epikuscake",
+        "url": "https://instagram.com/epikuscake",
+        "qr_src": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1762568582/qrIntagram_sbbdvd.jpg",
+        "cta_label": "Ir a Instagram"
+    }
 }

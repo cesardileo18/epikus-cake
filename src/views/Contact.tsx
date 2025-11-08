@@ -203,7 +203,7 @@ const Contact: React.FC = () => {
 
             {/* Datos rápidos */}
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-pink-100 p-6 md:p-8">
-              <div className="mt-8 grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
+              <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
                 <div className="rounded-xl bg-[#e70ee71c] p-4">
                   <p className="font-semibold text-gray-900 mb-1">{content.quick_info.email.label}</p>
                   <p>{mdText(content.quick_info.email.value)}</p>

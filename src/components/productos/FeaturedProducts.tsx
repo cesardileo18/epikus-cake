@@ -4,6 +4,7 @@ import type { ProductWithId } from '@/hooks/useFeaturedProducts';
 import { Link, useNavigate } from 'react-router-dom';
 import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { showToast } from '../Toast/ToastProvider';
+import { useStoreStatus } from "@/context/StoreStatusContext";
 
 type CartItem = { productId: string; quantity: number };
 
@@ -68,6 +69,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 }) => {
     const [variantesSeleccionadas, setVariantesSeleccionadas] = useState<Record<string, string>>({});
     const navigate = useNavigate();
+    const { isStoreOpen, closedMessage } = useStoreStatus();
 
     const seleccionarVariante = (productId: string, variantId: string) => {
         setVariantesSeleccionadas(prev => ({ ...prev, [productId]: variantId }));
@@ -257,13 +259,24 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 
                                                 {openCart && (
                                                     <button
-                                                        onClick={() => navigate('/checkout')}
+                                                        onClick={() => {
+                                                            if (!isStoreOpen) {
+                                                                showToast.error(closedMessage || "La tienda está cerrada actualmente");
+                                                                return;
+                                                            }
+                                                            navigate("/checkout");
+                                                        }}
                                                         type="button"
-                                                        className="cursor-pointer text-sm font-semibold text-pink-600 hover:text-pink-700 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-pink-300 rounded"
+                                                        disabled={!isStoreOpen}
+                                                        className={`text-sm font-semibold rounded transition-all duration-300 ${isStoreOpen
+                                                                ? "cursor-pointer text-pink-600 hover:text-pink-700 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-pink-300"
+                                                                : "cursor-not-allowed text-gray-400"
+                                                            }`}
                                                     >
                                                         Carrito
                                                     </button>
                                                 )}
+
                                             </div>
                                         ) : (
                                             <button

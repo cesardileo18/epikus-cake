@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartProvider';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
 import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
 import { showToast } from '@/components/Toast/ToastProvider';
+import { useStoreStatus } from "@/context/StoreStatusContext";
 
 import contentJson from '@/content/ProductDetailContent.json';
 import type { ProductDetailContent } from '@/interfaces/ProductDetailContent';
@@ -25,6 +26,7 @@ const ProductDetail: React.FC = () => {
 
   const { state } = useLocation() as { state?: LocationState };
   const seedProduct = state?.product;
+  const { isStoreOpen, closedMessage } = useStoreStatus();
 
   const [varianteSeleccionada, setVarianteSeleccionada] = useState<string | undefined>(undefined);
 
@@ -100,32 +102,32 @@ const ProductDetail: React.FC = () => {
 
   const jsonLd = product
     ? {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.nombre,
-        description: product.descripcion,
-        image: [product.imagen],
-        sku: product.id,
-        category: product.categoria,
-        offers: product.tieneVariantes && product.variantes
-          ? {
-              '@type': 'AggregateOffer',
-              priceCurrency: content.schema.currency,
-              lowPrice: Math.min(...product.variantes.map(v => v.precio)),
-              highPrice: Math.max(...product.variantes.map(v => v.precio)),
-              availability: product.variantes.some(v => (v.stock ?? 0) > 0)
-                ? 'https://schema.org/InStock'
-                : 'https://schema.org/OutOfStock',
-            }
-          : {
-              '@type': 'Offer',
-              availability: (product.stock ?? 0) > 0
-                ? 'https://schema.org/InStock'
-                : 'https://schema.org/OutOfStock',
-              priceCurrency: content.schema.currency,
-              price: product.precio,
-            },
-      }
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.nombre,
+      description: product.descripcion,
+      image: [product.imagen],
+      sku: product.id,
+      category: product.categoria,
+      offers: product.tieneVariantes && product.variantes
+        ? {
+          '@type': 'AggregateOffer',
+          priceCurrency: content.schema.currency,
+          lowPrice: Math.min(...product.variantes.map(v => v.precio)),
+          highPrice: Math.max(...product.variantes.map(v => v.precio)),
+          availability: product.variantes.some(v => (v.stock ?? 0) > 0)
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+        }
+        : {
+          '@type': 'Offer',
+          availability: (product.stock ?? 0) > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+          priceCurrency: content.schema.currency,
+          price: product.precio,
+        },
+    }
     : null;
 
   if (loading && !product) {
@@ -227,13 +229,12 @@ const ProductDetail: React.FC = () => {
                         key={variant.id}
                         onClick={() => setVarianteSeleccionada(variant.id)}
                         disabled={sinStockVariant}
-                        className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                          sinStockVariant
-                            ? 'bg-gray-50 text-gray-400 cursor-not-allowed line-through'
-                            : isSelected
-                              ? 'bg-pink-500 text-white shadow-md'
-                              : 'bg-white border border-gray-200 text-gray-700 hover:border-pink-300'
-                        }`}
+                        className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${sinStockVariant
+                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed line-through'
+                          : isSelected
+                            ? 'bg-pink-500 text-white shadow-md'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:border-pink-300'
+                          }`}
                         type="button"
                       >
                         <div className="font-bold mb-0.5">{variant.label}</div>
@@ -296,23 +297,33 @@ const ProductDetail: React.FC = () => {
                       +
                     </button>
                     <button
-                      onClick={() => navigate('/checkout')}
-                      className="flex-1 px-4 py-2 rounded-xl border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50 transition"
+                      onClick={() => {
+                        if (!isStoreOpen) {
+                          showToast.error(closedMessage || "La tienda está cerrada actualmente");
+                          return;
+                        }
+                        navigate("/checkout");
+                      }}
+                      disabled={!isStoreOpen}
+                      className={`flex-1 px-4 py-2 rounded-xl font-semibold border-2 transition-all duration-300 ${isStoreOpen
+                        ? "border-pink-500 text-pink-600 hover:bg-pink-50"
+                        : "border-gray-300 text-gray-400 cursor-not-allowed bg-gray-100"
+                        }`}
                       type="button"
                     >
-                      {content.cart.view_cart}
+                      {isStoreOpen ? content.cart.view_cart : "Tienda cerrada"}
                     </button>
+
                   </div>
                 </div>
               ) : (
                 <button
                   onClick={handleAdd}
                   disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
-                  className={`w-full px-6 py-3 rounded-xl font-bold transition ${
-                    sinStock || (product.tieneVariantes && !varianteSeleccionada)
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
-                  }`}
+                  className={`w-full px-6 py-3 rounded-xl font-bold transition ${sinStock || (product.tieneVariantes && !varianteSeleccionada)
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
+                    }`}
                   type="button"
                 >
                   {sinStock
@@ -352,12 +363,23 @@ const ProductDetail: React.FC = () => {
                       +
                     </button>
                     <button
-                      onClick={() => navigate('/checkout')}
-                      className="ml-2 px-4 py-2 rounded-xl border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50 transition"
+                      onClick={() => {
+                        if (!isStoreOpen) {
+                          showToast.error(closedMessage || "La tienda está cerrada actualmente");
+                          return;
+                        }
+                        navigate("/checkout");
+                      }}
+                      disabled={!isStoreOpen}
+                      className={`flex-1 px-4 py-2 rounded-xl font-semibold border-2 transition-all duration-300 ${isStoreOpen
+                          ? "border-pink-500 text-pink-600 hover:bg-pink-50"
+                          : "border-gray-300 text-gray-400 cursor-not-allowed bg-gray-100"
+                        }`}
                       type="button"
                     >
-                      {content.cart.view_cart}
+                      {isStoreOpen ? content.cart.view_cart : "Tienda cerrada"}
                     </button>
+
                   </div>
                 </div>
               ) : (
@@ -365,11 +387,10 @@ const ProductDetail: React.FC = () => {
                   <button
                     onClick={handleAdd}
                     disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
-                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${
-                      sinStock || (product.tieneVariantes && !varianteSeleccionada)
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
-                    }`}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${sinStock || (product.tieneVariantes && !varianteSeleccionada)
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
+                      }`}
                     type="button"
                   >
                     {sinStock
