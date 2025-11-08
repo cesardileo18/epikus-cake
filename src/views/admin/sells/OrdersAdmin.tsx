@@ -2,9 +2,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '@/config/firebase';
+import toast from 'react-hot-toast';
 import {
   collection,
   doc,
+  deleteDoc,
   onSnapshot,
   orderBy,
   query,
@@ -22,6 +24,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { sendEmail } from '@/config/emailjs'; // 👈 agregado
+import { showToast } from '@/components/Toast/ToastProvider';
 
 type OrderStatus = 'pendiente' | 'en_proceso' | 'entregado' | 'cancelado';
 
@@ -92,15 +95,15 @@ const getItemUnitPrice = (it: OrderItem) =>
   typeof it.precio === 'number'
     ? it.precio
     : typeof it.precioUnitario === 'number'
-    ? it.precioUnitario
-    : 0;
+      ? it.precioUnitario
+      : 0;
 
 const getItemSubtotal = (it: OrderItem) =>
   typeof it.subtotal === 'number'
     ? it.subtotal
     : typeof it.subtotalItem === 'number'
-    ? it.subtotalItem
-    : getItemUnitPrice(it) * (it.cantidad ?? 0);
+      ? it.subtotalItem
+      : getItemUnitPrice(it) * (it.cantidad ?? 0);
 
 const getOrderTotal = (o: Order) =>
   typeof o.total === 'number' ? o.total : (o.pricing?.total ?? 0);
@@ -108,12 +111,12 @@ const getOrderTotal = (o: Order) =>
 const fmtDateTime = (ts?: Timestamp) =>
   ts
     ? ts.toDate().toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
     : '—';
 
 const statusCfg = (s: OrderStatus) => {
@@ -141,7 +144,44 @@ const statusCfg = (s: OrderStatus) => {
   } as const;
   return map[s] ?? map.pendiente;
 };
+const eliminarPedido = async (o: Order) => {
+  const ok = await confirmToast(`¿Eliminar definitivamente el pedido #${o.id}? Esta acción no se puede deshacer.`);
+  if (!ok) return;
 
+  try {
+    await deleteDoc(doc(db, 'pedidos', o.id));
+    showToast.success(`Pedido #${o.id} eliminado correctamente ✨`);
+  } catch (error) {
+    console.error('Error eliminando pedido:', error);
+    showToast.error('Error al eliminar el pedido. Revisá la consola.');
+  }
+};
+
+const confirmToast = (msg: string): Promise<boolean> =>
+  new Promise((resolve) => {
+    const id = toast.custom(
+      () => (
+        <div className="max-w-sm w-full bg-white rounded-2xl border-2 border-rose-200 shadow-lg p-4">
+          <p className="text-sm text-gray-800 mb-3">{msg}</p>
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={() => { toast.dismiss(id); resolve(false); }}
+              className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => { toast.dismiss(id); resolve(true); }}
+              className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 10000 } // 10s para decidir
+    );
+  });
 // ===== Helpers de email (solo UI + texto)
 const buildProductosHTML = (o: Order) =>
   o.items
@@ -298,14 +338,16 @@ const OrdersAdmin: React.FC = () => {
   };
 
   const cancelarPedido = async (o: Order) => {
-    const ok = confirm('¿Seguro que querés cancelar este pedido? Esto NO repone stock automáticamente.');
+    const ok = await confirmToast(`¿Cancelar el pedido #${o.id}? Esto no repone stock automáticamente.`);
     if (!ok) return;
-    const ref = doc(db, 'pedidos', o.id);
-    await updateDoc(ref, {
+
+    await updateDoc(doc(db, 'pedidos', o.id), {
       status: 'cancelado',
       updatedAt: serverTimestamp(),
     });
+    showToast.success(`Pedido #${o.id} cancelado`);
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 px-4 pt-20 pb-10">
@@ -501,6 +543,14 @@ const OrdersAdmin: React.FC = () => {
                         >
                           Cancelar
                         </button>
+                        <button
+                          onClick={() => eliminarPedido(o)}
+                          className="px-3 py-2 rounded-lg text-sm font-semibold border bg-white text-red-600 hover:bg-red-50"
+                          title="Eliminar definitivamente este pedido"
+                        >
+                          Eliminar
+                        </button>
+
                       </div>
 
                       {o.status === 'entregado' && (
