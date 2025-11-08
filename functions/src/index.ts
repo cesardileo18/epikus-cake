@@ -5,10 +5,14 @@ import type { Request, Response } from "express";
 import { defineString } from "firebase-functions/params";
 import * as nodemailer from "nodemailer";
 import { google } from "googleapis";
-
+import * as admin from "firebase-admin";
+admin.initializeApp();
 setGlobalOptions({ region: "southamerica-east1", maxInstances: 10 });
 
-const MP_ACCESS_TOKEN = "APP_USR-3474946577848305-101116-a58950c687f436f321f334654137576b-211153688";
+const isLocal = process.env.FUNCTIONS_EMULATOR === "true";
+const MP_ACCESS_TOKEN = isLocal
+  ? process.env.MERCADOPAGO_TOKEN_TEST
+  : process.env.MERCADOPAGO_TOKEN_PROD;
 
 // Define las variables de entorno para Gmail
 const gmailClientId = defineString("GMAIL_CLIENT_ID");
@@ -17,13 +21,22 @@ const gmailRefreshToken = defineString("GMAIL_REFRESH_TOKEN");
 const gmailEmail = defineString("GMAIL_EMAIL");
 const recaptchaSecret = defineString("RECAPTCHA_SECRET");
 
-// 🌐 Test endpoint
+// ✅ SEGURIDAD: Función auxiliar para sanitizar strings
+// Elimina caracteres peligrosos (<, >) que podrían usarse para inyectar código HTML/JavaScript
+// Esto previene ataques XSS (Cross-Site Scripting)
+function sanitize(text: string | null, maxLength: number): string | null {
+  if (!text) return null;
+  // Remueve < y > para prevenir tags HTML, recorta espacios y limita longitud
+  return text.replace(/[<>]/g, '').trim().slice(0, maxLength);
+}
+
+// Test endpoint
 export const ping = onRequest((req: Request, res: Response): void => {
   res.set("Access-Control-Allow-Origin", "*");
   res.status(200).send("ok");
 });
 
-// 💳 Crear preferencia Mercado Pago
+// Crear preferencia Mercado Pago
 export const createPreference = onRequest(
   async (req: Request, res: Response): Promise<void> => {
     res.set("Access-Control-Allow-Origin", "*");
@@ -41,8 +54,9 @@ export const createPreference = onRequest(
     }
 
     try {
-      const { amount, description, orderId } = req.body || {}; // ← Agregado orderId
-      if (!amount || !description || !orderId) { // ← Validación
+      const { items, orderId } = req.body || {};
+      
+      if (!items || !Array.isArray(items) || items.length === 0 || !orderId) {
         res.status(400).json({ error: "Faltan parámetros" });
         return;
       }
@@ -54,19 +68,17 @@ export const createPreference = onRequest(
       }
 
       const preference = {
-        items: [
-          {
-            title: description,
-            unit_price: Number(amount),
-            quantity: 1,
-          },
-        ],
+        items: items.map((item: any) => ({
+          title: `${item.nombre}${item.variantLabel ? ` (${item.variantLabel})` : ''}`,
+          unit_price: Number(item.precioUnitario),
+          quantity: Number(item.cantidad),
+        })),
         back_urls: {
-          success: `https://epikuscake.web.app/payment-success?orderId=${orderId}`, // ← Usa orderId
+          success: `https://epikuscake.web.app/payment-success?orderId=${orderId}`,
           failure: "https://epikuscake.web.app/confirm-order",
         },
         auto_return: "approved",
-        external_reference: orderId, // ← Opcional pero recomendado
+        external_reference: orderId,
       };
 
       const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
@@ -91,8 +103,80 @@ export const createPreference = onRequest(
     }
   }
 );
+// Webhook de notificaciones de Mercado Pago
+export const mercadopagoWebhook = onRequest(async (req: Request, res: Response): Promise<void> => {
+  // CORS
+  res.set("Access-Control-Allow-Origin", "*");
 
-// 📧 Función auxiliar para crear el transporter de Nodemailer
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Método no permitido" });
+    return;
+  }
+
+  try {
+    const { type, data } = req.body;
+
+    // MercadoPago envía varios tipos de notificaciones, solo nos interesa "payment"
+    if (type !== "payment") {
+      res.status(200).send("ok");
+      return;
+    }
+
+    const paymentId = data?.id;
+    if (!paymentId) {
+      res.status(400).json({ error: "Payment ID no encontrado" });
+      return;
+    }
+
+    // Consultar el pago a la API de MercadoPago para obtener detalles
+    const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` }
+    });
+
+    const payment = await response.json();
+
+    // Obtener el orderId que guardaste en external_reference
+    const orderId = payment.external_reference;
+    const status = payment.status; // "approved", "rejected", "pending", etc.
+
+    if (!orderId) {
+      console.error("❌ Pago sin external_reference:", paymentId);
+      res.status(200).send("ok");
+      return;
+    }
+
+    // Actualizar el estado de la orden según el resultado del pago
+    const orderRef = admin.firestore().collection('pedidos').doc(orderId);
+
+    if (status === 'approved') {
+      await orderRef.update({
+        status: 'en_proceso',
+        'pago.acreditado': true,
+        'pago.mercadopagoId': paymentId,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } else if (status === 'rejected') {
+      await orderRef.update({
+        status: 'cancelado',
+        'pago.mercadopagoId': paymentId,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    console.log(`✅ Webhook procesado - Order: ${orderId}, Payment: ${paymentId}, Status: ${status}`);
+    res.status(200).send("ok");
+
+  } catch (err: any) {
+    console.error("❌ Error en webhook:", err);
+    res.status(500).json({ error: err?.message ?? "Error interno" });
+  }
+});
+// Función auxiliar para crear el transporter de Nodemailer
 async function createTransporter() {
   const OAuth2 = google.auth.OAuth2;
 
@@ -121,11 +205,10 @@ async function createTransporter() {
   });
 }
 
-// 📧 Enviar email
+// Enviar email
 export const sendEmail = onCall(async (request) => {
   const { to, subject, text, html } = request.data;
 
-  // Validación básica
   if (!to || !subject) {
     throw new Error("Faltan parámetros requeridos: to, subject");
   }
@@ -151,7 +234,7 @@ export const sendEmail = onCall(async (request) => {
   }
 });
 
-// 🛡️ Verificar reCAPTCHA
+// Verificar reCAPTCHA
 export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Promise<void> => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -179,14 +262,346 @@ export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Pr
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ secret, response: token }),
     });
-    const data = await verifyResp.json(); // { success, score, action, ... }
+    const data = await verifyResp.json();
 
     const score = typeof data.score === "number" ? data.score : 0;
-    const ok = !!data.success && score >= 0.5; // umbral ajustable
+    const ok = !!data.success && score >= 0.5;
 
     res.status(200).json({ ok, score });
   } catch (err: any) {
     console.error("reCAPTCHA verify error:", err);
     res.status(500).json({ ok: false, error: err?.message ?? "internal-error" });
   }
+});
+
+// Validar carrito antes de confirmar
+export const validateCart = onCall(async (request) => {
+  const { items } = request.data;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("Carrito vacío o inválido");
+  }
+
+  try {
+    const validatedItems = [];
+    let subtotal = 0;
+
+    for (const item of items) {
+      const { productId, variantId, quantity } = item;
+
+      const realProductId = productId.includes('-')
+        ? productId.split('-')[0]
+        : productId;
+
+      const productDoc = await admin.firestore()
+        .collection('productos')
+        .doc(realProductId)
+        .get();
+
+      if (!productDoc.exists) {
+        throw new Error(`Producto no encontrado: ${realProductId}`);
+      }
+
+      const producto = productDoc.data()!;
+
+      if (!producto.activo) {
+        throw new Error(`El producto "${producto.nombre}" ya no está disponible`);
+      }
+
+      let precioReal = 0;
+      let stockDisponible = 0;
+      let variantLabel = null;
+
+      if (producto.tieneVariantes && Array.isArray(producto.variantes)) {
+        if (!variantId) {
+          throw new Error(`Debes seleccionar un tamaño para "${producto.nombre}"`);
+        }
+
+        const variant = producto.variantes.find((v: any) => v.id === variantId);
+        if (!variant) {
+          throw new Error(`Variante no encontrada para "${producto.nombre}"`);
+        }
+
+        precioReal = Number(variant.precio ?? 0);
+        stockDisponible = Number(variant.stock ?? 0);
+        variantLabel = variant.label;
+      } else {
+        precioReal = Number(producto.precio ?? 0);
+        stockDisponible = Number(producto.stock ?? 0);
+      }
+
+      if (stockDisponible < quantity) {
+        throw new Error(
+          `Stock insuficiente para "${producto.nombre}"${variantLabel ? ` (${variantLabel})` : ''}. Disponible: ${stockDisponible}, solicitado: ${quantity}`
+        );
+      }
+
+      if (precioReal <= 0) {
+        throw new Error(`Precio inválido para "${producto.nombre}"`);
+      }
+
+      const subtotalItem = precioReal * quantity;
+      subtotal += subtotalItem;
+
+      validatedItems.push({
+        productId: item.productId,
+        realProductId,
+        variantId: variantId || null,
+        variantLabel,
+        nombre: producto.nombre,
+        precioUnitario: precioReal,
+        cantidad: quantity,
+        stockDisponible,
+        subtotalItem,
+      });
+    }
+
+    return {
+      ok: true,
+      items: validatedItems,
+      subtotal,
+      timestamp: Date.now(),
+    };
+
+  } catch (error: any) {
+    console.error("❌ Error en validateCart:", error);
+    throw new Error(error.message || "Error al validar el carrito");
+  }
+});
+
+// 🧩 Crear orden atómica: valida, descuenta stock y crea el documento en /pedidos
+export const createOrder = onCall(async (request) => {
+  // ✅ PASO 1: VERIFICAR AUTENTICACIÓN
+  // ANTES: Confiábamos en el userUid que venía del cliente (request.data)
+  // AHORA: Tomamos el userUid del token JWT que Firebase verifica automáticamente
+  // Esto previene que alguien cree órdenes haciéndose pasar por otro usuario
+  if (!request.auth) {
+    throw new Error('Usuario no autenticado');
+  }
+  const userUid = request.auth.uid; // ← Este userUid es 100% confiable
+
+  const {
+    items,                 // [{ productId, variantId?, quantity }]
+    customer,              // { nombre, email|null, whatsapp }
+    entrega,               // { tipo: 'retiro', fecha, hora }
+    pago,                  // { metodoSeleccionado: 'transferencia'|'mercadopago' }
+    dedicatoria = null,    // string|null
+    cantidadPersonas = null, // string|null
+    notas = null,          // string|null
+    source = 'web',        // string
+    terminosAceptados = false, // ← NUEVO
+  } = request.data || {};
+
+  // Validaciones básicas de datos requeridos
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('Carrito vacío o inválido');
+  }
+  if (!customer?.nombre || !customer?.whatsapp || !entrega?.fecha || !entrega?.hora) {
+    throw new Error('Faltan datos requeridos de la orden');
+  }
+  if (!pago?.metodoSeleccionado || !['transferencia', 'mercadopago'].includes(pago.metodoSeleccionado)) {
+    throw new Error('Método de pago inválido');
+  }
+  if (!terminosAceptados) { // ← NUEVO
+    throw new Error('Debes aceptar los Términos y Condiciones.');
+  }
+
+  // ✅ PASO 2: RATE LIMITING (protección contra spam)
+  // Guardamos en Firestore la última vez que este usuario creó una orden
+  // Si intenta crear otra orden en menos de 30 segundos, la bloqueamos
+  // Esto previene que bots o usuarios maliciosos creen miles de órdenes
+  const rateLimitRef = admin.firestore().collection('rateLimits').doc(userUid);
+  const rateLimitDoc = await rateLimitRef.get();
+  const now = Date.now();
+
+  if (rateLimitDoc.exists) {
+    const lastOrder = rateLimitDoc.data()?.lastOrderTime || 0;
+    // Si la última orden fue hace menos de 30 segundos (30000 ms), rechazamos
+    if (now - lastOrder < 30000) {
+      throw new Error('Esperá 30 segundos antes de crear otra orden');
+    }
+  }
+
+  // ✅ PASO 3: SANITIZAR TEXTOS (protección contra XSS)
+  // Los campos de texto libre (dedicatoria, notas, alergias) podrían contener
+  // código malicioso como <script>alert('hack')</script>
+  // La función sanitize() elimina los caracteres peligrosos < y >
+  const dedicatoriaSafe = sanitize(dedicatoria, 500);    // Máximo 500 caracteres
+  const notasSafe = sanitize(notas, 1000);               // Máximo 1000 caracteres
+
+  // Reglas de pricing (calculadas en backend para evitar manipulación)
+  const DESCUENTO_TRANSFERENCIA = 10;
+
+  // ✅ PASO 4: TRANSACCIÓN ATÓMICA
+  // Creamos la referencia del documento de la orden ANTES de la transacción
+  // Así sabemos qué ID tendrá la orden antes de crearla
+  const orderRef = admin.firestore().collection('pedidos').doc();
+
+  // runTransaction garantiza que TODO suceda o NADA suceda (atomicidad)
+  // Si algo falla (ej: stock insuficiente), se revierte TODO automáticamente
+  await admin.firestore().runTransaction(async (tx) => {
+    let subtotal = 0;
+    const itemsOut: any[] = [];
+
+    // ✅ PASO 4.1: VALIDAR CADA PRODUCTO Y DESCONTAR STOCK
+    for (const it of items) {
+      const { productId, variantId, quantity } = it;
+
+      // Validar que el ítem tenga datos válidos
+      if (!productId || typeof quantity !== 'number' || quantity <= 0) {
+        throw new Error('Ítem inválido en el carrito');
+      }
+
+      // Extraer el ID real del producto (puede venir como "prod123-variant456")
+      const realProductId = productId.includes('-') ? productId.split('-')[0] : productId;
+
+      // Obtener el producto de Firestore DENTRO de la transacción
+      // Esto garantiza que leemos la versión más actual del stock
+      const pRef = admin.firestore().collection('productos').doc(realProductId);
+      const snap = await tx.get(pRef);
+
+      if (!snap.exists) throw new Error(`Producto no encontrado: ${realProductId}`);
+
+      const producto = snap.data() as any;
+
+      // Validar que el producto esté activo
+      if (!producto.activo) {
+        throw new Error(`El producto "${producto.nombre}" ya no está disponible`);
+      }
+
+      let precioUnitario = 0;
+      let stockDisponible = 0;
+      let variantLabel: string | null = null;
+
+      // ✅ CASO A: Producto con variantes (ej: tortas con diferentes tamaños)
+      if (producto.tieneVariantes && Array.isArray(producto.variantes)) {
+        if (!variantId) throw new Error(`Debes seleccionar un tamaño para "${producto.nombre}"`);
+
+        const variantes = producto.variantes as any[];
+        const idx = variantes.findIndex((v) => v.id === variantId);
+
+        if (idx === -1) throw new Error(`Variante no encontrada para "${producto.nombre}"`);
+
+        const variante = variantes[idx];
+        precioUnitario = Number(variante.precio ?? 0);
+        stockDisponible = Number(variante.stock ?? 0);
+        variantLabel = variante.label;
+
+        // Validar stock suficiente
+        if (stockDisponible < quantity) {
+          throw new Error(
+            `Stock insuficiente para "${producto.nombre}"${variantLabel ? ` (${variantLabel})` : ''}. Disponible: ${stockDisponible}, solicitado: ${quantity}`
+          );
+        }
+
+        // Validar precio positivo
+        if (precioUnitario <= 0) throw new Error(`Precio inválido para "${producto.nombre}"`);
+
+        // ✅ DESCONTAR STOCK de la variante específica
+        // Creamos una copia de la variante con el stock actualizado
+        variantes[idx] = { ...variante, stock: stockDisponible - quantity };
+        // Actualizamos el array de variantes en Firestore (dentro de la transacción)
+        tx.update(pRef, { variantes });
+
+      }
+      // ✅ CASO B: Producto sin variantes (stock y precio único)
+      else {
+        precioUnitario = Number(producto.precio ?? 0);
+        stockDisponible = Number(producto.stock ?? 0);
+
+        // Validar stock suficiente
+        if (stockDisponible < quantity) {
+          throw new Error(`Stock insuficiente para "${producto.nombre}". Disponible: ${stockDisponible}, solicitado: ${quantity}`);
+        }
+
+        // Validar precio positivo
+        if (precioUnitario <= 0) throw new Error(`Precio inválido para "${producto.nombre}"`);
+
+        // ✅ DESCONTAR STOCK del producto base
+        tx.update(pRef, { stock: stockDisponible - quantity });
+      }
+
+      // Calcular subtotal del ítem
+      const subtotalItem = precioUnitario * quantity;
+      subtotal += subtotalItem;
+
+      // Guardar información del ítem procesado
+      itemsOut.push({
+        productId,                 // Mantener el ID completo (puede incluir variante)
+        variantId: variantId || null,
+        variantLabel,
+        nombre: producto.nombre,
+        precioUnitario,            // ← Precio REAL del backend, no del cliente
+        cantidad: quantity,
+        subtotalItem,
+      });
+    }
+
+    // ✅ PASO 4.2: CALCULAR PRICING (en backend, no confiamos en el cliente)
+    const aplicaDescuento = pago.metodoSeleccionado === 'transferencia';
+    const descuentoPorcentaje = aplicaDescuento ? DESCUENTO_TRANSFERENCIA : 0;
+    const descuentoMonto = aplicaDescuento ? Math.round(subtotal * (DESCUENTO_TRANSFERENCIA / 100)) : 0;
+    const total = Math.max(0, subtotal - descuentoMonto);
+
+    // Calcular si requiere seña (50% del total para transferencias)
+    const requiereSenia = pago.metodoSeleccionado === 'transferencia';
+    const seniaMonto = requiereSenia ? Math.round(total * 0.5) : 0;
+    const saldoRestante = requiereSenia ? Math.max(0, total - seniaMonto) : 0;
+
+    // Determinar tipo de liquidación (online si paga con MercadoPago)
+    const liquidacion = pago.metodoSeleccionado === 'mercadopago' ? 'online' : 'offline';
+
+    // ✅ PASO 4.3: CREAR EL DOCUMENTO DE LA ORDEN
+    // Todo esto se ejecuta dentro de la transacción, si algo falla, se revierte
+    tx.set(orderRef, {
+      status: 'pendiente',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      userUid,  // ← userUid verificado del token, no del cliente
+      customer: {
+        nombre: customer.nombre,
+        email: customer.email || null,
+        whatsapp: customer.whatsapp,
+      },
+      entrega: {
+        tipo: entrega.tipo || 'retiro',
+        fecha: entrega.fecha,
+        hora: entrega.hora,
+      },
+      pago: {
+        metodoSeleccionado: pago.metodoSeleccionado,
+        aplicaDescuento,
+        requiereSenia,
+        seniaMonto,
+        saldoRestante,
+        liquidacion,
+        acreditado: false,
+      },
+      pricing: {
+        subtotal,              // ← Calculado en backend
+        descuentoPorcentaje,   // ← Calculado en backend
+        descuentoMonto,        // ← Calculado en backend
+        total,                 // ← Calculado en backend
+      },
+      notasInternas: null,
+      dedicatoria: dedicatoriaSafe,    // ← Texto sanitizado (sin < >)
+      cantidadPersonas,
+      terminosAceptados: !!terminosAceptados, // ← NUEVO
+      notas: notasSafe,                // ← Texto sanitizado
+      items: itemsOut,                 // ← Items con precios del backend
+      source,
+    });
+  });
+  // ← Aquí termina la transacción. Si llegamos acá, TODO se guardó correctamente
+
+  // ✅ PASO 5: ACTUALIZAR RATE LIMIT
+  // Guardamos el timestamp de AHORA como la última vez que este usuario creó una orden
+  // La próxima vez que intente crear una orden, verificaremos este timestamp
+  await rateLimitRef.set({ lastOrderTime: now });
+
+  // ✅ PASO 6: RESPONDER AL CLIENTE
+  // Devolvemos el ID de la orden creada
+  return {
+    ok: true,
+    orderId: orderRef.id,
+  };
 });

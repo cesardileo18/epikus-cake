@@ -1,9 +1,9 @@
 // src/views/ConfirmOrder.tsx
 import React, { useMemo, useState, useRef } from 'react';
+import { v4 as uuidv4 } from "uuid"; // npm i uuid
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartProvider';
-import { db, auth } from '@/config/firebase';
-import { collection, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { functions, auth } from '@/config/firebase';
 import MercadoPagoCheckout from '@/components/mercadoPago/MercadoPagoCheckout';
 import {
   HiUser, HiEnvelope, HiPhone, HiCalendar, HiClock,
@@ -14,16 +14,18 @@ import { useRecaptcha } from '@/hooks/useRecaptcha';
 import ReCaptchaInvisible from '@/components/security/ReCaptchaInvisible';
 import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/Toast/ToastProvider';
-
+import { httpsCallable } from 'firebase/functions';
+import ConsentimientoTyC from '@/components/buttons/ConsentimientoTyC';
 const price = (n: number) => n.toLocaleString('es-AR');
-const WA_PHONE = '5491158651170';
+const WA_PHONE = import.meta.env.VITE_WA_PHONE;
 const DESCUENTO_TRANSFERENCIA = 10;
 
 const ConfirmOrder: React.FC = () => {
+  const [aceptoTerminos, setAceptoTerminos] = useState(false);
   const enviandoRef = useRef(false);
   // ====== estilos animaciones CSS (shimmer / confetti / float)
   const [errorRecaptcha, setErrorRecaptcha] = useState<string | null>(null);
-  const { executeRecaptcha } = useRecaptcha();
+  const { executeRecaptcha } = useRecaptcha(true);
   const Styles = () => (
     <style>{`
       @keyframes shimmer {
@@ -68,7 +70,7 @@ const ConfirmOrder: React.FC = () => {
     hora: '',
     dedicatoria: '',
     cantidadPersonas: '',
-    alergias: '',
+    terminosAceptados: aceptoTerminos,
     notas: '',
   });
   const [enviando, setEnviando] = useState(false);
@@ -93,8 +95,9 @@ const ConfirmOrder: React.FC = () => {
     if (!form.nombre.trim()) return false;
     if (!/^\d{10,15}$/.test(form.whatsapp.replace(/\D/g, ''))) return false;
     if (!form.fecha || !form.hora) return false;
+    if (!aceptoTerminos) return false; // 👈 AGREGAR ESTO
     return items.length > 0;
-  }, [form, items.length]);
+  }, [form, items.length, aceptoTerminos]);
 
   const minDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 48h adelante
 
@@ -108,7 +111,7 @@ const ConfirmOrder: React.FC = () => {
     const extras = [
       form.dedicatoria ? `\nDedicatoria: ${form.dedicatoria}` : '',
       form.cantidadPersonas ? `\nCantidad de personas: ${form.cantidadPersonas}` : '',
-      form.alergias ? `\n⚠️ Alergias/Restricciones: ${form.alergias}` : '',
+      form.terminosAceptados ? `\n✅ Aceptó términos y condiciones: ${form.terminosAceptados}` : '',
       form.notas ? `\nNotas adicionales: ${form.notas}` : ''
     ].join('');
     const politica =
@@ -130,70 +133,6 @@ const ConfirmOrder: React.FC = () => {
     );
   };
 
-  const createOrderAndDecrement = async (userUid: string): Promise<string> => {
-    const orderRef = doc(collection(db, 'pedidos'));
-    await runTransaction(db, async (tx) => {
-      for (const it of items) {
-        const pRef = doc(db, 'productos', it.product.id);
-        const snap = await tx.get(pRef);
-        if (!snap.exists()) throw new Error(`Producto inexistente: ${it.product.nombre}`);
-        const producto = snap.data();
-        if (it.variantId && producto.tieneVariantes && Array.isArray(producto.variantes)) {
-          const variantes = producto.variantes;
-          const idx = variantes.findIndex((v: any) => v.id === it.variantId);
-          if (idx === -1) throw new Error(`Variante no encontrada: ${it.variantLabel}`);
-          const stockVariante = Number(variantes[idx].stock ?? 0);
-          if (stockVariante < it.quantity) throw new Error(`Sin stock suficiente de "${it.product.nombre} (${it.variantLabel})". Quedan ${stockVariante}.`);
-          variantes[idx].stock = stockVariante - it.quantity;
-          tx.update(pRef, { variantes });
-        } else {
-          const stock = Number(producto.stock ?? 0);
-          if (stock < it.quantity) throw new Error(`Sin stock suficiente de "${it.product.nombre}". Quedan ${stock}.`);
-          tx.update(pRef, { stock: stock - it.quantity });
-        }
-      }
-
-      tx.set(orderRef, {
-        status: 'pendiente',
-        createdAt: serverTimestamp(),
-        userUid,
-        customer: { nombre: form.nombre, email: form.email || null, whatsapp: form.whatsapp },
-        entrega: { tipo: 'retiro', fecha: form.fecha, hora: form.hora },
-        pago: {
-          metodoSeleccionado: paymentMethod,
-          aplicaDescuento: pricing.aplicaDescuento,
-          requiereSenia: paymentMethod === 'transferencia',
-          seniaMonto: paymentMethod === 'transferencia' ? pricing.senia50 : 0,
-          saldoRestante: paymentMethod === 'transferencia' ? pricing.saldo50 : 0,
-          liquidacion: paymentMethod === 'mercadopago' ? 'online' : 'offline',
-          acreditado: false,
-        },
-        pricing: {
-          subtotal: pricing.subtotal,
-          descuentoPorcentaje: pricing.descuentoPorcentaje,
-          descuentoMonto: pricing.descuentoMonto,
-          total: pricing.total,
-        },
-        notasInternas: null,
-        dedicatoria: form.dedicatoria || null,
-        cantidadPersonas: form.cantidadPersonas || null,
-        alergias: form.alergias || null,
-        notas: form.notas || null,
-        items: items.map((it) => ({
-          productId: it.product.id,
-          variantId: it.variantId || null,
-          variantLabel: it.variantLabel || null,
-          nombre: it.product.nombre,
-          precioUnitario: it.precio,
-          cantidad: it.quantity,
-          subtotalItem: it.precio * it.quantity,
-        })),
-        source: 'web',
-      });
-    });
-    return orderRef.id;
-  };
-
   const confirmarTransferencia = async () => {
     if (!valido || enviando || enviandoRef.current) return;
     enviandoRef.current = true;
@@ -201,35 +140,63 @@ const ConfirmOrder: React.FC = () => {
     setErrorRecaptcha(null);
 
     try {
-      // 1) reCAPTCHA
+      // 1) reCAPTCHA (igual que antes)
       const recaptchaResult = await executeRecaptcha("confirm_order");
       if (!recaptchaResult.ok || (recaptchaResult.score && recaptchaResult.score < 0.5)) {
-        setErrorRecaptcha('No pudimos verificar que sos humano. Intentá de nuevo.');
+        setErrorRecaptcha("No pudimos verificar que sos humano. Intentá de nuevo.");
         return;
       }
+      const clientRequestId = uuidv4();
+      // 2) Crear orden en backend (validar + decrementar stock + crear pedido), TODO ATÓMICO
+      const createOrder = httpsCallable(functions, "createOrder");
+      const { data }: any = await createOrder({
+        clientRequestId,
+        userUid: auth.currentUser?.uid || "guest",
+        items: items.map((it) => ({
+          productId: it.productId,
+          variantId: it.variantId ?? null,
+          quantity: it.quantity,
+        })),
+        customer: {
+          nombre: form.nombre,
+          email: form.email || null,
+          whatsapp: form.whatsapp
+        },
+        entrega: {
+          tipo: "retiro",
+          fecha: form.fecha,
+          hora: form.hora
+        },
+        pago: {                              // 👈 CAMBIAR ESTO
+          metodoSeleccionado: paymentMethod  // 👈 De paymentMethod a pago.metodoSeleccionado
+        },
+        dedicatoria: form.dedicatoria || null,
+        cantidadPersonas: form.cantidadPersonas || null,
+        terminosAceptados: form.terminosAceptados || null,
+        notas: form.notas || null,
+        source: "web",
+      });
 
-      // 2) Crear la orden (necesitamos el orderId)
-      const user = auth.currentUser!;
-      const orderId = await createOrderAndDecrement(user.uid);
+      const orderId = data?.orderId as string;
+      if (!orderId) throw new Error("No se pudo crear la orden.");
 
-      // 3) Abrir WhatsApp en NUEVA pestaña (sin tocar la actual)
+      // 3) WhatsApp en nueva pestaña (igual que antes)
       const message = buildWaMessage(orderId);
       const waHref = `https://api.whatsapp.com/send?phone=${WA_PHONE}&text=${encodeURIComponent(message)}`;
-
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = waHref;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
       document.body.appendChild(a);
       a.click();
       a.remove();
 
-      // 4) Limpiar y navegar al comprobante (tu SPA)
+      // 4) Limpiar y navegar al comprobante (igual que antes)
       clear();
       setCelebrate(true);
       nav(`/payment-success?orderId=${orderId}`);
 
-      // 5) Emails EN PARALELO (no bloquean la UX)
+      // 5) Emails EN PARALELO (igual que antes)
       const tasks: Promise<unknown>[] = [];
 
       if (form.email) {
@@ -246,20 +213,26 @@ const ConfirmOrder: React.FC = () => {
                 <p><strong>Total:</strong> $${price(pricing.total)}</p>
                 <p><strong>Seña (50%):</strong> $${price(pricing.senia50)}</p>
                 <p><strong>Retiro:</strong> ${form.fecha} a las ${form.hora}</p>
+                <p>Términos: ${form.terminosAceptados ? "ACEPTADOS" : "NO aceptados"}</p>
               </div>
               <p>En breve te contactamos por WhatsApp para coordinar el pago de la seña.</p>
               <p><strong>Recordá:</strong> Tu pedido queda confirmado al acreditar la seña del 50%.</p>
               <p style="margin-top: 30px;">Gracias por confiar en Epikus Cake 💖</p>
             </div>
           `,
-            text: `Pedido #${orderId} confirmado. Total: $${price(pricing.total)}. Seña 50%: $${price(pricing.senia50)}. Retiro: ${form.fecha} ${form.hora}`
-          }).catch(err => console.error('Email cliente falló:', err))
+            text: `Pedido #${orderId} confirmado. Total: $${price(pricing.total)}. Seña 50%: $${price(pricing.senia50)}. Retiro: ${form.fecha} ${form.hora}`,
+          }).catch((err) => console.error("Email cliente falló:", err))
         );
       }
 
-      const productosHTML = items.map(it =>
-        `<li>${it.product.nombre}${it.variantLabel ? ` (${it.variantLabel})` : ''} x${it.quantity} — $${price(it.precio * it.quantity)}</li>`
-      ).join('');
+      const productosHTML = items
+        .map(
+          (it) =>
+            `<li>${it.product.nombre}${it.variantLabel ? ` (${it.variantLabel})` : ""} x${it.quantity} — $${price(
+              it.precio * it.quantity
+            )}</li>`
+        )
+        .join("");
 
       tasks.push(
         sendEmail({
@@ -272,8 +245,9 @@ const ConfirmOrder: React.FC = () => {
             <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
               <h3 style="margin-top: 0;">👤 Datos del cliente</h3>
               <p><strong>Nombre:</strong> ${form.nombre}</p>
-              <p><strong>Email:</strong> ${form.email || 'No proporcionó'}</p>
+              <p><strong>Email:</strong> ${form.email || "No proporcionó"}</p>
               <p><strong>WhatsApp:</strong> ${form.whatsapp}</p>
+              <p>Términos: ${form.terminosAceptados ? "ACEPTADOS" : "NO aceptados"}</p>
             </div>
             <div style="background: #fdf2f8; padding: 15px; border-radius: 8px; margin: 15px 0;">
               <h3 style="margin-top: 0;">🛍️ Productos</h3>
@@ -282,11 +256,11 @@ const ConfirmOrder: React.FC = () => {
             <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin: 15px 0;">
               <h3 style="margin-top: 0;">💰 Pago</h3>
               <p><strong>Subtotal:</strong> $${price(pricing.subtotal)}</p>
-              ${pricing.aplicaDescuento ? `<p><strong>Descuento ${pricing.descuentoPorcentaje}%:</strong> -$${price(pricing.descuentoMonto)}</p>` : ''}
+              ${pricing.aplicaDescuento ? `<p><strong>Descuento ${pricing.descuentoPorcentaje}%:</strong> -$${price(pricing.descuentoMonto)}</p>` : ""}
               <p style="font-size: 18px;"><strong>TOTAL:</strong> $${price(pricing.total)}</p>
               <p><strong>Seña (50%):</strong> $${price(pricing.senia50)}</p>
               <p><strong>Saldo al retirar:</strong> $${price(pricing.saldo50)}</p>
-              <p><strong>Método:</strong> ${paymentMethod === 'transferencia' ? 'Transferencia/Efectivo' : 'MercadoPago'}</p>
+              <p><strong>Método:</strong> ${paymentMethod === "transferencia" ? "Transferencia/Efectivo" : "MercadoPago"}</p>
             </div>
             <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
               <h3 style="margin-top: 0;">📅 Retiro</h3>
@@ -298,25 +272,25 @@ const ConfirmOrder: React.FC = () => {
                 <h3 style="margin-top: 0;">📝 Notas especiales</h3>
                 <p>${form.notas}</p>
               </div>
-            ` : ''}
+            ` : ""}
             <p style="color: #666; font-size: 12px; margin-top: 30px;">Este email se envió automáticamente desde el sitio web.</p>
           </div>
         `,
-          text: `Nueva compra #${orderId}\nCliente: ${form.nombre}\nWhatsApp: ${form.whatsapp}\nTotal: $${price(pricing.total)}\nRetiro: ${form.fecha} ${form.hora}`
-        }).catch(err => console.error('Email interno falló:', err))
+          text: `Nueva compra #${orderId}\nCliente: ${form.nombre}\nWhatsApp: ${form.whatsapp}\nTotal: $${price(
+            pricing.total
+          )}\nRetiro: ${form.fecha} ${form.hora}`,
+        }).catch((err) => console.error("Email interno falló:", err))
       );
 
-      Promise.allSettled(tasks).then(() => { }).catch(() => { });
+      Promise.allSettled(tasks);
     } catch (e: any) {
       console.error(e);
-      showToast.error(e?.message || 'No se pudo confirmar el pedido.');
-
+      showToast.error(e?.message || "No se pudo confirmar el pedido.");
     } finally {
       setEnviando(false);
       enviandoRef.current = false;
     }
   };
-
 
   if (items.length === 0) {
     return (
@@ -551,6 +525,14 @@ const ConfirmOrder: React.FC = () => {
                       {errorRecaptcha}
                     </div>
                   )}
+                  <ConsentimientoTyC
+                    accepted={aceptoTerminos}
+                    onChange={(v) => {
+                      setAceptoTerminos(v);
+                      setForm((f) => ({ ...f, terminosAceptados: v }));
+                    }}
+                    termsUrl="/terminos"
+                  />
                   <motion.button
                     whileHover={{ y: -1, scale: 1.005 }}
                     whileTap={{ scale: 0.995 }}
@@ -571,17 +553,43 @@ const ConfirmOrder: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <span>✅</span> Confirmar por WhatsApp
+                        <span>✅</span> Finalizar pedido
                       </>
                     )}
                   </motion.button>
                 </>
               ) : (
-                <MercadoPagoCheckout
-                  amount={total} // sin descuento en MP
-                  description="Pedido Epikus Cake"
-                  onError={(e) => showToast.error('Error en el pago: ' + (e?.message ?? e))}
-                />
+                <>
+                  <ConsentimientoTyC
+                    accepted={aceptoTerminos}
+                    onChange={(v) => {
+                      setAceptoTerminos(v);
+                      setForm((f) => ({ ...f, terminosAceptados: v }));
+                    }}
+                    termsUrl="/terminos"
+                  />
+
+                  {aceptoTerminos ? (
+                    <MercadoPagoCheckout
+                      amount={total}
+                      form={form}
+                      items={items}
+                      description="Pedido Epikus Cake"
+                      onError={(e) => showToast.error('Error en el pago: ' + (e?.message ?? e))}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-3 rounded-xl bg-gray-200 text-gray-600 cursor-not-allowed font-semibold text-sm"
+                      title="Debes aceptar los Términos y Condiciones para continuar"
+                    >
+                      Aceptá TyC para pagar
+                    </button>
+
+                  )}
+                </>
+
               )}
 
               <Link to="/checkout" className="block text-center text-pink-600 hover:text-pink-700 hover:underline font-medium py-3">
@@ -589,8 +597,7 @@ const ConfirmOrder: React.FC = () => {
               </Link>
 
               <p className="text-xs text-gray-500 text-center">
-                La fecha y hora se reservan al acreditar la seña del 50% (transferencia/efectivo). Ver{' '}
-                <Link to="/terminos" className="underline">Términos y Condiciones</Link>.
+                La fecha y hora se reservan al acreditar la seña del 50% (transferencia/efectivo).
               </p>
             </div>
           </motion.div>

@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { sendEmailLink, signInWithGoogle } from '@/auth/auth';
 
+import loginJson from '@/content/loginContent.json';
+import type { LoginContent } from '@/interfaces/LoginContent';
+const content: LoginContent = loginJson as LoginContent;
+
 // Util
 const isValidEmail = (v: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -37,7 +41,7 @@ const Login: React.FC = () => {
       await signInWithGoogle();
       navigate(redirect);
     } catch {
-      setError('No pudimos iniciar sesión con Google. Intenta nuevamente.');
+      setError(content.google.error);
     } finally {
       setLoadingGoogle(false);
     }
@@ -49,9 +53,9 @@ const Login: React.FC = () => {
       setLoadingEmail(true);
       await sendEmailLink(email, redirect);
       setSent(true);
-      setCooldown(60); // 60s para reenviar
+      setCooldown(content.email.cooldown_seconds);
     } catch {
-      setError('No pudimos enviar el enlace. Revisa el correo e intenta otra vez.');
+      setError(content.email.error);
     } finally {
       setLoadingEmail(false);
     }
@@ -65,28 +69,26 @@ const Login: React.FC = () => {
 
   return (
     <main className="relative min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 overflow-hidden">
-      {/* Shapes del fondo (como en Home) */}
+      {/* Shapes del fondo */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-10 -left-10 w-44 h-44 rounded-full bg-gradient-to-r from-pink-400 to-rose-300 opacity-20 blur-2xl animate-bounce" />
         <div className="absolute bottom-16 right-10 w-24 h-24 rounded-full bg-gradient-to-r from-yellow-400 to-orange-300 opacity-30 blur-xl animate-pulse" />
         <div className="absolute top-1/3 -right-6 w-20 h-20 rounded-full bg-gradient-to-r from-purple-400 to-pink-300 opacity-25 blur-xl animate-bounce" />
       </div>
 
-      {/* MISMO LAYOUT QUE HOME */}
       <div className="relative z-10 pt-28 md:pt-32 pb-24">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Centro el card dentro del contenedor */}
           <section className="grid place-items-center">
             <div className="w-full max-w-xl rounded-3xl bg-white/70 backdrop-blur-xl border border-pink-100 shadow-[0_20px_60px_rgba(244,114,182,0.15)] p-8 md:p-10">
               <header className="text-center mb-8">
-                {/* Título estilo hero con highlight en “sesión” */}
-                <h1
-                  className="text-[clamp(2rem,6.5vw,3.5rem)] leading-[1.1] font-extralight tracking-tight text-slate-900"
-                >
-                  Iniciar <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">sesión</span>
+                <h1 className="text-[clamp(2rem,6.5vw,3.5rem)] leading-[1.1] font-extralight tracking-tight text-slate-900">
+                  {content.hero.title_prefix}{' '}
+                  <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+                    {content.hero.title_highlight}
+                  </span>
                 </h1>
                 <p className="mt-3 text-[clamp(0.95rem,1.6vw,1.25rem)] text-gray-600">
-                  Accedé para ver tus pedidos y continuar tu compra
+                  {content.hero.subtitle}
                 </p>
               </header>
 
@@ -97,10 +99,9 @@ const Login: React.FC = () => {
                 disabled={loadingGoogle}
                 className="group relative w-full inline-flex items-center justify-center gap-3 rounded-2xl px-5 py-4 text-white font-semibold
                 bg-gradient-to-r from-pink-500 to-rose-400 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:hover:translate-y-0"
-                aria-label="Continuar con Google"
-                title="Continuar con Google"
+                aria-label={content.google.aria}
+                title={content.google.aria}
               >
-                {/* Icono Google */}
                 <span className="h-5 w-5 bg-white rounded-[4px] grid place-items-center">
                   <svg width="14" height="14" viewBox="0 0 48 48">
                     <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.23 9.24 3.62l6.9-6.9C35.9 2.02 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l8.9 6.9C13.27 14.54 18.2 9.5 24 9.5z" />
@@ -109,7 +110,7 @@ const Login: React.FC = () => {
                     <path fill="#34A853" d="M24 48c6.48 0 11.93-2.14 15.9-5.83l-7.4-5.73c-2.06 1.39-4.7 2.21-8.5 2.21-6.8 0-12.53-4.6-14.54-10.93l-8.96 6.63C6.51 42.62 14.62 48 24 48z" />
                   </svg>
                 </span>
-                {loadingGoogle ? 'Conectando…' : 'Continuar con Google'}
+                {loadingGoogle ? content.google.connecting : content.google.label}
                 {loadingGoogle && (
                   <span className="absolute right-5 h-5 w-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
                 )}
@@ -118,21 +119,23 @@ const Login: React.FC = () => {
               {/* Divider */}
               <div className="my-8 flex items-center gap-4 text-gray-400">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-pink-200 to-transparent" />
-                <span className="text-sm font-medium">o con tu email</span>
+                <span className="text-sm font-medium">{content.divider.text}</span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-pink-200 to-transparent" />
               </div>
 
               {/* Email */}
               <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-gray-700">Correo electrónico</span>
+                  <span className="mb-2 block text-sm font-semibold text-gray-700">
+                    {content.email.label}
+                  </span>
                   <div className="relative">
                     <input
                       type="email"
                       inputMode="email"
                       autoComplete="email"
                       required
-                      placeholder="tu@email.com"
+                      placeholder={content.email.placeholder}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className={`w-full rounded-2xl border bg-white/80 backdrop-blur-sm px-4 py-3.5 pr-11 outline-none transition
@@ -147,7 +150,7 @@ const Login: React.FC = () => {
                     </svg>
                   </div>
                   <small id="email-help" className="mt-1 block text-xs text-gray-500">
-                    Te enviaremos un enlace mágico para ingresar.
+                    {content.email.help}
                   </small>
                 </label>
 
@@ -157,7 +160,11 @@ const Login: React.FC = () => {
                   className="w-full rounded-2xl border border-pink-200 bg-white/70 px-5 py-3.5 font-semibold text-gray-800 shadow-sm
                   hover:shadow transition disabled:opacity-60 disabled:cursor-not-allowed relative"
                 >
-                  {loadingEmail ? 'Enviando…' : sent ? 'Reenviar enlace' : 'Enviarme un enlace por email'}
+                  {loadingEmail
+                    ? content.email.sending_label
+                    : sent
+                      ? content.email.resend_label
+                      : content.email.send_label}
                   {loadingEmail && (
                     <span className="absolute right-5 top-1/2 -translate-y-1/2 h-5 w-5 border-2 border-gray-400/60 border-t-transparent rounded-full animate-spin" />
                   )}
@@ -166,9 +173,12 @@ const Login: React.FC = () => {
                 <div className="min-h-[24px]" aria-live="polite">
                   {sent && !loadingEmail && (
                     <p className="text-sm text-gray-600">
-                      Te enviamos un enlace a <span className="font-semibold">{email}</span>. Abrilo desde el dispositivo donde querés continuar.
+                      {content.email.link_sent_prefix}
+                      <span className="font-semibold">{email}</span>. {content.email.open_hint}
                       {cooldown > 0 && (
-                        <> Podrás reenviar en <span className="font-semibold">{cooldown}s</span>.</>
+                        <> {content.email.resend_in_prefix}
+                          <span className="font-semibold">{cooldown}{content.email.resend_in_suffix}</span>.
+                        </>
                       )}
                     </p>
                   )}
@@ -181,9 +191,11 @@ const Login: React.FC = () => {
                 )}
               </form>
 
-              {/* Footer pequeño */}
+              {/* Footer */}
               <div className="mt-8 flex items-center justify-center text-xs text-gray-500">
-                <Link to="/" className="font-semibold text-pink-600 hover:text-rose-500">Volver al inicio</Link>
+                <Link to={content.routes.home} className="font-semibold text-pink-600 hover:text-rose-500">
+                  {content.footer.back_home_label}
+                </Link>
               </div>
             </div>
           </section>

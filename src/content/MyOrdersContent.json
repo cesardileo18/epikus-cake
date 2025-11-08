@@ -1,0 +1,53 @@
+{
+  "routes": {
+    "products": "/products",
+    "login": "/login",
+    "myOrders": "/my-orders"
+  },
+  "auth_gate": {
+    "title": "Debes iniciar sesión",
+    "desc": "Para ver tus pedidos necesitas estar logueado",
+    "cta": "Iniciar Sesión"
+  },
+  "loading": {
+    "text": "Cargando tus pedidos..."
+  },
+  "header": {
+    "title_prefix": "Mis",
+    "title_highlight": "Pedidos",
+    "subtitle": "Historial completo de tus compras"
+  },
+  "empty": {
+    "title": "Aún no tienes pedidos",
+    "desc": "¡Empieza a explorar nuestros deliciosos productos!",
+    "cta": "Ver Productos"
+  },
+  "sections": {
+    "products": "Productos",
+    "delivery_pickup": "Retiro",
+    "delivery_shipping": "Envío",
+    "pickup_hint": "En nuestro local",
+    "delivery_when": "Fecha y hora",
+    "notes_title": "Notas adicionales",
+    "total_label": "Total"
+  },
+  "item": {
+    "qty_label": "Cantidad",
+    "variant_prefix": "📦 "
+  },
+  "actions": {
+    "reorder": "Volver a comprar",
+    "processing": "Procesando...",
+    "explore_more": "Explorar más productos"
+  },
+  "status": {
+    "pendiente": "Pendiente",
+    "en_proceso": "En Proceso",
+    "entregado": "Entregado",
+    "cancelado": "Cancelado"
+  },
+  "i18n": {
+    "price_locale": "es-AR",
+    "currency_prefix": "$"
+  }
+}

@@ -36,8 +36,8 @@ rl.question('Ingresa el código de la URL: ', (code) => {
       console.error('Error obteniendo token:', err.message);
       return;
     }
-    console.log('\n✅ Token obtenido exitosamente!');
-    console.log('\n📋 Tu refresh_token es:\n', token.refresh_token);
-    console.log('\n📋 Token completo:\n', JSON.stringify(token, null, 2));
+    // console.log('\n✅ Token obtenido exitosamente!');
+    // console.log('\n📋 Tu refresh_token es:\n', token.refresh_token);
+    // console.log('\n📋 Token completo:\n', JSON.stringify(token, null, 2));
   });
 });

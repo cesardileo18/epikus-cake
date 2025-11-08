@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="es-AR">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
   <!-- Google Search Console Verification -->
   <meta name="google-site-verification" content="V05V470tczo85kyf2XDwsv5tZKzaAEi8erxUTRf_6mg" />
-
   <!-- SEO Básico -->
   <title>Pastelería Artesanal en CABA | Epikus Cake - Tortas y Postres Premium</title>
   <meta name="description"
     content="Tortas y postres artesanales en Buenos Aires. Ingredientes premium, pedidos personalizados y envíos en CABA. Descubrí la calidad de Epikus Cake." />
-  <meta name="keywords" content="pastelería artesanal, tortas CABA, postres Buenos Aires, tortas personalizadas, envío de tortas, Epikus Cake" />
+  <meta name="keywords"
+    content="pastelería artesanal, tortas CABA, postres Buenos Aires, tortas personalizadas, envío de tortas, Epikus Cake" />
   <meta name="author" content="Epikus Cake" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <link rel="canonical" href="https://epikuscake.web.app/" />
@@ -91,25 +91,26 @@
 
 <body>
   <div id="root"></div>
-  
+
   <script>
     // Desregistrar cualquier service worker existente
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
           registration.unregister();
         }
       });
     }
-    
+
     // Limpiar todo el caché
     if ('caches' in window) {
-      caches.keys().then(function(names) {
+      caches.keys().then(function (names) {
         for (let name of names) caches.delete(name);
       });
     }
   </script>
-  
+
   <script type="module" src="/src/main.tsx"></script>
 </body>
+
 </html>

@@ -1,0 +1,36 @@
+{
+  "hero": {
+    "title_prefix": "Iniciar",
+    "title_highlight": "sesión",
+    "subtitle": "Accedé para ver tus pedidos y continuar tu compra"
+  },
+  "google": {
+    "label": "Continuar con Google",
+    "connecting": "Conectando…",
+    "aria": "Continuar con Google",
+    "error": "No pudimos iniciar sesión con Google. Intenta nuevamente."
+  },
+  "divider": {
+    "text": "o con tu email"
+  },
+  "email": {
+    "label": "Correo electrónico",
+    "placeholder": "tu@email.com",
+    "help": "Te enviaremos un enlace mágico para ingresar.",
+    "send_label": "Enviarme un enlace por email",
+    "resend_label": "Reenviar enlace",
+    "sending_label": "Enviando…",
+    "error": "No pudimos enviar el enlace. Revisa el correo e intenta otra vez.",
+    "link_sent_prefix": "Te enviamos un enlace a ",
+    "open_hint": "Abrilo desde el dispositivo donde querés continuar.",
+    "resend_in_prefix": "Podrás reenviar en ",
+    "resend_in_suffix": "s",
+    "cooldown_seconds": 60
+  },
+  "footer": {
+    "back_home_label": "Volver al inicio"
+  },
+  "routes": {
+    "home": "/"
+  }
+}

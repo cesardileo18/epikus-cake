@@ -1,0 +1,60 @@
+{
+  "hero": {
+    "badge": "Política de Privacidad",
+    "title_prefix": "Tu información,",
+    "title_highlight": "siempre segura",
+    "subtitle_html": "En <span class=\"font-semibold\">Epikus Cake</span> respetamos tu privacidad y tratamos tus datos con responsabilidad y transparencia."
+  },
+  "intro": {
+    "text_html": "Esta Política describe qué datos personales recopilamos, para qué los usamos, cómo los protegemos y qué derechos tenés. Si tenés dudas, escribinos a <a href=\"mailto:epikuscake@gmail.com\" class=\"text-pink-600 font-semibold hover:underline\">epikuscake@gmail.com</a> o por WhatsApp."
+  },
+  "sections": [
+    {
+      "title": "1. Datos que recopilamos",
+      "items": [
+        "Nombre, teléfono y/o e-mail que nos envíes por WhatsApp, formulario o redes.",
+        "Datos necesarios para gestionar pedidos (dirección, fecha de entrega, preferencias).",
+        "Información técnica mínima de navegación (p. ej., páginas visitadas) para mejorar la experiencia. No hacemos perfiles invasivos ni vendemos datos."
+      ]
+    },
+    {
+      "title": "2. Para qué usamos tu información",
+      "items": [
+        "Tomar, preparar y entregar pedidos.",
+        "Responder consultas y brindar soporte personalizado.",
+        "Mejorar nuestros productos, catálogo y experiencia del sitio.",
+        "Procesar pagos (si corresponde) a través de proveedores como Mercado Pago."
+      ]
+    },
+    {
+      "title": "3. Con quién compartimos datos",
+      "text": "No vendemos tu información. Solo la compartimos con terceros necesarios para operar (p. ej., pasarela de pagos y servicios de entrega), quienes están obligados a protegerla y usarla solo para ese fin."
+    },
+    {
+      "title": "4. Seguridad",
+      "text": "Aplicamos medidas razonables para resguardar tus datos. Aun así, ningún sistema es 100% infalible. Si detectás algo inusual, contactanos de inmediato."
+    },
+    {
+      "title": "5. Tus derechos",
+      "text": "Podés solicitar acceso, actualización, rectificación o eliminación de tus datos. Escribinos a <a href=\"mailto:epikuscake@gmail.com\" class=\"text-pink-600 font-semibold hover:underline\">epikuscake@gmail.com</a>. Si residís en Argentina, esta política se adecua de forma general a la Ley 25.326 de Protección de Datos Personales."
+    },
+    {
+      "title": "6. Cookies",
+      "text": "Usamos cookies técnicas para el funcionamiento del sitio y, de forma limitada, analíticas para mejorar contenidos. Podés bloquearlas desde tu navegador."
+    },
+    {
+      "title": "7. Cambios en esta política",
+      "text": "Podemos actualizar esta política. Publicaremos cualquier modificación aquí."
+    }
+  ],
+  "meta": {
+    "last_update_label": "Última actualización:",
+    "last_update_value": "Septiembre 2025"
+  },
+  "routes": {
+    "home": "/"
+  },
+  "cta": {
+    "back_home": "Volver al inicio"
+  }
+}

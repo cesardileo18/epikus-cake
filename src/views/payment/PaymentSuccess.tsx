@@ -18,7 +18,7 @@ import {
   CalendarIcon,
   ShareIcon,
 } from '@heroicons/react/24/outline';
-
+import { useOrderStatusListener } from '@/hooks/mercadoPago/useOrderStatusListener';
 import ShareReceipt from '@/components/share/ShareReceipt';
 
 type OrderStatus = 'pendiente' | 'en_proceso' | 'entregado' | 'cancelado';
@@ -73,7 +73,8 @@ interface Order {
   userUid?: string;
 }
 
-const price = (n: number | undefined | null) => Number(n ?? 0).toLocaleString('es-AR');
+const price = (n: number | undefined | null) =>
+  Number(n ?? 0).toLocaleString('es-AR');
 
 const getItemUnitPrice = (it: OrderItem) =>
   typeof it.precio === 'number'
@@ -90,7 +91,7 @@ const getItemSubtotal = (it: OrderItem) =>
     : getItemUnitPrice(it) * (it.cantidad ?? 0);
 
 const getOrderTotal = (o: Order) =>
-  typeof o.total === 'number' ? o.total : (o.pricing?.total ?? 0);
+  typeof o.total === 'number' ? o.total : o.pricing?.total ?? 0;
 
 const statusCfg = (s: OrderStatus) => {
   const map = {
@@ -136,8 +137,9 @@ const PaymentSuccess: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const WA_PHONE = import.meta.env.VITE_WA_PHONE;
 
-  // cargar pedido
+  // Cargar pedido + marcar en_proceso/acreditado si viene de MP y aún no estaba
   useEffect(() => {
     let mounted = true;
     const run = async () => {
@@ -156,7 +158,6 @@ const PaymentSuccess: React.FC = () => {
         }
         const data = { id: snap.id, ...(snap.data() as any) } as Order;
 
-        // Si viene de MercadoPago (success), pasamos a en_proceso + acreditado (si aún no estaba)
         const isMP = data.pago?.metodoSeleccionado === 'mercadopago';
         const needsUpdate =
           isMP && (data.status !== 'en_proceso' || !data.pago?.acreditado);
@@ -168,13 +169,12 @@ const PaymentSuccess: React.FC = () => {
             'pago.acreditado': true,
             updatedAt: serverTimestamp(),
           });
-          // refrescar
           const again = await getDoc(ref);
           if (again.exists()) {
             const fresh = { id: again.id, ...(again.data() as any) } as Order;
             if (mounted) setOrder(fresh);
           } else if (mounted) {
-            setOrder(data); // fallback
+            setOrder(data);
           }
           setUpdating(false);
         } else {
@@ -192,12 +192,14 @@ const PaymentSuccess: React.FC = () => {
     };
   }, [orderId]);
 
+  // ✅ El hook ahora sólo recibe orderId (evita dobles envíos de email)
+  useOrderStatusListener(orderId || null);
+
   const total = useMemo(() => (order ? getOrderTotal(order) : 0), [order]);
 
   // mensajes según método/estado
   const banner = useMemo(() => {
     if (!order) return null;
-
     const metodo = order.pago?.metodoSeleccionado;
     if (metodo === 'mercadopago') {
       return {
@@ -207,8 +209,6 @@ const PaymentSuccess: React.FC = () => {
           'Recibimos tu pago por MercadoPago. Tu pedido pasó a preparación. Te avisamos cuando esté listo. 💖',
       };
     }
-
-    // transferencia / efectivo (WhatsApp)
     return {
       tone: 'warning' as const,
       title: 'Pedido pendiente de seña',
@@ -236,10 +236,16 @@ const PaymentSuccess: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Ups…</h2>
           <p className="text-gray-600 mb-6">{error ?? 'No pudimos mostrar el pedido.'}</p>
           <div className="flex items-center justify-center gap-3">
-            <Link to="/my-orders" className="px-4 py-2 rounded-lg border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50">
+            <Link
+              to="/my-orders"
+              className="px-4 py-2 rounded-lg border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50"
+            >
               Ver mis pedidos
             </Link>
-            <Link to="/products" className="px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold hover:opacity-95">
+            <Link
+              to="/products"
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold hover:opacity-95"
+            >
               Volver a la tienda
             </Link>
           </div>
@@ -251,13 +257,46 @@ const PaymentSuccess: React.FC = () => {
   const cfg = statusCfg(order.status);
   const StatusIcon = cfg.Icon;
 
+  const buildWaMessageFromOrder = () => {
+    if (!order) return '';
+    const lines = order.items.map(
+      (it) =>
+        `• ${it.nombre}${it.variantLabel ? ` (${it.variantLabel})` : ''} x${
+          it.cantidad
+        } — $${price(getItemSubtotal(it))}`
+    );
+    const when = `Fecha: ${order.entrega?.fecha}  Hora: ${order.entrega?.hora}`;
+    const cliente = `Cliente: ${order.customer?.nombre}${
+      order.customer?.email ? `\nEmail: ${order.customer.email}` : ''
+    }\nWhatsApp: ${order.customer?.whatsapp}`;
+
+    const descuentoTexto = order.pricing?.descuentoMonto
+      ? `\n✨ Descuento ${order.pricing?.descuentoPorcentaje}%: -$${price(
+          order.pricing?.descuentoMonto
+        )}`
+      : '';
+
+    return (
+      `Hola Epikus Cake 👋\n` +
+      `Tengo una consulta sobre mi *pedido #${order.id}*:\n\n` +
+      `${lines.join('\n')}\n` +
+      `\nSubtotal: $${price(order.pricing?.subtotal)}${descuentoTexto}\n` +
+      `*TOTAL: $${price(total)}*\n\n` +
+      `${when}\n` +
+      `${cliente}\n\n`
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 py-22 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-2">
-            Compra <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">realizada</span>
+            Compra{' '}
+            <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+              realizada
+            </span>
           </h1>
           <p className="text-gray-600">Gracias por tu pedido ❤️</p>
         </div>
@@ -281,14 +320,19 @@ const PaymentSuccess: React.FC = () => {
               <div>
                 <p className="font-semibold">{banner.title}</p>
                 <p className="text-sm">{banner.desc}</p>
-                {updating && <p className="text-xs opacity-80 mt-1">Actualizando estado…</p>}
+                {updating && (
+                  <p className="text-xs opacity-80 mt-1">Actualizando estado…</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
         {/* Ticket (con id para capturar) */}
-        <div id="invoice-section" className="bg-white rounded-3xl shadow-lg overflow-hidden border border-pink-100">
+        <div
+          id="invoice-section"
+          className="bg-white rounded-3xl shadow-lg overflow-hidden border border-pink-100"
+        >
           {/* Header del pedido */}
           <div className="bg-gradient-to-r from-pink-500 to-rose-400 px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -296,10 +340,14 @@ const PaymentSuccess: React.FC = () => {
                 <ClipboardDocumentListIcon className="w-6 h-6 text-white" />
                 <div>
                   <p className="text-white font-semibold">Pedido #{order.id}</p>
-                  <p className="text-pink-100 text-sm">Creado: {fmtDateTime(order.createdAt)}</p>
+                  <p className="text-pink-100 text-sm">
+                    Creado: {fmtDateTime(order.createdAt)}
+                  </p>
                 </div>
               </div>
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold border ${cfg.badge}`}>
+              <div
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold border ${cfg.badge}`}
+              >
                 <StatusIcon className="w-4 h-4" />
                 {cfg.label}
               </div>
@@ -314,8 +362,16 @@ const PaymentSuccess: React.FC = () => {
                 <h4 className="font-semibold text-gray-900 mb-2">Cliente</h4>
                 <p className="text-sm text-gray-700">
                   {order.customer?.nombre ?? '—'}
-                  {order.customer?.email ? <><br />✉️ {order.customer.email}</> : null}
-                  {order.customer?.whatsapp ? <><br />📱 {order.customer.whatsapp}</> : null}
+                  {order.customer?.email ? (
+                    <>
+                      <br />✉️ {order.customer.email}
+                    </>
+                  ) : null}
+                  {order.customer?.whatsapp ? (
+                    <>
+                      <br />📱 {order.customer.whatsapp}
+                    </>
+                  ) : null}
                 </p>
               </div>
 
@@ -326,9 +382,12 @@ const PaymentSuccess: React.FC = () => {
                 </h4>
                 <p className="text-sm text-gray-700">
                   {order.entrega?.tipo === 'envio' ? 'Envío' : 'Retiro en local'}
-                  {order.entrega?.tipo === 'envio' && order.entrega?.direccion ? ` · ${order.entrega.direccion}` : ''}
+                  {order.entrega?.tipo === 'envio' && order.entrega?.direccion
+                    ? ` · ${order.entrega.direccion}`
+                    : ''}
                   <br />
-                  {order.entrega?.fecha} {order.entrega?.hora ? `· ${order.entrega.hora}` : ''}
+                  {order.entrega?.fecha}{' '}
+                  {order.entrega?.hora ? `· ${order.entrega.hora}` : ''}
                 </p>
               </div>
             </div>
@@ -339,13 +398,20 @@ const PaymentSuccess: React.FC = () => {
                 <h4 className="font-semibold text-gray-900 mb-2">Productos</h4>
                 <div className="space-y-2 max-h-56 overflow-auto pr-1">
                   {order.items?.map((it, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm bg-gray-50 rounded-xl p-3">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-sm bg-gray-50 rounded-xl p-3"
+                    >
                       <div className="text-gray-800">
                         <span className="font-medium">{it.nombre}</span>
-                        {it.variantLabel ? <span className="text-gray-500"> ({it.variantLabel})</span> : null}
+                        {it.variantLabel ? (
+                          <span className="text-gray-500"> ({it.variantLabel})</span>
+                        ) : null}
                         <span className="text-gray-500"> ×{it.cantidad}</span>
                       </div>
-                      <div className="font-semibold">${price(getItemSubtotal(it))}</div>
+                      <div className="font-semibold">
+                        ${price(getItemSubtotal(it))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -354,12 +420,18 @@ const PaymentSuccess: React.FC = () => {
               <div className="border-t pt-3 space-y-1 text-sm">
                 <div className="flex items-center justify-between">
                   <span>Subtotal</span>
-                  <span className="font-semibold">${price(order.pricing?.subtotal ?? undefined)}</span>
+                  <span className="font-semibold">
+                    ${price(order.pricing?.subtotal ?? undefined)}
+                  </span>
                 </div>
                 {order.pricing?.descuentoMonto ? (
                   <div className="flex items-center justify-between text-green-600">
-                    <span>Descuento {order.pricing?.descuentoPorcentaje ?? 0}%</span>
-                    <span className="font-semibold">-${price(order.pricing?.descuentoMonto)}</span>
+                    <span>
+                      Descuento {order.pricing?.descuentoPorcentaje ?? 0}%
+                    </span>
+                    <span className="font-semibold">
+                      -${price(order.pricing?.descuentoMonto)}
+                    </span>
                   </div>
                 ) : null}
                 <div className="flex items-center justify-between text-base mt-1">
@@ -374,11 +446,15 @@ const PaymentSuccess: React.FC = () => {
                   <div className="mt-2 space-y-1">
                     <div className="flex items-center justify-between">
                       <span>Seña 50%</span>
-                      <span className="font-semibold">${price(order.pago?.seniaMonto)}</span>
+                      <span className="font-semibold">
+                        ${price(order.pago?.seniaMonto)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Saldo al retirar</span>
-                      <span className="font-semibold">${price(order.pago?.saldoRestante)}</span>
+                      <span className="font-semibold">
+                        ${price(order.pago?.saldoRestante)}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -414,6 +490,21 @@ const PaymentSuccess: React.FC = () => {
                 <ShareIcon className="w-5 h-5" />
                 Compartir comprobante
               </ShareReceipt>
+
+              {/* Botón WhatsApp solo para MercadoPago */}
+              {order.pago?.metodoSeleccionado === 'mercadopago' && (
+                <a
+                  href={`https://api.whatsapp.com/send?phone=${WA_PHONE}&text=${encodeURIComponent(
+                    buildWaMessageFromOrder()
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold border-2 border-green-500 text-green-600 bg-white hover:bg-green-50 transition"
+                >
+                  <ShareIcon className="w-5 h-5" />
+                  Contactar por WhatsApp
+                </a>
+              )}
             </div>
           </div>
         </div>

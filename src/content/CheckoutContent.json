@@ -1,0 +1,40 @@
+{
+  "hero": {
+    "title_prefix": "Tu",
+    "title_highlight": "carrito"
+  },
+  "routes": {
+    "products": "/products",
+    "confirmOrder": "/confirm-order",
+    "login": "/login"
+  },
+  "empty_state": {
+    "message": "Tu carrito está vacío.",
+    "cta_label": "Ver productos"
+  },
+  "list": {
+    "image_fallback": "https://via.placeholder.com/64x64/f8fafc/64748b?text=%E2%80%93",
+    "show_variant_prefix": "📦 ",
+    "buttons": {
+      "dec_aria": "Disminuir",
+      "inc_aria": "Aumentar",
+      "del_aria": "Eliminar"
+    },
+    "stock": {
+      "max_reached_tooltip": "Alcanzaste el stock disponible"
+    }
+  },
+  "summary": {
+    "total_label": "Total",
+    "checkout_label": "Realizar Pedido",
+    "continue_label": "Seguir comprando",
+    "checkout_disabled_label": "Realizar Pedido"
+  },
+  "i18n": {
+    "price_locale": "es-AR",
+    "currency_prefix": "$"
+  },
+  "aria": {
+    "open_whatsapp": "Abrir WhatsApp"
+  }
+}

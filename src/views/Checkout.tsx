@@ -1,11 +1,14 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthProvider';
 
-const price = (n: number) => n.toLocaleString('es-AR');
+import checkoutJson from '@/content/checkoutContent.json';
+import type { CheckoutContent } from '@/interfaces/CheckoutContent';
+
+const content: CheckoutContent = checkoutJson as CheckoutContent;
+const price = (n: number) => n.toLocaleString(content.i18n.price_locale);
 
 const Checkout: React.FC = () => {
   const { items, updateQty, remove, total } = useCart();
@@ -14,9 +17,9 @@ const Checkout: React.FC = () => {
 
   const handleRealizarPedido = () => {
     if (!user) {
-      navigate('/login?redirect=/confirm-order');
+      navigate(`${content.routes.login}?redirect=${content.routes.confirmOrder}`);
     } else {
-      navigate('/confirm-order');
+      navigate(content.routes.confirmOrder);
     }
   };
 
@@ -24,20 +27,20 @@ const Checkout: React.FC = () => {
     <div className="min-h-screen bg-[#ff7bab48] pt-24 pb-20">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <h1 className="mb-8 leading-tight text-[clamp(2rem,6vw,3.5rem)] font-light text-gray-900">
-          Tu{' '}
+          {content.hero.title_prefix}{' '}
           <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-            carrito
+            {content.hero.title_highlight}
           </span>
         </h1>
 
         {items.length === 0 ? (
           <div className="rounded-2xl bg-white p-10 shadow-lg text-center">
-            <p className="text-gray-600 mb-6">Tu carrito está vacío.</p>
+            <p className="text-gray-600 mb-6">{content.empty_state.message}</p>
             <Link
-              to="/products"
+              to={content.routes.products}
               className="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold shadow-lg hover:shadow-xl"
             >
-              Ver productos
+              {content.empty_state.cta_label}
             </Link>
           </div>
         ) : (
@@ -45,14 +48,14 @@ const Checkout: React.FC = () => {
             {/* Lista */}
             <div className="space-y-3 sm:space-y-4">
               {items.map((it) => {
-                // 🔥 NUEVO: Obtener stock máximo según si tiene variante o no
-                const stockMaximo = it.variantId && it.product.tieneVariantes && it.product.variantes
-                  ? (it.product.variantes.find(v => v.id === it.variantId)?.stock ?? 0)
-                  : (it.product.stock ?? 0);
+                const stockMaximo =
+                  it.variantId && it.product.tieneVariantes && it.product.variantes
+                    ? (it.product.variantes.find(v => v.id === it.variantId)?.stock ?? 0)
+                    : (it.product.stock ?? 0);
 
                 return (
                   <div
-                    key={it.productId}  // 🔥 ACTUALIZADO: usar productId (que incluye variantId)
+                    key={it.productId}
                     className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 bg-white rounded-2xl p-4 shadow"
                   >
                     <img
@@ -60,8 +63,7 @@ const Checkout: React.FC = () => {
                       alt={it.product.nombre}
                       className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          'https://via.placeholder.com/64x64/f8fafc/64748b?text=–';
+                        (e.target as HTMLImageElement).src = content.list.image_fallback;
                       }}
                     />
 
@@ -69,20 +71,20 @@ const Checkout: React.FC = () => {
                       <div className="font-semibold text-gray-900 truncate">
                         {it.product.nombre}
                       </div>
-                      {/* 🔥 NUEVO: Mostrar variante si existe */}
+
                       {it.variantLabel && (
                         <div className="text-xs text-gray-600 mt-0.5">
-                          📦 {it.variantLabel}
+                          {content.list.show_variant_prefix}{it.variantLabel}
                         </div>
                       )}
-                      {/* 🔥 ACTUALIZADO: Usar it.precio en lugar de it.product.precio */}
+
                       <div className="text-pink-600 font-bold text-sm sm:text-base">
-                        ${price(it.precio)}
+                        {content.i18n.currency_prefix}{price(it.precio)}
                       </div>
 
                       {/* Total del ítem en móvil */}
                       <div className="sm:hidden mt-1 font-bold text-gray-900">
-                        ${price(it.quantity * it.precio)}
+                        {content.i18n.currency_prefix}{price(it.quantity * it.precio)}
                       </div>
                     </div>
 
@@ -92,7 +94,7 @@ const Checkout: React.FC = () => {
                         onClick={() => updateQty(it.productId, it.quantity - 1)}
                         className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
                         type="button"
-                        aria-label="Disminuir"
+                        aria-label={content.list.buttons.dec_aria}
                       >
                         <MinusIcon className="w-4 h-4" />
                       </button>
@@ -103,10 +105,11 @@ const Checkout: React.FC = () => {
 
                       <button
                         onClick={() => updateQty(it.productId, it.quantity + 1)}
-                        disabled={it.quantity >= stockMaximo}  // 🔥 ACTUALIZADO: usar stockMaximo
+                        disabled={it.quantity >= stockMaximo}
                         className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 flex items-center justify-center"
                         type="button"
-                        aria-label="Aumentar"
+                        aria-label={content.list.buttons.inc_aria}
+                        title={it.quantity >= stockMaximo ? content.list.stock.max_reached_tooltip : undefined}
                       >
                         <PlusIcon className="w-4 h-4 text-white" />
                       </button>
@@ -114,15 +117,15 @@ const Checkout: React.FC = () => {
 
                     {/* Total del ítem en escritorio */}
                     <div className="hidden sm:block w-24 text-right font-bold text-gray-900">
-                      ${price(it.quantity * it.precio)}
+                      {content.i18n.currency_prefix}{price(it.quantity * it.precio)}
                     </div>
 
                     {/* Eliminar */}
                     <button
-                      onClick={() => remove(it.productId)}  // 🔥 ACTUALIZADO: usar productId
+                      onClick={() => remove(it.productId)}
                       className="ml-auto sm:ml-0 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center order-2 sm:order-none"
                       type="button"
-                      aria-label="Eliminar"
+                      aria-label={content.list.buttons.del_aria}
                     >
                       <TrashIcon className="w-5 h-5 text-gray-500" />
                     </button>
@@ -134,9 +137,9 @@ const Checkout: React.FC = () => {
             {/* Resumen */}
             <aside className="bg-white p-5 sm:p-6 rounded-2xl shadow-lg h-fit lg:sticky lg:top-24">
               <div className="flex justify-between items-center text-lg font-semibold mb-4">
-                <span>Total</span>
+                <span>{content.summary.total_label}</span>
                 <span className="text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-                  ${price(total)}
+                  {content.i18n.currency_prefix}{price(total)}
                 </span>
               </div>
 
@@ -148,7 +151,7 @@ const Checkout: React.FC = () => {
                     hover:from-pink-600 hover:to-rose-500 transition-all"
                   type="button"
                 >
-                  Realizar Pedido
+                  {content.summary.checkout_label}
                 </button>
               ) : (
                 <button
@@ -156,15 +159,15 @@ const Checkout: React.FC = () => {
                   disabled
                   className="w-full py-3 rounded-xl font-semibold shadow-lg bg-gray-200 text-gray-500 cursor-not-allowed"
                 >
-                  Realizar Pedido
+                  {content.summary.checkout_disabled_label}
                 </button>
               )}
 
               <Link
-                to="/products"
+                to={content.routes.products}
                 className="block text-center mt-3 text-pink-600 hover:underline"
               >
-                Seguir comprando
+                {content.summary.continue_label}
               </Link>
             </aside>
           </div>

@@ -27,7 +27,7 @@ export default function useContactForm() {
     return true;
   }, [form]);
 
-  const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER ?? '';
+  const whatsappNumber = import.meta.env.VITE_WA_PHONE;
   const whatsappLink = useMemo(() => {
     const text = 'Hola Epikus Cake, me gustaría hacer un pedido.';
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;

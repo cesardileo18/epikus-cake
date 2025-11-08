@@ -1,4 +1,3 @@
-// src/views/MyOrders.tsx
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthProvider';
@@ -16,6 +15,10 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
+import myOrdersJson from '@/content/myOrdersContent.json';
+import type { MyOrdersContent } from '@/interfaces/MyOrdersContent';
+const content: MyOrdersContent = myOrdersJson as MyOrdersContent;
+
 // === Soporte para ambos esquemas (viejo y nuevo) ===
 interface OrderItem {
   productId: string;
@@ -23,10 +26,8 @@ interface OrderItem {
   variantLabel?: string | null;
   nombre: string;
   cantidad: number;
-  // viejo esquema
   precio?: number;
   subtotal?: number;
-  // nuevo esquema
   precioUnitario?: number;
   subtotalItem?: number;
 }
@@ -37,7 +38,7 @@ interface Order {
   createdAt: Timestamp;
   customer: {
     nombre: string;
-    whatsapp?: string; // puede faltar en algunos docs
+    whatsapp?: string;
   };
   entrega: {
     tipo: 'retiro' | 'envio';
@@ -46,9 +47,7 @@ interface Order {
     hora: string;
   };
   items: OrderItem[];
-  // viejo esquema
   total?: number;
-  // nuevo esquema
   pricing?: {
     total?: number;
     subtotal?: number;
@@ -78,12 +77,10 @@ const MyOrders: React.FC = () => {
         let snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-          // fallback: subcolección users/{uid}/pedidos
           q = query(collection(db, `users/${user.uid}/pedidos`));
           snapshot = await getDocs(q);
         }
 
-        // fallback: buscar por número de teléfono si no hay nada y el user tiene phoneNumber
         if (snapshot.empty && user.phoneNumber) {
           const allOrdersQuery = query(collection(db, 'pedidos'));
           const allOrdersSnapshot = await getDocs(allOrdersQuery);
@@ -120,9 +117,8 @@ const MyOrders: React.FC = () => {
     fetchOrders();
   }, [user]);
 
-  // === Helpers robustos (evitan undefined y soportan ambos esquemas) ===
   const formatPrice = (n: number | undefined | null) =>
-    Number(n ?? 0).toLocaleString('es-AR');
+    Number(n ?? 0).toLocaleString(content.i18n.price_locale);
 
   const getItemUnitPrice = (it: OrderItem) =>
     typeof it.precio === 'number'
@@ -153,33 +149,33 @@ const MyOrders: React.FC = () => {
     });
   };
 
+  // Labels de estado desde JSON; colores/íconos quedan en código
   const getStatusConfig = (status: Order['status']) => {
-    const configs = {
+    const cfg = {
       pendiente: {
-        label: 'Pendiente',
+        label: content.status.pendiente,
         color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
         icon: ClockIcon,
       },
       en_proceso: {
-        label: 'En Proceso',
+        label: content.status.en_proceso,
         color: 'bg-blue-100 text-blue-800 border-blue-200',
         icon: TruckIcon,
       },
       entregado: {
-        label: 'Entregado',
+        label: content.status.entregado,
         color: 'bg-green-100 text-green-800 border-green-200',
         icon: CheckCircleIcon,
       },
       cancelado: {
-        label: 'Cancelado',
+        label: content.status.cancelado,
         color: 'bg-red-100 text-red-800 border-red-200',
         icon: ClockIcon,
       },
     } as const;
-    return configs[status] || configs.pendiente;
+    return cfg[status] || cfg.pendiente;
   };
 
-  // Reorder (compatibles con variantes)
   const handleReorder = async (order: Order) => {
     setReordering(order.id);
     try {
@@ -192,7 +188,6 @@ const MyOrders: React.FC = () => {
         const isActive = productData.activo !== false;
         if (!isActive) continue;
 
-        // stock según variante o base
         let stockDisponible = 0;
         if (item.variantId && productData.tieneVariantes && Array.isArray(productData.variantes)) {
           const variante = productData.variantes.find((v: any) => v.id === item.variantId);
@@ -207,7 +202,7 @@ const MyOrders: React.FC = () => {
             {
               id: item.productId,
               nombre: item.nombre,
-              precio: productData.precio, // precio actual del producto
+              precio: productData.precio,
               imagen: productData.imagen || '',
               descripcion: productData.descripcion || '',
               categoria: productData.categoria || '',
@@ -236,13 +231,13 @@ const MyOrders: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center px-4">
         <div className="text-center">
           <ClipboardDocumentListIcon className="w-20 h-20 mx-auto text-gray-300 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Debes iniciar sesión</h2>
-          <p className="text-gray-600 mb-6">Para ver tus pedidos necesitas estar logueado</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">{content.auth_gate.title}</h2>
+          <p className="text-gray-600 mb-6">{content.auth_gate.desc}</p>
           <Link
-            to="/login?redirect=/my-orders"
+            to={`${content.routes.login}?redirect=${content.routes.myOrders}`}
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
           >
-            Iniciar Sesión
+            {content.auth_gate.cta}
           </Link>
         </div>
       </div>
@@ -254,7 +249,7 @@ const MyOrders: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando tus pedidos...</p>
+          <p className="text-gray-600">{content.loading.text}</p>
         </div>
       </div>
     );
@@ -266,26 +261,26 @@ const MyOrders: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-4">
-            Mis{' '}
+            {content.header.title_prefix}{' '}
             <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-              Pedidos
+              {content.header.title_highlight}
             </span>
           </h1>
-          <p className="text-lg text-gray-600">Historial completo de tus compras</p>
+          <p className="text-lg text-gray-600">{content.header.subtitle}</p>
         </div>
 
         {/* Sin pedidos */}
         {orders.length === 0 ? (
           <div className="bg-white rounded-3xl shadow-lg p-12 text-center">
             <ShoppingBagIcon className="w-20 h-20 mx-auto text-gray-300 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Aún no tienes pedidos</h2>
-            <p className="text-gray-600 mb-6">¡Empieza a explorar nuestros deliciosos productos!</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{content.empty.title}</h2>
+            <p className="text-gray-600 mb-6">{content.empty.desc}</p>
             <Link
-              to="/products"
+              to={content.routes.products}
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
             >
               <ShoppingBagIcon className="w-5 h-5 mr-2" />
-              Ver Productos
+              {content.empty.cta}
             </Link>
           </div>
         ) : (
@@ -326,7 +321,7 @@ const MyOrders: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <ShoppingBagIcon className="w-5 h-5 text-pink-500" />
-                        Productos
+                        {content.sections.products}
                       </h3>
                       <div className="space-y-2">
                         {order.items.map((item, idx) => (
@@ -337,14 +332,16 @@ const MyOrders: React.FC = () => {
                             <div className="flex-1">
                               <p className="font-medium text-gray-900">{item.nombre}</p>
                               {item.variantLabel && (
-                                <p className="text-xs text-gray-500 mt-0.5">📦 {item.variantLabel}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {content.item.variant_prefix}{item.variantLabel}
+                                </p>
                               )}
                               <p className="text-sm text-gray-600">
-                                Cantidad: {item.cantidad} × ${formatPrice(getItemUnitPrice(item))}
+                                {content.item.qty_label}: {item.cantidad} × {content.i18n.currency_prefix}{formatPrice(getItemUnitPrice(item))}
                               </p>
                             </div>
                             <p className="font-bold text-pink-600">
-                              ${formatPrice(getItemSubtotal(item))}
+                              {content.i18n.currency_prefix}{formatPrice(getItemSubtotal(item))}
                             </p>
                           </div>
                         ))}
@@ -360,20 +357,20 @@ const MyOrders: React.FC = () => {
                           ) : (
                             <TruckIcon className="w-5 h-5 text-purple-500" />
                           )}
-                          {order.entrega.tipo === 'retiro' ? 'Retiro' : 'Envío'}
+                          {order.entrega.tipo === 'retiro' ? content.sections.delivery_pickup : content.sections.delivery_shipping}
                         </h4>
                         {order.entrega.tipo === 'envio' && order.entrega.direccion && (
                           <p className="text-sm text-gray-600">{order.entrega.direccion}</p>
                         )}
                         {order.entrega.tipo === 'retiro' && (
-                          <p className="text-sm text-gray-600">En nuestro local</p>
+                          <p className="text-sm text-gray-600">{content.sections.pickup_hint}</p>
                         )}
                       </div>
 
                       <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4">
                         <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                           <CalendarIcon className="w-5 h-5 text-blue-500" />
-                          Fecha y hora
+                          {content.sections.delivery_when}
                         </h4>
                         <p className="text-sm text-gray-600">
                           {order.entrega.fecha} a las {order.entrega.hora}
@@ -384,16 +381,16 @@ const MyOrders: React.FC = () => {
                     {/* Notas */}
                     {order.notas && (
                       <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200">
-                        <h4 className="font-semibold text-gray-900 mb-1">Notas adicionales</h4>
+                        <h4 className="font-semibold text-gray-900 mb-1">{content.sections.notes_title}</h4>
                         <p className="text-sm text-gray-600">{order.notas}</p>
                       </div>
                     )}
 
                     {/* Total */}
                     <div className="border-t pt-4 flex justify-between items-center">
-                      <span className="text-lg font-semibold text-gray-900">Total</span>
+                      <span className="text-lg font-semibold text-gray-900">{content.sections.total_label}</span>
                       <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-                        ${formatPrice(getOrderTotal(order))}
+                        {content.i18n.currency_prefix}{formatPrice(getOrderTotal(order))}
                       </span>
                     </div>
 
@@ -407,12 +404,12 @@ const MyOrders: React.FC = () => {
                         {reordering === order.id ? (
                           <>
                             <div className="w-5 h-5 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                            Procesando...
+                            {content.actions.processing}
                           </>
                         ) : (
                           <>
                             <ArrowPathIcon className="w-5 h-5" />
-                            Volver a comprar
+                            {content.actions.reorder}
                           </>
                         )}
                       </button>
@@ -428,11 +425,11 @@ const MyOrders: React.FC = () => {
         {orders.length > 0 && (
           <div className="text-center mt-8">
             <Link
-              to="/products"
+              to={content.routes.products}
               className="inline-flex items-center px-6 py-3 bg-white border-2 border-pink-500 text-pink-500 font-semibold rounded-xl hover:bg-pink-50 transition-all"
             >
               <ShoppingBagIcon className="w-5 h-5 mr-2" />
-              Explorar más productos
+              {content.actions.explore_more}
             </Link>
           </div>
         )}

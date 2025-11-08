@@ -21,6 +21,7 @@ import {
   BanknotesIcon,
   FunnelIcon,
 } from '@heroicons/react/24/outline';
+import { sendEmail } from '@/config/emailjs'; // 👈 agregado
 
 type OrderStatus = 'pendiente' | 'en_proceso' | 'entregado' | 'cancelado';
 
@@ -77,7 +78,7 @@ interface Order {
     seniaMonto?: number;
     saldoRestante?: number;
     liquidacion?: 'online' | 'offline';
-    acreditado?: boolean; // true cuando está acreditada la seña (transferencia) o el pago (MP)
+    acreditado?: boolean;
   };
 
   notas?: string | null;
@@ -141,6 +142,60 @@ const statusCfg = (s: OrderStatus) => {
   return map[s] ?? map.pendiente;
 };
 
+// ===== Helpers de email (solo UI + texto)
+const buildProductosHTML = (o: Order) =>
+  o.items
+    ?.map(
+      (it) =>
+        `<li>${it.nombre}${it.variantLabel ? ` (${it.variantLabel})` : ''} x${it.cantidad} — $${price(getItemSubtotal(it))}</li>`
+    )
+    .join('') || '';
+
+const mailAcreditado = (o: Order) => {
+  const total = getOrderTotal(o);
+  const subtotal = o.pricing?.subtotal ?? 0;
+  const dMonto = o.pricing?.descuentoMonto ?? 0;
+  const dPorc = o.pricing?.descuentoPorcentaje ?? 0;
+  const prods = buildProductosHTML(o);
+  const nombre = o.customer?.nombre ?? 'Cliente';
+
+  return {
+    subject: `✅ Pago/seña aprobado - Pedido #${o.id}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color:#10b981;">¡Pago aprobado!</h2>
+        <p>Hola <strong>${nombre}</strong>, tu pedido <strong>#${o.id}</strong> pasó a <strong>preparación</strong>.</p>
+        <div style="background:#d1fae5;padding:16px;border-radius:10px;margin:16px 0">
+          <h3 style="margin:0 0 8px 0">💰 Resumen</h3>
+          <p><strong>Subtotal:</strong> $${price(subtotal)}</p>
+          ${dMonto ? `<p><strong>Descuento ${dPorc}%:</strong> -$${price(dMonto)}</p>` : ''}
+          <p style="font-size:18px;"><strong>TOTAL:</strong> $${price(total)}</p>
+        </div>
+        <div style="background:#fdf2f8;padding:16px;border-radius:10px;margin:16px 0">
+          <h3 style="margin:0 0 8px 0">🛍️ Productos</h3>
+          <ul style="padding-left:18px">${prods}</ul>
+        </div>
+        <div style="background:#eff6ff;padding:16px;border-radius:10px;margin:16px 0">
+          <h3 style="margin:0 0 8px 0">📅 Retiro</h3>
+          <p>${o.entrega?.fecha ?? '-'} ${o.entrega?.hora ? `· ${o.entrega.hora}` : ''}</p>
+        </div>
+        <p>Gracias por elegir Epikus Cake 💖</p>
+      </div>`,
+    text: `Pago aprobado - Pedido #${o.id}. Total: $${price(total)}. Retiro: ${o.entrega?.fecha ?? '-'} ${o.entrega?.hora ?? '-'}`,
+  };
+};
+
+const mailEntregado = (o: Order) => ({
+  subject: `🎂 Pedido #${o.id} entregado`,
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color:#16a34a;">¡Pedido entregado!</h2>
+      <p>Hola <strong>${o.customer?.nombre ?? 'Cliente'}</strong>, tu pedido <strong>#${o.id}</strong> fue marcado como <strong>entregado</strong>.</p>
+      <p>¡Gracias por comprar en Epikus Cake! 💖</p>
+    </div>`,
+  text: `Pedido #${o.id} entregado. ¡Gracias por tu compra!`,
+});
+
 const OrdersAdmin: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +254,27 @@ const OrdersAdmin: React.FC = () => {
       status: 'en_proceso',
       updatedAt: serverTimestamp(),
     });
+
+    // 🔔 Enviar mail al cliente al pasar a preparación
+    if (o.customer?.email) {
+      const m = mailAcreditado(o);
+      sendEmail({
+        to: o.customer.email,
+        subject: m.subject,
+        html: m.html,
+        text: m.text,
+      }).catch(console.error);
+    }
+
+    // (Opcional) correo interno de notificación
+    // if (import.meta.env.VITE_CONTACT_EMAIL) {
+    //   sendEmail({
+    //     to: import.meta.env.VITE_CONTACT_EMAIL,
+    //     subject: `✅ Pedido #${o.id} pasó a preparación`,
+    //     html: `<p>El pedido #${o.id} pasó a <strong>en_proceso</strong>.</p>`,
+    //     text: `Pedido #${o.id} en proceso`,
+    //   }).catch(console.error);
+    // }
   };
 
   const marcarEntregado = async (o: Order) => {
@@ -208,6 +284,17 @@ const OrdersAdmin: React.FC = () => {
       deliveredAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+
+    // 🔔 Enviar mail al cliente al marcar entregado
+    if (o.customer?.email) {
+      const m = mailEntregado(o);
+      sendEmail({
+        to: o.customer.email,
+        subject: m.subject,
+        html: m.html,
+        text: m.text,
+      }).catch(console.error);
+    }
   };
 
   const cancelarPedido = async (o: Order) => {

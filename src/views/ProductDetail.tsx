@@ -1,4 +1,3 @@
-// src/views/ProductDetail.tsx
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
@@ -7,10 +6,18 @@ import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
 import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
 import { showToast } from '@/components/Toast/ToastProvider';
 
+import contentJson from '@/content/ProductDetailContent.json';
+import type { ProductDetailContent } from '@/interfaces/ProductDetailContent';
+const content: ProductDetailContent = contentJson as ProductDetailContent;
+
 type LocationState = { product?: ProductWithId };
 
-const currency = (n: number) =>
-  n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+const currencyFmt = (n: number) =>
+  n.toLocaleString(content.i18n.locale, {
+    style: 'currency',
+    currency: content.i18n.currency_code,
+    maximumFractionDigits: 0,
+  });
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,7 +65,7 @@ const ProductDetail: React.FC = () => {
     if (!product) return;
 
     if (product.tieneVariantes && !varianteSeleccionada) {
-      showToast.error('Por favor seleccioná un tamaño/porciones');
+      showToast.error(content.variants.select_prompt);
       return;
     }
 
@@ -93,32 +100,32 @@ const ProductDetail: React.FC = () => {
 
   const jsonLd = product
     ? {
-      '@context': 'https://schema.org',
-      '@type': 'Product',
-      name: product.nombre,
-      description: product.descripcion,
-      image: [product.imagen],
-      sku: product.id,
-      category: product.categoria,
-      offers: product.tieneVariantes && product.variantes
-        ? {
-          '@type': 'AggregateOffer',
-          priceCurrency: 'ARS',
-          lowPrice: Math.min(...product.variantes.map(v => v.precio)),
-          highPrice: Math.max(...product.variantes.map(v => v.precio)),
-          availability: product.variantes.some(v => (v.stock ?? 0) > 0)
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
-        }
-        : {
-          '@type': 'Offer',
-          availability: (product.stock ?? 0) > 0
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
-          priceCurrency: 'ARS',
-          price: product.precio,
-        },
-    }
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.nombre,
+        description: product.descripcion,
+        image: [product.imagen],
+        sku: product.id,
+        category: product.categoria,
+        offers: product.tieneVariantes && product.variantes
+          ? {
+              '@type': 'AggregateOffer',
+              priceCurrency: content.schema.currency,
+              lowPrice: Math.min(...product.variantes.map(v => v.precio)),
+              highPrice: Math.max(...product.variantes.map(v => v.precio)),
+              availability: product.variantes.some(v => (v.stock ?? 0) > 0)
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+            }
+          : {
+              '@type': 'Offer',
+              availability: (product.stock ?? 0) > 0
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+              priceCurrency: content.schema.currency,
+              price: product.precio,
+            },
+      }
     : null;
 
   if (loading && !product) {
@@ -126,7 +133,7 @@ const ProductDetail: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-600 text-sm">Cargando producto...</p>
+          <p className="text-gray-600 text-sm">{content.loading.text}</p>
         </div>
       </div>
     );
@@ -136,34 +143,35 @@ const ProductDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
         <section className="max-w-5xl mx-auto px-4 md:px-6 py-10 md:py-16 text-center">
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">Producto no encontrado</h1>
-          <p className="text-gray-600 mb-6 md:mb-8">Puede que haya sido retirado o que el enlace sea incorrecto.</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">{content.not_found.title}</h1>
+          <p className="text-gray-600 mb-6 md:mb-8">{content.not_found.desc}</p>
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center px-5 py-3 rounded-xl bg-white border border-gray-200 hover:border-pink-300 shadow-md hover:shadow-lg transition"
           >
             <ChevronLeftIcon className="w-5 h-5 mr-2" />
-            Volver
+            {content.not_found.back_btn}
           </button>
         </section>
       </div>
     );
   }
 
-  const precioDisplay = product.tieneVariantes && !varianteSeleccionada && product.variantes
-    ? `Desde ${currency(Math.min(...product.variantes.map(v => v.precio)))}`
-    : currency(precioActual);
+  const precioDisplay =
+    product.tieneVariantes && !varianteSeleccionada && product.variantes
+      ? `${content.price.from_prefix} ${currencyFmt(Math.min(...product.variantes.map(v => v.precio)))}`
+      : currencyFmt(precioActual);
 
   return (
     <div className="min-h-screen bg-[#ff7bab48] pt-20">
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
 
       <nav className="max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 text-xs md:text-sm text-gray-600 truncate">
-        <Link to="/" className="hover:text-pink-600">Inicio</Link>
+        <Link to={content.routes.home} className="hover:text-pink-600">{content.breadcrumbs.home}</Link>
         <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle text-gray-400" />
-        <Link to="/products" className="hover:text-pink-600">Productos</Link>
+        <Link to={content.routes.products} className="hover:text-pink-600">{content.breadcrumbs.products}</Link>
         <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle text-gray-400" />
-        <Link to={`/products?cat=${product.categoria}`} className="hover:text-pink-600">
+        <Link to={`${content.routes.products}?cat=${product.categoria}`} className="hover:text-pink-600">
           {product.categoria.charAt(0).toUpperCase() + product.categoria.slice(1)}
         </Link>
         <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle text-gray-400" />
@@ -182,10 +190,7 @@ const ProductDetail: React.FC = () => {
                 src={product.imagen}
                 alt={product.nombre}
                 className="w-full h-auto max-h-[55vh] md:max-h-[70vh] object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://via.placeholder.com/800x800/f8fafc/94a3b8?text=Imagen+no+disponible';
-                }}
+                onError={(e) => { (e.target as HTMLImageElement).src = content.assets.gallery_fallback; }}
               />
             </div>
           </div>
@@ -201,9 +206,9 @@ const ProductDetail: React.FC = () => {
                 {product.categoria.charAt(0).toUpperCase() + product.categoria.slice(1)}
               </span>
               {stockActual > 0 || (product.tieneVariantes && product.variantes?.some(v => (v.stock ?? 0) > 0)) ? (
-                <span className="text-emerald-600 text-xs md:text-sm font-semibold">En stock</span>
+                <span className="text-emerald-600 text-xs md:text-sm font-semibold">{content.stock.in_stock}</span>
               ) : (
-                <span className="text-red-600 text-xs md:text-sm font-semibold">Sin stock</span>
+                <span className="text-red-600 text-xs md:text-sm font-semibold">{content.stock.out_of_stock}</span>
               )}
             </div>
 
@@ -211,7 +216,7 @@ const ProductDetail: React.FC = () => {
             {product.tieneVariantes && product.variantes && product.variantes.length > 0 && (
               <div className="mb-4 md:mb-6 space-y-3">
                 <h3 className="text-sm md:text-base font-bold text-gray-900">
-                  Seleccioná tamaño / porciones:
+                  {content.variants.title}
                 </h3>
                 <div className="grid grid-cols-2 gap-2.5">
                   {product.variantes.map((variant) => {
@@ -222,17 +227,18 @@ const ProductDetail: React.FC = () => {
                         key={variant.id}
                         onClick={() => setVarianteSeleccionada(variant.id)}
                         disabled={sinStockVariant}
-                        className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${sinStockVariant
+                        className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                          sinStockVariant
                             ? 'bg-gray-50 text-gray-400 cursor-not-allowed line-through'
                             : isSelected
                               ? 'bg-pink-500 text-white shadow-md'
                               : 'bg-white border border-gray-200 text-gray-700 hover:border-pink-300'
-                          }`}
+                        }`}
                         type="button"
                       >
                         <div className="font-bold mb-0.5">{variant.label}</div>
                         <div className="text-xs opacity-90">
-                          {sinStockVariant ? 'Sin stock' : currency(variant.precio)}
+                          {sinStockVariant ? content.variants.no_stock_label : currencyFmt(variant.precio)}
                         </div>
                       </button>
                     );
@@ -250,21 +256,15 @@ const ProductDetail: React.FC = () => {
             <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
               <div className="flex items-start gap-2">
                 <div className="mt-1 w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-pink-500" />
-                <p className="text-gray-700 text-sm md:text-base">
-                  <strong>Sin envíos:</strong> retiro por el local/atelier (coordinamos por WhatsApp).
-                </p>
+                <p className="text-gray-700 text-sm md:text-base">{content.policies[0]}</p>
               </div>
               <div className="flex items-start gap-2">
                 <div className="mt-1 w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-rose-400" />
-                <p className="text-gray-700 text-sm md:text-base">
-                  <strong>Cabify/mensajería opcional:</strong> te cotizo el viaje. <span className="font-semibold">No me hago responsable</span> por el estado durante el traslado.
-                </p>
+                <p className="text-gray-700 text-sm md:text-base">{content.policies[1]}</p>
               </div>
               <div className="flex items-start gap-2">
                 <div className="mt-1 w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-purple-400" />
-                <p className="text-gray-700 text-sm md:text-base">
-                  <strong>Hecho a pedido:</strong> <span className="font-semibold">48 hs</span> de anticipación.
-                </p>
+                <p className="text-gray-700 text-sm md:text-base">{content.policies[2]}</p>
               </div>
             </div>
 
@@ -273,15 +273,15 @@ const ProductDetail: React.FC = () => {
               {enCarrito > 0 ? (
                 <div className="space-y-3">
                   <div className="text-sm text-gray-600">
-                    En el carrito: <span className="font-semibold text-gray-800">{enCarrito}</span> /{' '}
-                    <span className="text-gray-700">Stock {stockActual}</span>
+                    {content.cart.in_cart_label}: <span className="font-semibold text-gray-800">{enCarrito}</span> /{' '}
+                    <span className="text-gray-700">{content.cart.stock_label} {stockActual}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <button
                       onClick={() => handleQty(enCarrito - 1)}
                       className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 transition font-bold"
                       type="button"
-                      aria-label="Menos"
+                      aria-label={content.cart.minus_aria}
                     >
                       −
                     </button>
@@ -291,7 +291,7 @@ const ProductDetail: React.FC = () => {
                       disabled={enCarrito >= stockActual}
                       className="w-10 h-10 rounded-full bg-pink-500 text-white hover:bg-pink-600 disabled:bg-gray-300 transition font-bold"
                       type="button"
-                      aria-label="Más"
+                      aria-label={content.cart.plus_aria}
                     >
                       +
                     </button>
@@ -300,7 +300,7 @@ const ProductDetail: React.FC = () => {
                       className="flex-1 px-4 py-2 rounded-xl border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50 transition"
                       type="button"
                     >
-                      Ver carrito
+                      {content.cart.view_cart}
                     </button>
                   </div>
                 </div>
@@ -308,17 +308,18 @@ const ProductDetail: React.FC = () => {
                 <button
                   onClick={handleAdd}
                   disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
-                  className={`w-full px-6 py-3 rounded-xl font-bold transition ${sinStock || (product.tieneVariantes && !varianteSeleccionada)
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
-                    }`}
+                  className={`w-full px-6 py-3 rounded-xl font-bold transition ${
+                    sinStock || (product.tieneVariantes && !varianteSeleccionada)
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-lg hover:shadow-xl'
+                  }`}
                   type="button"
                 >
                   {sinStock
-                    ? 'Sin stock'
+                    ? content.stock.out_of_stock
                     : (product.tieneVariantes && !varianteSeleccionada)
-                      ? 'Seleccioná tamaño'
-                      : 'Agregar al carrito'}
+                      ? content.variants.select_prompt
+                      : content.cart.add_to_cart}
                 </button>
               )}
             </div>
@@ -328,15 +329,15 @@ const ProductDetail: React.FC = () => {
               {enCarrito > 0 ? (
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600">
-                    En el carrito: <span className="font-semibold text-gray-800">{enCarrito}</span> /{' '}
-                    <span className="text-gray-700">Stock {stockActual}</span>
+                    {content.cart.in_cart_label}: <span className="font-semibold text-gray-800">{enCarrito}</span> /{' '}
+                    <span className="text-gray-700">{content.cart.stock_label} {stockActual}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => handleQty(enCarrito - 1)}
                       className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 transition"
                       type="button"
-                      aria-label="Menos"
+                      aria-label={content.cart.minus_aria}
                     >
                       −
                     </button>
@@ -346,7 +347,7 @@ const ProductDetail: React.FC = () => {
                       disabled={enCarrito >= stockActual}
                       className="w-10 h-10 rounded-full bg-pink-500 text-white hover:bg-pink-600 disabled:bg-gray-300 transition"
                       type="button"
-                      aria-label="Más"
+                      aria-label={content.cart.plus_aria}
                     >
                       +
                     </button>
@@ -355,7 +356,7 @@ const ProductDetail: React.FC = () => {
                       className="ml-2 px-4 py-2 rounded-xl border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50 transition"
                       type="button"
                     >
-                      Ver carrito
+                      {content.cart.view_cart}
                     </button>
                   </div>
                 </div>
@@ -364,17 +365,18 @@ const ProductDetail: React.FC = () => {
                   <button
                     onClick={handleAdd}
                     disabled={sinStock || (product.tieneVariantes && !varianteSeleccionada)}
-                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${sinStock || (product.tieneVariantes && !varianteSeleccionada)
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
-                      }`}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition ${
+                      sinStock || (product.tieneVariantes && !varianteSeleccionada)
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xl hover:shadow-2xl hover:-translate-y-0.5'
+                    }`}
                     type="button"
                   >
                     {sinStock
-                      ? 'Sin stock'
+                      ? content.stock.out_of_stock
                       : (product.tieneVariantes && !varianteSeleccionada)
-                        ? 'Seleccioná tamaño'
-                        : 'Agregar al carrito'}
+                        ? content.variants.select_prompt
+                        : content.cart.add_to_cart}
                   </button>
                 </div>
               )}
@@ -382,7 +384,7 @@ const ProductDetail: React.FC = () => {
 
             {/* Descripción */}
             <div className="prose prose-pink max-w-none">
-              <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Descripción</h2>
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2">{content.sections.description}</h2>
               <p className="text-gray-700 text-sm md:text-base leading-relaxed">{product.descripcion}</p>
             </div>
           </div>
@@ -391,12 +393,12 @@ const ProductDetail: React.FC = () => {
         {/* Relacionados */}
         {relacionados.length > 0 && (
           <div className="mt-10 md:mt-16">
-            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">También te puede gustar</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">{content.related.title}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
               {relacionados.map((p) => {
                 const precioRelacionado = p.tieneVariantes && p.variantes
-                  ? `Desde ${currency(Math.min(...p.variantes.map(v => v.precio)))}`
-                  : currency(p.precio ?? 0);
+                  ? `${content.price.from_prefix} ${currencyFmt(Math.min(...p.variantes.map(v => v.precio)))}`
+                  : currencyFmt(p.precio ?? 0);
 
                 return (
                   <Link
@@ -410,10 +412,7 @@ const ProductDetail: React.FC = () => {
                         src={p.imagen}
                         alt={p.nombre}
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'https://via.placeholder.com/600x450/f8fafc/94a3b8?text=Imagen+no+disponible';
-                        }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = content.assets.related_fallback; }}
                       />
                     </div>
                     <div className="p-3 md:p-4">
@@ -430,8 +429,6 @@ const ProductDetail: React.FC = () => {
           </div>
         )}
       </section>
-
-
     </div>
   );
 };

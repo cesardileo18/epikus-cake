@@ -1,0 +1,56 @@
+{
+  "hero": {
+    "badge": "Términos y Condiciones",
+    "title_prefix": "Hacemos todo",
+    "title_highlight": "claro y simple",
+    "subtitle_html": "Condiciones aplicables a los pedidos de <span class=\"font-semibold\">Epikus Cake</span>."
+  },
+  "sections": [
+    {
+      "title": "1. Pedidos y anticipación",
+      "items": [
+        "Los pedidos deben realizarse con un mínimo de 48 horas de anticipación.",
+        "Para confirmar el pedido es necesario abonar el 50% del valor. El saldo se paga al retirar.",
+        "Los productos son personalizados y se elaboran a pedido."
+      ]
+    },
+    {
+      "title": "2. Pagos y precios",
+      "items": [
+        "Cotizamos según los precios vigentes del mes.",
+        "Para cotizaciones con fecha futura (p. ej., en 2–3 meses), el precio puede variar por inflación o cambios de insumos.",
+        "El valor final se confirma al momento de la seña."
+      ]
+    },
+    {
+      "title": "3. Retiros y envíos",
+      "items": [
+        "Los pedidos se retiran en nuestro domicilio (CABA).",
+        "Si el cliente desea envío, podemos gestionarlo por Cabify a pedido del comprador.",
+        "El envío es a cargo y bajo responsabilidad del comprador. Epikus Cake no se hace responsable por el estado del producto una vez entregado al transporte."
+      ]
+    },
+    {
+      "title": "4. Cancelaciones",
+    "items": [
+    "Los productos son personalizados y hechos a pedido.",
+    "Cancelaciones con más de 72 h: reintegro parcial (se descuenta 20% por insumos y gestión).",
+    "Cancelaciones dentro de las 72 h previas: la seña no es reembolsable."
+  ]
+    },
+    {
+      "title": "5. Trato y derecho a rechazar pedidos",
+      "text": "Priorizamos un trato cordial y respetuoso. Nos reservamos el derecho de rechazar pedidos ante conductas inapropiadas o faltas de respeto hacia nuestro equipo."
+    },
+    {
+      "title": "6. Modificaciones",
+      "text": "Estos términos pueden actualizarse sin previo aviso. La última versión estará siempre disponible en este sitio."
+    }
+  ],
+  "meta": {
+    "last_update_label": "Última actualización:",
+    "last_update_value": "Septiembre 2025"
+  },
+  "routes": { "home": "/" },
+  "cta": { "back_home": "Volver al inicio" }
+}

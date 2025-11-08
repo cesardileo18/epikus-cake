@@ -1,0 +1,38 @@
+{
+  "routes": { "home": "/", "products": "/products" },
+  "breadcrumbs": { "home": "Inicio", "products": "Productos" },
+  "loading": { "text": "Cargando producto..." },
+  "not_found": {
+    "title": "Producto no encontrado",
+    "desc": "Puede que haya sido retirado o que el enlace sea incorrecto.",
+    "back_btn": "Volver"
+  },
+  "i18n": { "locale": "es-AR", "currency_code": "ARS" },
+  "assets": {
+    "gallery_fallback": "https://via.placeholder.com/800x800/f8fafc/94a3b8?text=Imagen+no+disponible",
+    "related_fallback": "https://via.placeholder.com/600x450/f8fafc/94a3b8?text=Imagen+no+disponible"
+  },
+  "stock": { "in_stock": "En stock", "out_of_stock": "Sin stock" },
+  "variants": {
+    "title": "Seleccioná tamaño / porciones:",
+    "no_stock_label": "Sin stock",
+    "select_prompt": "Seleccioná tamaño"
+  },
+  "price": { "from_prefix": "Desde" },
+  "policies": [
+    "Sin envíos: retiro por el local/atelier (coordinamos por WhatsApp).",
+    "Cabify/mensajería opcional: te cotizo el viaje. No me hago responsable por el estado durante el traslado.",
+    "Hecho a pedido: 48 hs de anticipación."
+  ],
+  "cart": {
+    "add_to_cart": "Agregar al carrito",
+    "view_cart": "Ver carrito",
+    "in_cart_label": "En el carrito",
+    "stock_label": "Stock",
+    "minus_aria": "Menos",
+    "plus_aria": "Más"
+  },
+  "related": { "title": "También te puede gustar" },
+  "schema": { "currency": "ARS" },
+  "sections": { "description": "Descripción" }
+}

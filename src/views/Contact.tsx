@@ -25,7 +25,7 @@ const Contact: React.FC = () => {
     form, onChange, valid, submit, sending, status, whatsappLink, nameRef,
   } = useContactForm();
   const [errorRecaptcha, setErrorRecaptcha] = useState<string | null>(null);
-  const { executeRecaptcha } = useRecaptcha();
+  const { executeRecaptcha } = useRecaptcha(true);
 
   const submitDisabled = !valid || sending;
 
