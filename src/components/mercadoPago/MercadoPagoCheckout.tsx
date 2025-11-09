@@ -93,13 +93,18 @@ const MercadoPagoCheckout: React.FC<MercadoPagoCheckoutProps> = ({
         type="button"
         onClick={handleCheckout}
         disabled={loading}
-        className={`w-full py-3 rounded-xl font-semibold transition-all ${
-          loading
+        className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${loading
             ? "bg-gray-200 text-gray-500 cursor-not-allowed"
             : "bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500"
-        }`}
+          }`}
       >
-        {loading ? "Preparando pago..." : "Pagar con MercadoPago"}
+        {loading ? (
+          <>
+            <span className="animate-spin">⏳</span> Procesando...
+          </>
+        ) : (
+          "Pagar con MercadoPago"
+        )}
       </button>
     </div>
   );

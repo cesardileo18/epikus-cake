@@ -17,15 +17,29 @@ export const StoreStatusProvider = ({ children }: { children: React.ReactNode })
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [nextOpeningTime, setNextOpeningTime] = useState("");
   const [closedMessage, setClosedMessage] = useState<string | null>(null);
-  
+
   const checkStoreStatus = () => {
     const raw = (import.meta.env.VITE_FORCE_STORE_CLOSED ?? "").toString().trim().toLowerCase();
-    const forceClosed = raw === "true" || raw === "1" || raw === "yes" || raw === "on";
     const customMessage = import.meta.env.VITE_STORE_CLOSED_MESSAGE || "";
 
+    // Si es explícitamente "false" → SIEMPRE ABIERTA (para testing en localhost)
+    if (raw === "false") {
+      setIsStoreOpen(true);
+      setClosedMessage(null);
+      return;
+    }
+
+    // Si es "true" → SIEMPRE CERRADA (mantenimiento)
+    if (raw === "true") {
+      setIsStoreOpen(false);
+      setClosedMessage(customMessage || "Tienda cerrada por mantenimiento");
+      return;
+    }
+
+    // Si no existe o está vacía → Lógica normal de horarios
     // Obtener hora de Argentina correctamente
     const now = new Date();
-    
+
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/Argentina/Buenos_Aires',
       hour: 'numeric',
@@ -35,40 +49,34 @@ export const StoreStatusProvider = ({ children }: { children: React.ReactNode })
       month: 'numeric',
       year: 'numeric'
     });
-    
+
     const parts = formatter.formatToParts(now);
     const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
     const weekday = parts.find(p => p.type === 'weekday')?.value || '';
-    
+
     // Convertir weekday a número (0 = domingo)
     const dayMap: Record<string, number> = {
       'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
     };
     const day = dayMap[weekday] || 0;
 
-    if (forceClosed) {
-      setIsStoreOpen(false);
-      setClosedMessage(customMessage || "Tienda cerrada por mantenimiento");
-      return;
-    }
-
     let open = false;
 
     // ═══════════════════════════════════════════════════════════════
     // 🕐 CONFIGURACIÓN DE HORARIOS - MODIFICAR AQUÍ
     // ═══════════════════════════════════════════════════════════════
-    
+
     if (day >= 1 && day <= 5) {
       // 📅 LUNES A VIERNES
       // Cambiar los números para modificar horario de apertura y cierre
       // Formato: hour >= HORA_APERTURA && hour < HORA_CIERRE
       open = hour >= 9 && hour < 20;  // ← ACTUAL: 9:00 a 20:00
-    } 
+    }
     else if (day === 6) {
       // 📅 SÁBADO
       // Cambiar los números para modificar horario
       open = hour >= 9 && hour < 17;  // ← ACTUAL: 9:00 a 17:00
-    } 
+    }
     else if (day === 0) {
       // 📅 DOMINGO
       // Cambiar los números para modificar horario
@@ -78,7 +86,7 @@ export const StoreStatusProvider = ({ children }: { children: React.ReactNode })
     // ═══════════════════════════════════════════════════════════════
 
     setIsStoreOpen(open);
-    
+
     if (!open) {
       // ═══════════════════════════════════════════════════════════════
       // 💬 MENSAJES DE HORARIOS - ACTUALIZAR SI CAMBIAS LOS HORARIOS ARRIBA
@@ -118,7 +126,7 @@ export const StoreStatusProvider = ({ children }: { children: React.ReactNode })
       setClosedMessage(null);
     }
   };
-
+  
   useEffect(() => {
     checkStoreStatus();
     const interval = setInterval(checkStoreStatus, 60 * 1000);

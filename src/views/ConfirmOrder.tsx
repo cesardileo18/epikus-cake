@@ -1,6 +1,6 @@
 // src/views/ConfirmOrder.tsx
 import React, { useMemo, useState, useRef } from 'react';
-import { v4 as uuidv4 } from "uuid"; // npm i uuid
+import { v4 as uuidv4 } from "uuid";
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartProvider';
 import { functions, auth } from '@/config/firebase';
@@ -16,6 +16,7 @@ import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/Toast/ToastProvider';
 import { httpsCallable } from 'firebase/functions';
 import ConsentimientoTyC from '@/components/buttons/ConsentimientoTyC';
+
 const price = (n: number) => n.toLocaleString('es-AR');
 const WA_PHONE = import.meta.env.VITE_WA_PHONE;
 const DESCUENTO_TRANSFERENCIA = 10;
@@ -23,9 +24,9 @@ const DESCUENTO_TRANSFERENCIA = 10;
 const ConfirmOrder: React.FC = () => {
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
   const enviandoRef = useRef(false);
-  // ====== estilos animaciones CSS (shimmer / confetti / float)
   const [errorRecaptcha, setErrorRecaptcha] = useState<string | null>(null);
   const { executeRecaptcha } = useRecaptcha(true);
+
   const Styles = () => (
     <style>{`
       @keyframes shimmer {
@@ -44,7 +45,6 @@ const ConfirmOrder: React.FC = () => {
       }
       .float-slow { animation: floatY 4.5s ease-in-out infinite }
       .float-fast { animation: floatY 3.2s ease-in-out infinite }
-      /* confetti stars */
       .confetti-star {
         position: absolute;
         font-size: 16px;
@@ -58,6 +58,7 @@ const ConfirmOrder: React.FC = () => {
       }
     `}</style>
   );
+
   const { items, total, clear } = useCart();
   const nav = useNavigate();
 
@@ -74,7 +75,7 @@ const ConfirmOrder: React.FC = () => {
     notas: '',
   });
   const [enviando, setEnviando] = useState(false);
-  const [celebrate, setCelebrate] = useState(false); // 🎉 mini confetti
+  const [celebrate, setCelebrate] = useState(false);
 
   const pricing = useMemo(() => {
     const subtotal = total;
@@ -93,13 +94,27 @@ const ConfirmOrder: React.FC = () => {
 
   const valido = useMemo(() => {
     if (!form.nombre.trim()) return false;
+
+    // Email: requerido y formato válido
+    if (!form.email.trim()) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) return false;
+
+    // WhatsApp: requerido y formato válido
     if (!/^\d{10,15}$/.test(form.whatsapp.replace(/\D/g, ''))) return false;
+
+    // Fecha y hora: requeridos
     if (!form.fecha || !form.hora) return false;
-    if (!aceptoTerminos) return false; // 👈 AGREGAR ESTO
+    // Validar rango de hora: 09:00 a 19:00
+    const [hour, minute] = form.hora.split(':').map(Number);
+    if (hour < 9 || hour > 19 || (hour === 19 && minute > 0)) return false;
+    // Términos: requeridos
+    if (!aceptoTerminos) return false;
+
     return items.length > 0;
   }, [form, items.length, aceptoTerminos]);
 
-  const minDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 48h adelante
+  const minDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const buildWaMessage = (orderId: string) => {
     const lines = items.map(
@@ -140,14 +155,13 @@ const ConfirmOrder: React.FC = () => {
     setErrorRecaptcha(null);
 
     try {
-      // 1) reCAPTCHA (igual que antes)
       const recaptchaResult = await executeRecaptcha("confirm_order");
       if (!recaptchaResult.ok || (recaptchaResult.score && recaptchaResult.score < 0.5)) {
         setErrorRecaptcha("No pudimos verificar que sos humano. Intentá de nuevo.");
         return;
       }
       const clientRequestId = uuidv4();
-      // 2) Crear orden en backend (validar + decrementar stock + crear pedido), TODO ATÓMICO
+
       const createOrder = httpsCallable(functions, "createOrder");
       const { data }: any = await createOrder({
         clientRequestId,
@@ -167,8 +181,8 @@ const ConfirmOrder: React.FC = () => {
           fecha: form.fecha,
           hora: form.hora
         },
-        pago: {                              // 👈 CAMBIAR ESTO
-          metodoSeleccionado: paymentMethod  // 👈 De paymentMethod a pago.metodoSeleccionado
+        pago: {
+          metodoSeleccionado: paymentMethod
         },
         dedicatoria: form.dedicatoria || null,
         cantidadPersonas: form.cantidadPersonas || null,
@@ -180,7 +194,6 @@ const ConfirmOrder: React.FC = () => {
       const orderId = data?.orderId as string;
       if (!orderId) throw new Error("No se pudo crear la orden.");
 
-      // 3) WhatsApp en nueva pestaña (igual que antes)
       const message = buildWaMessage(orderId);
       const waHref = `https://api.whatsapp.com/send?phone=${WA_PHONE}&text=${encodeURIComponent(message)}`;
       const a = document.createElement("a");
@@ -191,12 +204,10 @@ const ConfirmOrder: React.FC = () => {
       a.click();
       a.remove();
 
-      // 4) Limpiar y navegar al comprobante (igual que antes)
       clear();
       setCelebrate(true);
       nav(`/payment-success?orderId=${orderId}`);
 
-      // 5) Emails EN PARALELO (igual que antes)
       const tasks: Promise<unknown>[] = [];
 
       if (form.email) {
@@ -307,7 +318,6 @@ const ConfirmOrder: React.FC = () => {
     <div className="relative min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-24 pb-28 overflow-hidden">
       <Styles />
 
-      {/* Burbujas animadas de fondo (claras y grandes, visibles en desktop) */}
       <motion.div
         className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-pink-200/30 blur-3xl"
         animate={{ x: [0, 35, -10, 0], y: [0, -20, 15, 0] }}
@@ -320,7 +330,6 @@ const ConfirmOrder: React.FC = () => {
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        {/* Header con “mascota” flotante */}
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="mb-8 relative">
           <h1 className="leading-tight text-[clamp(2rem,6vw,3.25rem)] font-light text-gray-900">
             Confirmar <span className="font-black text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">pedido</span>
@@ -340,9 +349,7 @@ const ConfirmOrder: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Grid 2 columnas: form + resumen sticky */}
         <div className="grid lg:grid-cols-[1.6fr_1fr] gap-8 items-start">
-          {/* LEFT: Form */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
@@ -360,33 +367,56 @@ const ConfirmOrder: React.FC = () => {
                   <HiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
-                    className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-3 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
+                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${form.nombre && !form.nombre.trim()
+                      ? 'border-red-400 focus:ring-2 focus:ring-red-200'
+                      : 'border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-200'
+                      }`}
                     placeholder="Nombre y apellido"
                     value={form.nombre}
                     onChange={onChange('nombre')}
+                    required
                   />
+                  {form.nombre && !form.nombre.trim() && (
+                    <p className="text-xs text-red-600 mt-1 ml-1">El nombre es requerido</p>
+                  )}
                 </div>
+
                 <div className="relative group">
                   <HiEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     type="email"
-                    className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-3 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
-                    placeholder="Email (opcional)"
+                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+                      ? 'border-red-400 focus:ring-2 focus:ring-red-200'
+                      : 'border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-200'
+                      }`}
+                    placeholder="Email"
                     value={form.email}
                     onChange={onChange('email')}
+                    required
                   />
+                  {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && (
+                    <p className="text-xs text-red-600 mt-1 ml-1">Ingresá un email válido</p>
+                  )}
                 </div>
+
                 <div className="relative group">
                   <HiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
-                    className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-3 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
-                    placeholder="WhatsApp (solo números)"
+                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${form.whatsapp && !/^\d{10,15}$/.test(form.whatsapp.replace(/\D/g, ''))
+                      ? 'border-red-400 focus:ring-2 focus:ring-red-200'
+                      : 'border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-200'
+                      }`}
+                    placeholder="WhatsApp (solo números, 10-15 dígitos)"
                     value={form.whatsapp}
                     onChange={onChange('whatsapp')}
                     inputMode="numeric"
+                    required
                   />
+                  {form.whatsapp && !/^\d{10,15}$/.test(form.whatsapp.replace(/\D/g, '')) && (
+                    <p className="text-xs text-red-600 mt-1 ml-1">Ingresá un WhatsApp válido (10-15 dígitos)</p>
+                  )}
                 </div>
               </div>
             </section>
@@ -412,10 +442,14 @@ const ConfirmOrder: React.FC = () => {
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     type="date"
-                    className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-3 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
+                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${!form.fecha
+                      ? 'border-red-400 focus:ring-2 focus:ring-red-200'
+                      : 'border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-200'
+                      }`}
                     value={form.fecha}
                     onChange={onChange('fecha')}
                     min={minDate}
+                    required
                   />
                 </div>
                 <div className="relative group">
@@ -423,10 +457,22 @@ const ConfirmOrder: React.FC = () => {
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     type="time"
-                    className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-3 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
+                    min="09:00"
+                    max="19:00"
+                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${!form.hora
+                      ? 'border-red-400 focus:ring-2 focus:ring-red-200'
+                      : 'border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-200'
+                      }`}
                     value={form.hora}
                     onChange={onChange('hora')}
+                    required
                   />
+                  {form.hora && (() => {
+                    const [hour, minute] = form.hora.split(':').map(Number);
+                    return (hour < 9 || hour > 19 || (hour === 19 && minute > 0)) && (
+                      <p className="text-xs text-red-600 mt-1 ml-1">Horario: 09:00 a 19:00 hs</p>
+                    );
+                  })()}
                 </div>
               </div>
             </section>
@@ -442,7 +488,7 @@ const ConfirmOrder: React.FC = () => {
                 <motion.textarea
                   whileFocus={{ scale: 1.01 }}
                   className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-3 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none resize-none"
-                  placeholder="Notas (ej: sin pasas, decoración especial...)"
+                  placeholder="Notas (opcional)"
                   rows={3}
                   value={form.notas}
                   onChange={onChange('notas')}
@@ -518,10 +564,9 @@ const ConfirmOrder: React.FC = () => {
             <div>
               {paymentMethod === 'transferencia' ? (
                 <>
-                  {/* Badge reCAPTCHA */}
                   <ReCaptchaInvisible />
                   {errorRecaptcha && (
-                    <div className="rounded-xl px-4 py-3 text-sm bg-rose-50 text-rose-700 border border-rose-200">
+                    <div className="rounded-xl px-4 py-3 text-sm bg-rose-50 text-rose-700 border border-rose-200 mb-4">
                       {errorRecaptcha}
                     </div>
                   )}
@@ -586,10 +631,8 @@ const ConfirmOrder: React.FC = () => {
                     >
                       Aceptá TyC para pagar
                     </button>
-
                   )}
                 </>
-
               )}
 
               <Link to="/checkout" className="block text-center text-pink-600 hover:text-pink-700 hover:underline font-medium py-3">
@@ -602,7 +645,7 @@ const ConfirmOrder: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* RIGHT: Resumen sticky con badge animado */}
+          {/* RIGHT: Resumen sticky */}
           <motion.aside
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -693,7 +736,7 @@ const ConfirmOrder: React.FC = () => {
         </div>
       </div>
 
-      {/* 🎉 Mini confetti (estrellitas) */}
+      {/* Confetti */}
       <AnimatePresence>
         {celebrate && (
           <motion.div
@@ -705,7 +748,7 @@ const ConfirmOrder: React.FC = () => {
           >
             {Array.from({ length: 24 }).map((_, i) => {
               const left = Math.random() * 100;
-              const x = (Math.random() - 0.5) * 160; // desplazamiento lateral
+              const x = (Math.random() - 0.5) * 160;
               const delay = Math.random() * 0.15;
               const emojis = ['✨', '⭐', '🌟', '💖', '🎉'];
               const emoji = emojis[i % emojis.length];
