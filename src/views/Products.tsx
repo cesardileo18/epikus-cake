@@ -121,9 +121,9 @@ const Products: React.FC = () => {
     <div className="min-h-screen bg-[#ff7bab48]">
       {/* Contenedor principal */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-5">
           {/* Header */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-7">
             <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-4">
               {content.header.title_prefix}{' '}
               <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
@@ -136,7 +136,7 @@ const Products: React.FC = () => {
           </div>
 
           {/* Filtros */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8 max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row gap-4 mb-12 max-w-4xl mx-auto">
             {/* Input de búsqueda */}
             <div className="flex-1 relative">
               <div className="relative">

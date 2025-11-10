@@ -362,9 +362,10 @@ const ConfirmOrder: React.FC = () => {
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-pink-100 text-pink-600">👤</span>
                 Información Personal
               </h3>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="relative group">
-                  <HiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <div className="grid grid-cols-1 gap-1">
+                {/* Nombre */}
+                <div className="relative">
+                  <HiUser className="absolute left-3 top-3 text-gray-400 w-5 h-5 pointer-events-none" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${form.nombre && !form.nombre.trim()
@@ -376,13 +377,16 @@ const ConfirmOrder: React.FC = () => {
                     onChange={onChange('nombre')}
                     required
                   />
-                  {form.nombre && !form.nombre.trim() && (
-                    <p className="text-xs text-red-600 mt-1 ml-1">El nombre es requerido</p>
-                  )}
+                  <div className="h-5">
+                    {form.nombre && !form.nombre.trim() && (
+                      <p className="text-xs text-red-600 ml-1">El nombre es requerido</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="relative group">
-                  <HiEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                {/* Email */}
+                <div className="relative">
+                  <HiEnvelope className="absolute left-3 top-3 text-gray-400 w-5 h-5 pointer-events-none" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     type="email"
@@ -395,13 +399,16 @@ const ConfirmOrder: React.FC = () => {
                     onChange={onChange('email')}
                     required
                   />
-                  {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && (
-                    <p className="text-xs text-red-600 mt-1 ml-1">Ingresá un email válido</p>
-                  )}
+                  <div className="h-5">
+                    {form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && (
+                      <p className="text-xs text-red-600 ml-1">Ingresá un email válido</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="relative group">
-                  <HiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                {/* WhatsApp */}
+                <div className="relative">
+                  <HiPhone className="absolute left-3 top-3 text-gray-400 w-5 h-5 pointer-events-none" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${form.whatsapp && !/^\d{10,15}$/.test(form.whatsapp.replace(/\D/g, ''))
@@ -414,9 +421,11 @@ const ConfirmOrder: React.FC = () => {
                     inputMode="numeric"
                     required
                   />
-                  {form.whatsapp && !/^\d{10,15}$/.test(form.whatsapp.replace(/\D/g, '')) && (
-                    <p className="text-xs text-red-600 mt-1 ml-1">Ingresá un WhatsApp válido (10-15 dígitos)</p>
-                  )}
+                  <div className="h-5">
+                    {form.whatsapp && !/^\d{10,15}$/.test(form.whatsapp.replace(/\D/g, '')) && (
+                      <p className="text-xs text-red-600 ml-1">Ingresá un WhatsApp válido (10-15 dígitos)</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </section>
@@ -437,42 +446,58 @@ const ConfirmOrder: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="relative group">
-                  <HiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="relative">
+                  <HiCalendar className="absolute left-3 top-3 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     type="date"
-                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${!form.fecha
+                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors cursor-pointer ${!form.fecha
                       ? 'border-red-400 focus:ring-2 focus:ring-red-200'
                       : 'border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-200'
-                      }`}
+                      }
+    [&::-webkit-calendar-picker-indicator]:absolute 
+    [&::-webkit-calendar-picker-indicator]:w-full 
+    [&::-webkit-calendar-picker-indicator]:h-full 
+    [&::-webkit-calendar-picker-indicator]:opacity-0 
+    [&::-webkit-calendar-picker-indicator]:cursor-pointer
+    [&::-webkit-calendar-picker-indicator]:left-0
+                    [&::-webkit-calendar-picker-indicator]:top-0`}
                     value={form.fecha}
                     onChange={onChange('fecha')}
                     min={minDate}
                     required
                   />
                 </div>
-                <div className="relative group">
-                  <HiClock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="relative">
+                  <HiClock className="absolute left-3 top-3 text-gray-400 w-5 h-5 pointer-events-none z-10" />
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     type="time"
                     min="09:00"
                     max="19:00"
-                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors ${!form.hora
+                    className={`w-full rounded-xl border pl-11 pr-3 py-3 outline-none transition-colors cursor-pointer ${!form.hora
                       ? 'border-red-400 focus:ring-2 focus:ring-red-200'
                       : 'border-gray-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-200'
-                      }`}
+                      } 
+    [&::-webkit-calendar-picker-indicator]:absolute 
+    [&::-webkit-calendar-picker-indicator]:w-full 
+    [&::-webkit-calendar-picker-indicator]:h-full 
+    [&::-webkit-calendar-picker-indicator]:opacity-0 
+    [&::-webkit-calendar-picker-indicator]:cursor-pointer
+    [&::-webkit-calendar-picker-indicator]:left-0
+    [&::-webkit-calendar-picker-indicator]:top-0`}
                     value={form.hora}
                     onChange={onChange('hora')}
                     required
                   />
-                  {form.hora && (() => {
-                    const [hour, minute] = form.hora.split(':').map(Number);
-                    return (hour < 9 || hour > 19 || (hour === 19 && minute > 0)) && (
-                      <p className="text-xs text-red-600 mt-1 ml-1">Horario: 09:00 a 19:00 hs</p>
-                    );
-                  })()}
+                  <div className="h-5">
+                    {form.hora && (() => {
+                      const [hour, minute] = form.hora.split(':').map(Number);
+                      return (hour < 9 || hour > 19 || (hour === 19 && minute > 0)) && (
+                        <p className="text-xs text-red-600 ml-1">Horario: 09:00 a 19:00 hs</p>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </section>

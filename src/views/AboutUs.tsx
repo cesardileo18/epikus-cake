@@ -130,7 +130,7 @@ export default function AboutUs() {
       </section>
 
       {/* Historia */}
-      <section className="border-t-2 border-pink-200 bg-white/50 backdrop-blur-sm py-10 relative z-10">
+      <section className="border-t-2 border-pink-200 bg-[#ff7bab3a] py-10 relative z-10">
         <div className="max-w-7xl mx-auto px-6">
           <SectionHeader
             kicker={content.history_section.kicker}
