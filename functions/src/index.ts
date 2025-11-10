@@ -6,7 +6,9 @@ import { defineString } from "firebase-functions/params";
 import * as nodemailer from "nodemailer";
 import { google } from "googleapis";
 import * as admin from "firebase-admin";
+import * as crypto from "crypto";
 admin.initializeApp();
+
 setGlobalOptions({ region: "southamerica-east1", maxInstances: 10 });
 
 const isLocal = process.env.FUNCTIONS_EMULATOR === "true";
@@ -29,7 +31,6 @@ function sanitize(text: string | null, maxLength: number): string | null {
   // Remueve < y > para prevenir tags HTML, recorta espacios y limita longitud
   return text.replace(/[<>]/g, '').trim().slice(0, maxLength);
 }
-
 // Test endpoint
 export const ping = onRequest((req: Request, res: Response): void => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -55,7 +56,7 @@ export const createPreference = onRequest(
 
     try {
       const { items, orderId } = req.body || {};
-      
+
       if (!items || !Array.isArray(items) || items.length === 0 || !orderId) {
         res.status(400).json({ error: "Faltan parámetros" });
         return;
@@ -105,72 +106,85 @@ export const createPreference = onRequest(
 );
 // Webhook de notificaciones de Mercado Pago
 export const mercadopagoWebhook = onRequest(async (req: Request, res: Response): Promise<void> => {
-  // CORS
   res.set("Access-Control-Allow-Origin", "*");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Método no permitido" });
-    return;
-  }
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { res.status(405).json({ error: "Método no permitido" }); return; }
 
   try {
-    const { type, data } = req.body;
+    // --- FIRMA (X-Signature) ---
+    const signature = req.header("x-signature") || "";
+    const requestId = req.header("x-request-id") || "";
+    const secret = process.env.MP_WEBHOOK_SECRET || ""; // poné este secret en tu app de MP
 
-    // MercadoPago envía varios tipos de notificaciones, solo nos interesa "payment"
-    if (type !== "payment") {
-      res.status(200).send("ok");
-      return;
-    }
+    if (!signature || !requestId || !secret) { res.status(401).send("missing-signature"); return; }
 
-    const paymentId = data?.id;
-    if (!paymentId) {
-      res.status(400).json({ error: "Payment ID no encontrado" });
-      return;
-    }
+    const [tsPart, v1Part] = signature.split(",");
+    const ts = (tsPart || "").replace("ts=", "");
+    const v1 = (v1Part || "").replace("v1=", "");
 
-    // Consultar el pago a la API de MercadoPago para obtener detalles
+    // id del evento (payment) viene en body.data.id
+    const { type, data } = req.body || {};
+    const paymentId = String(data?.id || "");
+
+    if (!paymentId) { res.status(400).json({ error: "Payment ID no encontrado" }); return; }
+
+    // manifest oficial: id:<data.id>;request-id:<x-request-id>;ts:<ts>;
+    const manifest = `id:${paymentId};request-id:${requestId};ts:${ts};`;
+    const calc = crypto.createHmac("sha256", secret).update(manifest).digest("hex");
+    if (calc !== v1) { res.status(401).send("invalid-signature"); return; }
+
+    // --- IDEMPOTENCIA ---
+    const idemRef = admin.firestore().collection("mp_payments").doc(paymentId);
+    const idemSnap = await idemRef.get();
+    if (idemSnap.exists) { res.status(200).send("ok"); return; }
+    await idemRef.set({ requestId, ts, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+    // --- LÓGICA EXISTENTE ---
+    if (type !== "payment") { res.status(200).send("ok"); return; }
+
     const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` }
     });
+    if (!response.ok) { res.status(502).json({ error: "MP fetch error" }); return; }
 
     const payment = await response.json();
-
-    // Obtener el orderId que guardaste en external_reference
     const orderId = payment.external_reference;
-    const status = payment.status; // "approved", "rejected", "pending", etc.
+    const status = payment.status;
+    if (!orderId) { console.error("❌ Pago sin external_reference:", paymentId); res.status(200).send("ok"); return; }
 
-    if (!orderId) {
-      console.error("❌ Pago sin external_reference:", paymentId);
-      res.status(200).send("ok");
-      return;
-    }
+    const orderRef = admin.firestore().collection("pedidos").doc(orderId);
 
-    // Actualizar el estado de la orden según el resultado del pago
-    const orderRef = admin.firestore().collection('pedidos').doc(orderId);
-
-    if (status === 'approved') {
+    if (status === "approved") {
       await orderRef.update({
-        status: 'en_proceso',
-        'pago.acreditado': true,
-        'pago.mercadopagoId': paymentId,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        status: "en_proceso",
+        "pago.acreditado": true,
+        "pago.mercadopago": {
+          paymentId: payment.id,
+          status: payment.status,
+          statusDetail: payment.status_detail,
+          transactionAmount: payment.transaction_amount,
+          paymentMethodId: payment.payment_method_id,
+          paymentTypeId: payment.payment_type_id,
+          dateApproved: payment.date_approved,
+          installments: payment.installments || 1,
+          cardLastFourDigits: payment.card?.last_four_digits || null,
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-    } else if (status === 'rejected') {
+    } else if (status === "rejected") {
       await orderRef.update({
-        status: 'cancelado',
-        'pago.mercadopagoId': paymentId,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        status: "cancelado",
+        "pago.mercadopago": {
+          paymentId: payment.id,
+          status: payment.status,
+          statusDetail: payment.status_detail,
+          transactionAmount: payment.transaction_amount,
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
-
     console.log(`✅ Webhook procesado - Order: ${orderId}, Payment: ${paymentId}, Status: ${status}`);
     res.status(200).send("ok");
-
   } catch (err: any) {
     console.error("❌ Error en webhook:", err);
     res.status(500).json({ error: err?.message ?? "Error interno" });
@@ -204,7 +218,6 @@ async function createTransporter() {
     },
   });
 }
-
 // Enviar email
 export const sendEmail = onCall(async (request) => {
   const { to, subject, text, html } = request.data;
@@ -233,7 +246,6 @@ export const sendEmail = onCall(async (request) => {
     throw new Error(error.message || "Error al enviar email");
   }
 });
-
 // Verificar reCAPTCHA
 export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Promise<void> => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -273,7 +285,6 @@ export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Pr
     res.status(500).json({ ok: false, error: err?.message ?? "internal-error" });
   }
 });
-
 // Validar carrito antes de confirmar
 export const validateCart = onCall(async (request) => {
   const { items } = request.data;
@@ -368,7 +379,6 @@ export const validateCart = onCall(async (request) => {
     throw new Error(error.message || "Error al validar el carrito");
   }
 });
-
 // 🧩 Crear orden atómica: valida, descuenta stock y crea el documento en /pedidos
 export const createOrder = onCall(async (request) => {
   // ✅ PASO 1: VERIFICAR AUTENTICACIÓN

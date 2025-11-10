@@ -6,13 +6,15 @@ import toast from 'react-hot-toast';
 import {
   collection,
   doc,
-  deleteDoc,
   onSnapshot,
   orderBy,
   query,
   updateDoc,
   serverTimestamp,
   Timestamp,
+  writeBatch,
+  getDoc,
+  increment,
 } from 'firebase/firestore';
 import {
   MagnifyingGlassIcon,
@@ -23,7 +25,7 @@ import {
   BanknotesIcon,
   FunnelIcon,
 } from '@heroicons/react/24/outline';
-import { sendEmail } from '@/config/emailjs'; // 👈 agregado
+import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/Toast/ToastProvider';
 
 type OrderStatus = 'pendiente' | 'en_proceso' | 'entregado' | 'cancelado';
@@ -34,10 +36,8 @@ interface OrderItem {
   variantLabel?: string | null;
   nombre: string;
   cantidad: number;
-  // viejo esquema
   precio?: number;
   subtotal?: number;
-  // nuevo esquema
   precioUnitario?: number;
   subtotalItem?: number;
 }
@@ -62,11 +62,8 @@ interface Order {
   };
 
   items: OrderItem[];
-
-  // viejo esquema
   total?: number;
 
-  // nuevo esquema
   pricing?: {
     total?: number;
     subtotal?: number;
@@ -82,13 +79,23 @@ interface Order {
     saldoRestante?: number;
     liquidacion?: 'online' | 'offline';
     acreditado?: boolean;
+    mercadopago?: {
+      paymentId?: string;
+      status?: string;
+      statusDetail?: string;
+      transactionAmount?: number;
+      paymentMethodId?: string;
+      paymentTypeId?: string;
+      dateApproved?: string;
+      installments?: number;
+      cardLastFourDigits?: string;
+    };
   };
 
   notas?: string | null;
   userUid?: string;
 }
 
-// ===== Helpers robustos (compatibles con ambos esquemas)
 const price = (n: number | undefined | null) => Number(n ?? 0).toLocaleString('es-AR');
 
 const getItemUnitPrice = (it: OrderItem) =>
@@ -144,16 +151,56 @@ const statusCfg = (s: OrderStatus) => {
   } as const;
   return map[s] ?? map.pendiente;
 };
+
 const eliminarPedido = async (o: Order) => {
-  const ok = await confirmToast(`¿Eliminar definitivamente el pedido #${o.id}? Esta acción no se puede deshacer.`);
+  const ok = await confirmToast(
+    `¿Eliminar definitivamente el pedido #${o.id}? Se devolverá el stock automáticamente.`
+  );
   if (!ok) return;
 
   try {
-    await deleteDoc(doc(db, 'pedidos', o.id));
-    showToast.success(`Pedido #${o.id} eliminado correctamente ✨`);
+    const batch = writeBatch(db);
+
+    for (const item of o.items) {
+      const realProductId = item.productId.includes('-')
+        ? item.productId.split('-')[0]
+        : item.productId;
+
+      const productRef = doc(db, 'productos', realProductId);
+      const productSnap = await getDoc(productRef);
+
+      if (!productSnap.exists()) {
+        console.warn(`⚠️ Producto no encontrado: ${realProductId}`);
+        continue;
+      }
+
+      const producto = productSnap.data() as any;
+
+      if (item.variantId && producto.tieneVariantes && Array.isArray(producto.variantes)) {
+        const variantes = [...producto.variantes];
+        const idx = variantes.findIndex((v: any) => v.id === item.variantId);
+
+        if (idx !== -1) {
+          variantes[idx] = {
+            ...variantes[idx],
+            stock: (variantes[idx].stock || 0) + item.cantidad,
+          };
+          batch.update(productRef, { variantes });
+        }
+      } else {
+        batch.update(productRef, {
+          stock: increment(item.cantidad),
+        });
+      }
+    }
+
+    batch.delete(doc(db, 'pedidos', o.id));
+    await batch.commit();
+
+    showToast.success(`Pedido #${o.id} eliminado y stock revertido ✨`);
   } catch (error) {
-    console.error('Error eliminando pedido:', error);
-    showToast.error('Error al eliminar el pedido. Revisá la consola.');
+    console.error('Error:', error);
+    showToast.error('Error al eliminar el pedido');
   }
 };
 
@@ -174,15 +221,15 @@ const confirmToast = (msg: string): Promise<boolean> =>
               onClick={() => { toast.dismiss(id); resolve(true); }}
               className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600"
             >
-              Eliminar
+              Confirmar
             </button>
           </div>
         </div>
       ),
-      { duration: 10000 } // 10s para decidir
+      { duration: 10000 }
     );
   });
-// ===== Helpers de email (solo UI + texto)
+
 const buildProductosHTML = (o: Order) =>
   o.items
     ?.map(
@@ -236,11 +283,65 @@ const mailEntregado = (o: Order) => ({
   text: `Pedido #${o.id} entregado. ¡Gracias por tu compra!`,
 });
 
+// NUEVO: cancelar + reponer stock (sin borrar el pedido)
+const cancelarYReponer = async (o: Order) => {
+  const ok = await confirmToast(`¿Cancelar el pedido #${o.id} y reponer stock automáticamente?`);
+  if (!ok) return;
+
+  try {
+    const batch = writeBatch(db);
+
+    for (const item of o.items) {
+      const realProductId = item.productId.includes('-')
+        ? item.productId.split('-')[0]
+        : item.productId;
+
+      const productRef = doc(db, 'productos', realProductId);
+      const productSnap = await getDoc(productRef);
+
+      if (!productSnap.exists()) {
+        console.warn(`⚠️ Producto no encontrado: ${realProductId}`);
+        continue;
+      }
+
+      const producto = productSnap.data() as any;
+
+      if (item.variantId && producto.tieneVariantes && Array.isArray(producto.variantes)) {
+        const variantes = [...producto.variantes];
+        const idx = variantes.findIndex((v: any) => v.id === item.variantId);
+
+        if (idx !== -1) {
+          variantes[idx] = {
+            ...variantes[idx],
+            stock: (variantes[idx].stock || 0) + item.cantidad,
+          };
+          batch.update(productRef, { variantes });
+        }
+      } else {
+        batch.update(productRef, {
+          stock: increment(item.cantidad),
+        });
+      }
+    }
+
+    batch.update(doc(db, 'pedidos', o.id), {
+      status: 'cancelado',
+      'pago.acreditado': false,
+      updatedAt: serverTimestamp(),
+    });
+
+    await batch.commit();
+    showToast.success(`Pedido #${o.id} cancelado y stock repuesto ✨`);
+  } catch (error) {
+    console.error('Error:', error);
+    showToast.error('No se pudo cancelar/reponer');
+  }
+};
+
 const OrdersAdmin: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filtros
   const [qText, setQText] = useState('');
   const [status, setStatus] = useState<'todos' | OrderStatus>('todos');
   const [metodo, setMetodo] = useState<'todos' | 'transferencia' | 'mercadopago'>('todos');
@@ -275,8 +376,10 @@ const OrdersAdmin: React.FC = () => {
         o.id,
         o.customer?.nombre,
         o.customer?.whatsapp,
+        o.customer?.email,
         o.entrega?.fecha,
         o.entrega?.hora,
+        o.pago?.mercadopago?.paymentId,
       ]
         .filter(Boolean)
         .join(' ')
@@ -286,7 +389,6 @@ const OrdersAdmin: React.FC = () => {
     });
   }, [orders, qText, status, metodo]);
 
-  // ===== Acciones
   const acreditarSeniaOPago = async (o: Order) => {
     const ref = doc(db, 'pedidos', o.id);
     await updateDoc(ref, {
@@ -295,7 +397,6 @@ const OrdersAdmin: React.FC = () => {
       updatedAt: serverTimestamp(),
     });
 
-    // 🔔 Enviar mail al cliente al pasar a preparación
     if (o.customer?.email) {
       const m = mailAcreditado(o);
       sendEmail({
@@ -305,16 +406,6 @@ const OrdersAdmin: React.FC = () => {
         text: m.text,
       }).catch(console.error);
     }
-
-    // (Opcional) correo interno de notificación
-    // if (import.meta.env.VITE_CONTACT_EMAIL) {
-    //   sendEmail({
-    //     to: import.meta.env.VITE_CONTACT_EMAIL,
-    //     subject: `✅ Pedido #${o.id} pasó a preparación`,
-    //     html: `<p>El pedido #${o.id} pasó a <strong>en_proceso</strong>.</p>`,
-    //     text: `Pedido #${o.id} en proceso`,
-    //   }).catch(console.error);
-    // }
   };
 
   const marcarEntregado = async (o: Order) => {
@@ -325,7 +416,6 @@ const OrdersAdmin: React.FC = () => {
       updatedAt: serverTimestamp(),
     });
 
-    // 🔔 Enviar mail al cliente al marcar entregado
     if (o.customer?.email) {
       const m = mailEntregado(o);
       sendEmail({
@@ -348,11 +438,9 @@ const OrdersAdmin: React.FC = () => {
     showToast.success(`Pedido #${o.id} cancelado`);
   };
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 px-4 pt-20 pb-10">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl md:text-4xl font-extralight text-gray-900">
             Gestión de <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">Pedidos</span>
@@ -360,14 +448,13 @@ const OrdersAdmin: React.FC = () => {
           <p className="text-gray-600">Acreditá señas, pasá a preparación y marcá entregas.</p>
         </div>
 
-        {/* Filtros */}
         <div className="bg-white/80 backdrop-blur rounded-2xl border border-pink-100 shadow p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <label className="relative">
               <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-2 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
-                placeholder="Buscar por ID, nombre, WhatsApp..."
+                placeholder="Buscar por ID, nombre, WhatsApp, email, ID MP..."
                 value={qText}
                 onChange={(e) => setQText(e.target.value)}
               />
@@ -403,7 +490,6 @@ const OrdersAdmin: React.FC = () => {
           </div>
         </div>
 
-        {/* Lista */}
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
@@ -425,15 +511,17 @@ const OrdersAdmin: React.FC = () => {
                 (o.pago?.metodoSeleccionado === 'transferencia' || o.pago?.metodoSeleccionado === 'mercadopago') &&
                 !o.pago?.acreditado;
 
-              const puedePreparacion = puedeAcreditar; // pasa a en_proceso al acreditar
+              const puedePreparacion = puedeAcreditar;
 
               const puedeEntregar =
                 (o.status === 'en_proceso' && (o.pago?.metodoSeleccionado === 'transferencia' ? !!o.pago?.acreditado : true)) ||
                 (o.status === 'pendiente' && o.pago?.metodoSeleccionado === 'mercadopago' && o.pago?.acreditado);
 
+              const mpStatus = o.pago?.mercadopago?.status;
+              const mpRefunded = mpStatus === 'refunded' || mpStatus === 'charged_back' || mpStatus === 'cancelled';
+
               return (
                 <div key={o.id} className="bg-white rounded-2xl border border-pink-100 shadow">
-                  {/* Header */}
                   <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b">
                     <div className="flex items-center gap-3">
                       <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border ${cfg.badge}`}>
@@ -447,9 +535,13 @@ const OrdersAdmin: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Body */}
+                  {mpRefunded && (
+                    <div className="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                      ⚠️ MercadoPago reporta estado <strong>{mpStatus}</strong>. Considerá cancelar y reponer stock.
+                    </div>
+                  )}
+
                   <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* Col 1: Cliente & Entrega */}
                     <div className="space-y-2">
                       <h4 className="text-sm font-semibold text-gray-800">Cliente</h4>
                       <div className="text-sm text-gray-700">
@@ -470,7 +562,6 @@ const OrdersAdmin: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Col 2: Items */}
                     <div className="space-y-2">
                       <h4 className="text-sm font-semibold text-gray-800">Productos</h4>
                       <div className="space-y-1 max-h-40 overflow-auto pr-1">
@@ -487,25 +578,91 @@ const OrdersAdmin: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Col 3: Pago & Acciones */}
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-gray-800">Pago</h4>
                       <div className="text-sm text-gray-700">
                         <div>Método: {o.pago?.metodoSeleccionado === 'mercadopago' ? 'MercadoPago' : 'Transferencia/Efectivo'}</div>
                         <div>Total: <span className="font-semibold">${price(total)}</span></div>
+
                         {o.pago?.metodoSeleccionado === 'transferencia' && (
                           <>
                             <div>Seña requerida: <span className="font-semibold">${price(senia)}</span></div>
                             <div>Estado seña: {o.pago?.acreditado ? '✅ acreditada' : '⏳ pendiente'}</div>
                           </>
                         )}
+
                         {o.pago?.metodoSeleccionado === 'mercadopago' && (
-                          <div>Pago MP: {o.pago?.acreditado ? '✅ aprobado' : '⏳ pendiente'}</div>
+                          <>
+                            <div>Pago MP: {o.pago?.acreditado ? '✅ aprobado' : '⏳ pendiente'}</div>
+
+                            {o.pago.mercadopago && (
+                              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <div className="text-xs space-y-1.5">
+                                  <div className="font-semibold text-blue-900 mb-2">💳 Detalles MercadoPago</div>
+
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-gray-600">ID Operación:</span>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(o.pago!.mercadopago!.paymentId || '');
+                                        showToast.success('ID copiado');
+                                      }}
+                                      className="font-mono text-blue-700 text-[11px] hover:text-blue-900 hover:underline cursor-pointer"
+                                      title="Click para copiar"
+                                    >
+                                      #{o.pago.mercadopago.paymentId}
+                                    </button>
+                                  </div>
+
+                                  {o.pago.mercadopago.transactionAmount && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Monto:</span>
+                                      <span className="font-semibold">${price(o.pago.mercadopago.transactionAmount)}</span>
+                                    </div>
+                                  )}
+
+                                  {o.pago.mercadopago.paymentMethodId && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Método:</span>
+                                      <span className="capitalize">{o.pago.mercadopago.paymentMethodId}</span>
+                                    </div>
+                                  )}
+
+                                  {o.pago.mercadopago.cardLastFourDigits && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Tarjeta:</span>
+                                      <span className="font-mono">**** {o.pago.mercadopago.cardLastFourDigits}</span>
+                                    </div>
+                                  )}
+
+                                  {o.pago.mercadopago.installments && o.pago.mercadopago.installments > 1 && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Cuotas:</span>
+                                      <span>{o.pago.mercadopago.installments}x</span>
+                                    </div>
+                                  )}
+
+                                  {o.pago.mercadopago.dateApproved && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Aprobado:</span>
+                                      <span className="text-[11px]">
+                                        {new Date(o.pago.mercadopago.dateApproved).toLocaleString('es-AR', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 
                       <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* Acreditar seña/pago → pasa a Preparación */}
                         <button
                           disabled={!puedePreparacion}
                           onClick={() => acreditarSeniaOPago(o)}
@@ -520,7 +677,6 @@ const OrdersAdmin: React.FC = () => {
                           Acreditar & Preparación
                         </button>
 
-                        {/* Entregar */}
                         <button
                           disabled={!puedeEntregar}
                           onClick={() => marcarEntregado(o)}
@@ -535,7 +691,6 @@ const OrdersAdmin: React.FC = () => {
                           Marcar Entregado
                         </button>
 
-                        {/* Cancelar */}
                         <button
                           onClick={() => cancelarPedido(o)}
                           className="px-3 py-2 rounded-lg text-sm font-semibold border bg-red-50 text-red-700 hover:bg-red-100 col-span-1 sm:col-span-2"
@@ -543,14 +698,22 @@ const OrdersAdmin: React.FC = () => {
                         >
                           Cancelar
                         </button>
+
+                        <button
+                          onClick={() => cancelarYReponer(o)}
+                          className="px-3 py-2 rounded-lg text-sm font-semibold border bg-white text-red-600 hover:bg-red-50 col-span-1 sm:col-span-2"
+                          title="Cancelar y reponer stock automáticamente"
+                        >
+                          Cancelar + Reponer stock
+                        </button>
+
                         <button
                           onClick={() => eliminarPedido(o)}
-                          className="px-3 py-2 rounded-lg text-sm font-semibold border bg-white text-red-600 hover:bg-red-50"
-                          title="Eliminar definitivamente este pedido"
+                          className="px-3 py-2 rounded-lg text-sm font-semibold border bg-white text-red-600/80 hover:bg-red-50 col-span-1 sm:col-span-2"
+                          title="Eliminar definitivamente este pedido y revertir stock"
                         >
                           Eliminar
                         </button>
-
                       </div>
 
                       {o.status === 'entregado' && (
