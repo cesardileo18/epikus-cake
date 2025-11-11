@@ -6,108 +6,50 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-       "**/*.map"
+      "**/*.map"
     ],
     "headers": [
       {
-        "source": "**",
+        "source": "**/*.html",
         "headers": [
-          {
-            "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin-allow-popups"
-          },
-          {
-            "key": "Cache-Control",
-            "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "-1"
-          },
-          {
-            "key": "Surrogate-Control",
-            "value": "no-store"
-          }
+          { "key": "Cache-Control", "value": "no-cache" }
         ]
       },
       {
-        "source": "index.html",
+        "source": "/assets/**",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "-1"
-          },
-          {
-            "key": "Surrogate-Control",
-            "value": "no-store"
-          }
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
         ]
       },
       {
         "source": "**/*.@(js|css)",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000, immutable"
-          }
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
         ]
       },
       {
         "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|ico)",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000, immutable"
-          }
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" }
         ]
       }
     ],
     "rewrites": [
-      {
-        "source": "/api/ping",
-        "function": {
-          "functionId": "ping",
-          "region": "southamerica-east1"
-        }
-      },
-      {
-        "source": "/api/create-preference",
-        "function": {
-          "functionId": "createPreference",
-          "region": "southamerica-east1"
-        }
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
+      { "source": "/api/ping", "function": { "functionId": "ping", "region": "southamerica-east1" } },
+      { "source": "/api/create-preference", "function": { "functionId": "createPreference", "region": "southamerica-east1" } },
+      { "source": "**", "destination": "/index.html" }
     ]
   },
-  "functions": {
-    "source": "functions"
-  },
+  "functions": { "source": "functions" },
   "emulators": {
-    "functions": {
-      "port": 5001
-    },
-    "hosting": {
-      "port": 5000
-    },
-    "ui": {
-      "enabled": true,
-      "port": 4000
-    }
+    "functions": { "port": 5001 },
+    "hosting": { "port": 5000 },
+    "ui": { "enabled": true, "port": 4000 }
   }
 }
