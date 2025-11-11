@@ -126,7 +126,7 @@ const ConfirmOrder: React.FC = () => {
     const extras = [
       form.dedicatoria ? `\nDedicatoria: ${form.dedicatoria}` : '',
       form.cantidadPersonas ? `\nCantidad de personas: ${form.cantidadPersonas}` : '',
-      form.terminosAceptados ? `\n✅ Aceptó términos y condiciones: ${form.terminosAceptados}` : '',
+      form.terminosAceptados ? `\n✅ Aceptó términos y condiciones: ${form.terminosAceptados ? "ACEPTADOS" : "NO aceptados"}` : '',
       form.notas ? `\nNotas adicionales: ${form.notas}` : ''
     ].join('');
     const politica =
@@ -296,7 +296,17 @@ const ConfirmOrder: React.FC = () => {
       Promise.allSettled(tasks);
     } catch (e: any) {
       console.error(e);
-      showToast.error(e?.message || "No se pudo confirmar el pedido.");
+      // Traducción de errores comunes del backend
+      const msg = e?.message?.toLowerCase() || "";
+      let friendly = "Ocurrió un error al confirmar tu pedido.";
+
+      if (msg.includes("whatsapp inválido")) friendly = "Verificá tu número de WhatsApp.";
+      else if (msg.includes("fecha/hora inválida")) friendly = "Revisá la fecha y hora de retiro.";
+      else if (msg.includes("anticipación")) friendly = "La fecha elegida debe tener al menos 2 días de anticipación.";
+      else if (msg.includes("no puede superar")) friendly = "La fecha de entrega no puede ser tan lejana.";
+      else if (msg.includes("cantidad por producto")) friendly = "Máximo 5 unidades por producto.";
+      else if (msg.includes("esperá 30 segundos")) friendly = "Esperá unos segundos antes de volver a intentar.";
+      showToast.error(friendly);
     } finally {
       setEnviando(false);
       enviandoRef.current = false;

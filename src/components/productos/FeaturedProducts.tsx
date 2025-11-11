@@ -25,22 +25,15 @@ interface FeaturedProductsProps {
 const currency = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 
-const getStockDisponible = (p: ProductWithId, variantId?: string, items?: CartItem[]) => {
-    let stockTotal = 0;
-
+// ✅ CAMBIO: Función que devuelve el stock MÁXIMO sin restar el carrito
+const getStockMaximo = (p: ProductWithId, variantId?: string) => {
     if (p.tieneVariantes && p.variantes) {
         if (!variantId) return 0;
         const variant = p.variantes.find(v => v.id === variantId);
-        stockTotal = variant?.stock ?? 0;
+        return variant?.stock ?? 0;
     } else {
-        stockTotal = p.stock ?? 0;
+        return p.stock ?? 0;
     }
-
-    if (!items) return stockTotal;
-
-    const itemKey = variantId ? `${p.id}-${variantId}` : p.id;
-    const enCarrito = items.find((it) => it.productId === itemKey)?.quantity ?? 0;
-    return Math.max(0, stockTotal - enCarrito);
 };
 
 const getPrecioDisplay = (p: ProductWithId, variantId?: string): string => {
@@ -110,11 +103,18 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {productos.map((producto) => {
                 const varianteSeleccionada = variantesSeleccionadas[producto.id];
-                const disponible = getStockDisponible(producto, varianteSeleccionada, items);
-                const sinStock = disponible <= 0;
-                const stockBajo = disponible > 0 && disponible <= 3;
+                
+                // ✅ CAMBIO: Obtener stock máximo (total disponible)
+                const stockMaximo = getStockMaximo(producto, varianteSeleccionada);
+                
                 const itemKey = varianteSeleccionada ? `${producto.id}-${varianteSeleccionada}` : producto.id;
                 const enCarrito = items?.find((it) => it.productId === itemKey)?.quantity ?? 0;
+                
+                // ✅ Disponible es solo para mostrar al usuario
+                const disponible = Math.max(0, stockMaximo - enCarrito);
+                const sinStock = stockMaximo <= 0;
+                const stockBajo = disponible > 0 && disponible <= 3;
+                
                 const isProcessing = procesando?.has(producto.id) ?? false;
 
                 const tieneAlgunStock = producto.tieneVariantes && producto.variantes
@@ -199,10 +199,12 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                     </div>
                                 </div>
                             )}
-
+                            {catalogMode && !producto.tieneVariantes && (
+                                <div className="h-[63px]" aria-hidden="true" />
+                            )}
                             {/* Precio + CTA */}
                             {!catalogMode ? (
-                                // === Modo Home/featured - 🔥 MEJORADO
+                                // === Modo Home/featured
                                 <div className="flex items-center justify-between pt-4">
                                     <div className="text-lg font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
                                         {getPrecioDisplay(producto)}
@@ -238,9 +240,10 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                             <div className="flex items-center justify-between sm:justify-start sm:gap-3 flex-1">
                                                 <div className="flex items-center space-x-3">
                                                     <button
-                                                        onClick={() => onUpdateQty(itemKey, enCarrito - 1, disponible)}
+                                                        onClick={() => onUpdateQty(itemKey, enCarrito - 1, stockMaximo)}
                                                         className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors duration-200 cursor-pointer"
                                                         type="button"
+                                                        aria-label="Reducir cantidad"
                                                     >
                                                         <MinusIcon className="w-4 h-4" />
                                                     </button>
@@ -248,10 +251,12 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                                     <span className="font-bold text-lg min-w-[2rem] text-center">{enCarrito}</span>
 
                                                     <button
-                                                        onClick={() => onUpdateQty(itemKey, enCarrito + 1, disponible)}
-                                                        disabled={enCarrito >= disponible}
+                                                        onClick={() => onUpdateQty(itemKey, enCarrito + 1, stockMaximo)}
+                                                        disabled={enCarrito >= stockMaximo}
                                                         className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center transition-colors duration-200 cursor-pointer"
                                                         type="button"
+                                                        aria-label="Aumentar cantidad"
+                                                        title={enCarrito >= stockMaximo ? `Stock máximo: ${stockMaximo}` : undefined}
                                                     >
                                                         <PlusIcon className="w-4 h-4 text-white" />
                                                     </button>
@@ -269,8 +274,8 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                                         type="button"
                                                         disabled={!isStoreOpen}
                                                         className={`text-sm font-semibold rounded transition-all duration-300 ${isStoreOpen
-                                                                ? "cursor-pointer text-pink-600 hover:text-pink-700 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-pink-300"
-                                                                : "cursor-not-allowed text-gray-400"
+                                                            ? "cursor-pointer text-pink-600 hover:text-pink-700 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-pink-300"
+                                                            : "cursor-not-allowed text-gray-400"
                                                             }`}
                                                     >
                                                         Carrito
@@ -282,7 +287,6 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                             <button
                                                 onClick={() => {
                                                     if (producto.tieneVariantes && !varianteSeleccionada) {
-                                                        // Validación silenciosa: el botón ya está disabled
                                                         return;
                                                     }
                                                     onAddToCart && onAddToCart(producto, varianteSeleccionada);

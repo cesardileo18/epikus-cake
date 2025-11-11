@@ -23,6 +23,17 @@ const gmailRefreshToken = defineString("GMAIL_REFRESH_TOKEN");
 const gmailEmail = defineString("GMAIL_EMAIL");
 const recaptchaSecret = defineString("RECAPTCHA_SECRET");
 
+// ───────────────────────────────────────────────────────────────────────────────
+// ✅ CONFIGURACIÓN DE VALIDACIONES (ajustable sin tocar la lógica)
+// - Máximo por ítem (para evitar “cantidad excesiva”)
+// - Anticipación mínima y máxima para fecha/hora de entrega
+// - Zona horaria objetivo (AR no tiene DST hoy; si cambias de país, ajustá)
+const MAX_CANTIDAD_POR_ITEM = 5;           // ← tope por cada producto
+const MIN_ANTICIPACION_MINUTOS = 2880;      // ← 48 horas mínimo
+const MAX_DIAS_ANTICIPACION = 30;           // ← 30 días máximo, define cuántos días hacia el futuro se puede programar una entrega.
+const TZ_OFFSET_ARG = "-03:00";             // ← America/Argentina/Buenos_Aires
+// ───────────────────────────────────────────────────────────────────────────────
+
 // ✅ SEGURIDAD: Función auxiliar para sanitizar strings
 // Elimina caracteres peligrosos (<, >) que podrían usarse para inyectar código HTML/JavaScript
 // Esto previene ataques XSS (Cross-Site Scripting)
@@ -31,6 +42,55 @@ function sanitize(text: string | null, maxLength: number): string | null {
   // Remueve < y > para prevenir tags HTML, recorta espacios y limita longitud
   return text.replace(/[<>]/g, '').trim().slice(0, maxLength);
 }
+
+// ✅ VALIDACIÓN WHATSAPP (E.164)
+// - isValidE164: chequea formato +XXXXXXXX (8 a 15 dígitos)
+// - toE164: normaliza entradas típicas de AR (agrega +54 9, remueve 0 LD, etc.)
+function isValidE164(value: string): boolean {
+  return /^\+[1-9]\d{7,14}$/.test(value); // + y 8–15 dígitos
+}
+
+function toE164(phone: string, defaultCountry: 'AR' | 'INTL' = 'AR'): string | null {
+  if (!phone) return null;
+  const raw = phone.trim();
+  const onlyDigits = raw.replace(/\D/g, '');
+  let candidate: string;
+
+  if (raw.startsWith('+')) {
+    candidate = '+' + onlyDigits; // ya venía con +, limpiamos no dígitos
+  } else if (onlyDigits.startsWith('00')) {
+    candidate = '+' + onlyDigits.slice(2); // 00 → +
+  } else if (defaultCountry === 'AR') {
+    // Regla práctica: para WhatsApp en AR suele requerirse +54 9 + número móvil
+    // - Quitar 0 de larga distancia
+    // - Asegurar '9' luego de +54 para móviles
+    let rest = onlyDigits;
+    if (rest.startsWith('0')) rest = rest.slice(1);
+    if (!rest.startsWith('9')) rest = '9' + rest;
+    candidate = '+54' + rest;
+  } else {
+    candidate = '+' + onlyDigits;
+  }
+
+  return isValidE164(candidate) ? candidate : null;
+}
+
+// ✅ VALIDACIÓN FECHA/HORA
+// - parseDeliveryDateTime: arma un Date a partir de strings fecha (YYYY-MM-DD) y hora (HH:mm)
+// - valida estructura, que no sea NaN y convierte usando offset AR (sin DST)
+function parseDeliveryDateTime(fecha: string, hora: string): Date | null {
+  if (typeof fecha !== 'string' || typeof hora !== 'string') return null;
+  // Normaliza hora a HH:mm
+  const m = hora.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const hh = m[1].padStart(2, '0');
+  const mm = m[2];
+  // Construye ISO con offset AR
+  const iso = `${fecha}T${hh}:${mm}:00${TZ_OFFSET_ARG}`;
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // Test endpoint
 export const ping = onRequest((req: Request, res: Response): void => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -104,6 +164,7 @@ export const createPreference = onRequest(
     }
   }
 );
+
 // Webhook de notificaciones de Mercado Pago
 export const mercadopagoWebhook = onRequest(async (req: Request, res: Response): Promise<void> => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -190,6 +251,7 @@ export const mercadopagoWebhook = onRequest(async (req: Request, res: Response):
     res.status(500).json({ error: err?.message ?? "Error interno" });
   }
 });
+
 // Función auxiliar para crear el transporter de Nodemailer
 async function createTransporter() {
   const OAuth2 = google.auth.OAuth2;
@@ -218,6 +280,7 @@ async function createTransporter() {
     },
   });
 }
+
 // Enviar email
 export const sendEmail = onCall(async (request) => {
   const { to, subject, text, html } = request.data;
@@ -246,6 +309,7 @@ export const sendEmail = onCall(async (request) => {
     throw new Error(error.message || "Error al enviar email");
   }
 });
+
 // Verificar reCAPTCHA
 export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Promise<void> => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -285,6 +349,7 @@ export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Pr
     res.status(500).json({ ok: false, error: err?.message ?? "internal-error" });
   }
 });
+
 // Validar carrito antes de confirmar
 export const validateCart = onCall(async (request) => {
   const { items } = request.data;
@@ -379,12 +444,10 @@ export const validateCart = onCall(async (request) => {
     throw new Error(error.message || "Error al validar el carrito");
   }
 });
+
 // 🧩 Crear orden atómica: valida, descuenta stock y crea el documento en /pedidos
 export const createOrder = onCall(async (request) => {
   // ✅ PASO 1: VERIFICAR AUTENTICACIÓN
-  // ANTES: Confiábamos en el userUid que venía del cliente (request.data)
-  // AHORA: Tomamos el userUid del token JWT que Firebase verifica automáticamente
-  // Esto previene que alguien cree órdenes haciéndose pasar por otro usuario
   if (!request.auth) {
     throw new Error('Usuario no autenticado');
   }
@@ -402,7 +465,7 @@ export const createOrder = onCall(async (request) => {
     terminosAceptados = false, // ← NUEVO
   } = request.data || {};
 
-  // Validaciones básicas de datos requeridos
+  // ✅ PASO 2: VALIDACIONES BÁSICAS DE CAMPOS REQUERIDOS
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('Carrito vacío o inválido');
   }
@@ -412,61 +475,91 @@ export const createOrder = onCall(async (request) => {
   if (!pago?.metodoSeleccionado || !['transferencia', 'mercadopago'].includes(pago.metodoSeleccionado)) {
     throw new Error('Método de pago inválido');
   }
-  if (!terminosAceptados) { // ← NUEVO
+  if (!terminosAceptados) {
     throw new Error('Debes aceptar los Términos y Condiciones.');
   }
 
-  // ✅ PASO 2: RATE LIMITING (protección contra spam)
-  // Guardamos en Firestore la última vez que este usuario creó una orden
-  // Si intenta crear otra orden en menos de 30 segundos, la bloqueamos
-  // Esto previene que bots o usuarios maliciosos creen miles de órdenes
+  // ✅ PASO 3: VALIDAR Y NORMALIZAR WHATSAPP (E.164)
+  // - No cambia tu lógica de negocio; solo asegura un formato consistente al guardar.
+  const whatsappNorm = toE164(String(customer.whatsapp), 'AR');
+  if (!whatsappNorm) {
+    throw new Error('WhatsApp inválido. Ingresá un número válido con código de país (ej: +54911XXXXXXXX).');
+  }
+
+  // ✅ PASO 4: VALIDAR FECHA/HORA (estructura, futuro, anticipación, horizonte)
+  const entregaDate = parseDeliveryDateTime(String(entrega.fecha), String(entrega.hora));
+  if (!entregaDate) {
+    throw new Error('Fecha/hora inválida. Usá formato YYYY-MM-DD y HH:mm.');
+  }
+  const nowMs = Date.now();
+  const entregaMs = entregaDate.getTime();
+
+  // 4.1) Anticipación mínima (p. ej., 3 horas)
+  if (entregaMs < nowMs + MIN_ANTICIPACION_MINUTOS * 60 * 1000) {
+    throw new Error(`La fecha/hora debe tener al menos ${MIN_ANTICIPACION_MINUTOS} minutos de anticipación.`);
+  }
+
+  // 4.2) Horizonte máximo (p. ej., 30 días)
+  const maxMs = nowMs + MAX_DIAS_ANTICIPACION * 24 * 60 * 60 * 1000;
+  if (entregaMs > maxMs) {
+    throw new Error(`La fecha/hora no puede superar ${MAX_DIAS_ANTICIPACION} días desde hoy.`);
+  }
+
+  // (Opcional) Ventana horaria operativa — desactivada por defecto
+  // const hora = entregaDate.getHours();
+  // if (hora < 9 || hora > 21) {
+  //   throw new Error('La hora de entrega debe estar entre 09:00 y 21:00.');
+  // }
+
+  // ✅ PASO 5: VALIDAR CANTIDAD EXCESIVA POR ÍTEM (además del stock en la transacción)
+  for (const it of items) {
+    const q = Number(it?.quantity);
+    if (!Number.isFinite(q) || q <= 0) {
+      throw new Error('Ítem inválido en el carrito');
+    }
+    if (q > MAX_CANTIDAD_POR_ITEM) {
+      throw new Error(`La cantidad por producto no puede superar ${MAX_CANTIDAD_POR_ITEM}.`);
+    }
+  }
+
+  // ✅ PASO 6: RATE LIMITING (protección contra spam) — ya lo tenías
   const rateLimitRef = admin.firestore().collection('rateLimits').doc(userUid);
   const rateLimitDoc = await rateLimitRef.get();
   const now = Date.now();
 
   if (rateLimitDoc.exists) {
     const lastOrder = rateLimitDoc.data()?.lastOrderTime || 0;
-    // Si la última orden fue hace menos de 30 segundos (30000 ms), rechazamos
     if (now - lastOrder < 30000) {
       throw new Error('Esperá 30 segundos antes de crear otra orden');
     }
   }
 
-  // ✅ PASO 3: SANITIZAR TEXTOS (protección contra XSS)
-  // Los campos de texto libre (dedicatoria, notas, alergias) podrían contener
-  // código malicioso como <script>alert('hack')</script>
-  // La función sanitize() elimina los caracteres peligrosos < y >
-  const dedicatoriaSafe = sanitize(dedicatoria, 500);    // Máximo 500 caracteres
-  const notasSafe = sanitize(notas, 1000);               // Máximo 1000 caracteres
+  // ✅ PASO 7: SANITIZAR TEXTOS (protección contra XSS) — ya lo tenías
+  const dedicatoriaSafe = sanitize(dedicatoria, 500);    // Máximo 500 chars
+  const notasSafe = sanitize(notas, 1000);               // Máximo 1000 chars
 
   // Reglas de pricing (calculadas en backend para evitar manipulación)
   const DESCUENTO_TRANSFERENCIA = 10;
 
-  // ✅ PASO 4: TRANSACCIÓN ATÓMICA
-  // Creamos la referencia del documento de la orden ANTES de la transacción
-  // Así sabemos qué ID tendrá la orden antes de crearla
+  // ✅ PASO 8: TRANSACCIÓN ATÓMICA (stock + creación de pedido)
   const orderRef = admin.firestore().collection('pedidos').doc();
 
-  // runTransaction garantiza que TODO suceda o NADA suceda (atomicidad)
-  // Si algo falla (ej: stock insuficiente), se revierte TODO automáticamente
   await admin.firestore().runTransaction(async (tx) => {
     let subtotal = 0;
     const itemsOut: any[] = [];
 
-    // ✅ PASO 4.1: VALIDAR CADA PRODUCTO Y DESCONTAR STOCK
+    // 8.1) VALIDAR CADA PRODUCTO, STOCK Y PRECIOS
     for (const it of items) {
       const { productId, variantId, quantity } = it;
 
-      // Validar que el ítem tenga datos válidos
+      // Validación de integridad del ítem
       if (!productId || typeof quantity !== 'number' || quantity <= 0) {
         throw new Error('Ítem inválido en el carrito');
       }
+      // Ya validamos tope por ítem antes; aquí seguimos igual que tu lógica
 
-      // Extraer el ID real del producto (puede venir como "prod123-variant456")
       const realProductId = productId.includes('-') ? productId.split('-')[0] : productId;
 
-      // Obtener el producto de Firestore DENTRO de la transacción
-      // Esto garantiza que leemos la versión más actual del stock
       const pRef = admin.firestore().collection('productos').doc(realProductId);
       const snap = await tx.get(pRef);
 
@@ -474,7 +567,6 @@ export const createOrder = onCall(async (request) => {
 
       const producto = snap.data() as any;
 
-      // Validar que el producto esté activo
       if (!producto.activo) {
         throw new Error(`El producto "${producto.nombre}" ya no está disponible`);
       }
@@ -483,7 +575,6 @@ export const createOrder = onCall(async (request) => {
       let stockDisponible = 0;
       let variantLabel: string | null = null;
 
-      // ✅ CASO A: Producto con variantes (ej: tortas con diferentes tamaños)
       if (producto.tieneVariantes && Array.isArray(producto.variantes)) {
         if (!variantId) throw new Error(`Debes seleccionar un tamaño para "${producto.nombre}"`);
 
@@ -497,80 +588,63 @@ export const createOrder = onCall(async (request) => {
         stockDisponible = Number(variante.stock ?? 0);
         variantLabel = variante.label;
 
-        // Validar stock suficiente
         if (stockDisponible < quantity) {
           throw new Error(
             `Stock insuficiente para "${producto.nombre}"${variantLabel ? ` (${variantLabel})` : ''}. Disponible: ${stockDisponible}, solicitado: ${quantity}`
           );
         }
-
-        // Validar precio positivo
         if (precioUnitario <= 0) throw new Error(`Precio inválido para "${producto.nombre}"`);
 
-        // ✅ DESCONTAR STOCK de la variante específica
-        // Creamos una copia de la variante con el stock actualizado
         variantes[idx] = { ...variante, stock: stockDisponible - quantity };
-        // Actualizamos el array de variantes en Firestore (dentro de la transacción)
         tx.update(pRef, { variantes });
 
-      }
-      // ✅ CASO B: Producto sin variantes (stock y precio único)
-      else {
+      } else {
         precioUnitario = Number(producto.precio ?? 0);
         stockDisponible = Number(producto.stock ?? 0);
 
-        // Validar stock suficiente
         if (stockDisponible < quantity) {
           throw new Error(`Stock insuficiente para "${producto.nombre}". Disponible: ${stockDisponible}, solicitado: ${quantity}`);
         }
-
-        // Validar precio positivo
         if (precioUnitario <= 0) throw new Error(`Precio inválido para "${producto.nombre}"`);
 
-        // ✅ DESCONTAR STOCK del producto base
         tx.update(pRef, { stock: stockDisponible - quantity });
       }
 
-      // Calcular subtotal del ítem
       const subtotalItem = precioUnitario * quantity;
       subtotal += subtotalItem;
 
-      // Guardar información del ítem procesado
       itemsOut.push({
         productId,                 // Mantener el ID completo (puede incluir variante)
         variantId: variantId || null,
         variantLabel,
         nombre: producto.nombre,
-        precioUnitario,            // ← Precio REAL del backend, no del cliente
+        precioUnitario,            // Precio REAL backend
         cantidad: quantity,
         subtotalItem,
       });
     }
 
-    // ✅ PASO 4.2: CALCULAR PRICING (en backend, no confiamos en el cliente)
+    // 8.2) CALCULAR PRICING (sin cambios de tu lógica)
     const aplicaDescuento = pago.metodoSeleccionado === 'transferencia';
     const descuentoPorcentaje = aplicaDescuento ? DESCUENTO_TRANSFERENCIA : 0;
     const descuentoMonto = aplicaDescuento ? Math.round(subtotal * (DESCUENTO_TRANSFERENCIA / 100)) : 0;
     const total = Math.max(0, subtotal - descuentoMonto);
 
-    // Calcular si requiere seña (50% del total para transferencias)
+    // 8.3) Señal y liquidación (sin cambios)
     const requiereSenia = pago.metodoSeleccionado === 'transferencia';
     const seniaMonto = requiereSenia ? Math.round(total * 0.5) : 0;
     const saldoRestante = requiereSenia ? Math.max(0, total - seniaMonto) : 0;
-
-    // Determinar tipo de liquidación (online si paga con MercadoPago)
     const liquidacion = pago.metodoSeleccionado === 'mercadopago' ? 'online' : 'offline';
 
-    // ✅ PASO 4.3: CREAR EL DOCUMENTO DE LA ORDEN
-    // Todo esto se ejecuta dentro de la transacción, si algo falla, se revierte
+    // 8.4) CREAR DOCUMENTO DE LA ORDEN (sin cambios; solo guardo WhatsApp normalizado)
     tx.set(orderRef, {
       status: 'pendiente',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      userUid,  // ← userUid verificado del token, no del cliente
+      userUid,  // userUid verificado del token
       customer: {
         nombre: customer.nombre,
         email: customer.email || null,
-        whatsapp: customer.whatsapp,
+        whatsapp: whatsappNorm, // ← número normalizado E.164
       },
       entrega: {
         tipo: entrega.tipo || 'retiro',
@@ -587,29 +661,26 @@ export const createOrder = onCall(async (request) => {
         acreditado: false,
       },
       pricing: {
-        subtotal,              // ← Calculado en backend
-        descuentoPorcentaje,   // ← Calculado en backend
-        descuentoMonto,        // ← Calculado en backend
-        total,                 // ← Calculado en backend
+        subtotal,
+        descuentoPorcentaje,
+        descuentoMonto,
+        total,
       },
       notasInternas: null,
-      dedicatoria: dedicatoriaSafe,    // ← Texto sanitizado (sin < >)
+      dedicatoria: dedicatoriaSafe,    // Texto sanitizado
       cantidadPersonas,
-      terminosAceptados: !!terminosAceptados, // ← NUEVO
-      notas: notasSafe,                // ← Texto sanitizado
-      items: itemsOut,                 // ← Items con precios del backend
+      terminosAceptados: !!terminosAceptados,
+      notas: notasSafe,                // Texto sanitizado
+      items: itemsOut,                 // Items con precios del backend
       source,
     });
   });
   // ← Aquí termina la transacción. Si llegamos acá, TODO se guardó correctamente
 
-  // ✅ PASO 5: ACTUALIZAR RATE LIMIT
-  // Guardamos el timestamp de AHORA como la última vez que este usuario creó una orden
-  // La próxima vez que intente crear una orden, verificaremos este timestamp
+  // ✅ PASO 9: ACTUALIZAR RATE LIMIT (sin cambios)
   await rateLimitRef.set({ lastOrderTime: now });
 
-  // ✅ PASO 6: RESPONDER AL CLIENTE
-  // Devolvemos el ID de la orden creada
+  // ✅ PASO 10: RESPONDER AL CLIENTE (sin cambios)
   return {
     ok: true,
     orderId: orderRef.id,

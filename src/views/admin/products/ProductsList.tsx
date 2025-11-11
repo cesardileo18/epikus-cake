@@ -5,7 +5,6 @@ import { db } from "@/config/firebase";
 import type { Product } from "@/interfaces/Product";
 import { showToast } from "@/components/Toast/ToastProvider";
 
-
 interface ProductWithId extends Product {
   id: string;
 }
@@ -20,14 +19,16 @@ const ProductsList = () => {
   const [guardando, setGuardando] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
 
-  // Estado para editar variantes
+  // --- Estado para AGREGAR/EDITAR variante (mismo formulario) ---
   const [nuevaVariante, setNuevaVariante] = useState({
     id: "",
     label: "",
     precio: 0,
     stock: 0,
-    disponible: true
+    disponible: true,
   });
+  const [editIdx, setEditIdx] = useState<number | null>(null); // null = modo agregar
+  const isEditing = editIdx !== null;
 
   useEffect(() => {
     cargarProductos();
@@ -53,12 +54,13 @@ const ProductsList = () => {
   const abrirModalEdicion = (producto: ProductWithId) => {
     setProductoEditando(producto);
     setModalAbierto(true);
+    resetVarianteForm();
   };
 
   const cerrarModal = () => {
     setModalAbierto(false);
     setProductoEditando(null);
-    setNuevaVariante({ id: "", label: "", precio: 0, stock: 0, disponible: true });
+    resetVarianteForm();
   };
 
   const handleCambioFormulario = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -75,8 +77,10 @@ const ProductsList = () => {
     if (!productoEditando) return;
     const tieneVariantes = e.target.checked;
 
-    // 🔥 Si ACTIVA variantes y el producto tenía precio/stock previo
-    if (tieneVariantes && productoEditando.precio && productoEditando.stock) {
+    // si estaba editando una variante y desactiva variantes, cancelo edición
+    if (!tieneVariantes) resetVarianteForm();
+
+    if (tieneVariantes && productoEditando.precio && productoEditando.stock !== undefined) {
       setProductoEditando(prev => ({
         ...prev!,
         tieneVariantes: true,
@@ -91,7 +95,6 @@ const ProductsList = () => {
         }]
       }));
     } else {
-      // Si DESACTIVA variantes o no había datos previos
       setProductoEditando(prev => ({
         ...prev!,
         tieneVariantes,
@@ -100,33 +103,75 @@ const ProductsList = () => {
     }
   };
 
-  const agregarVariante = () => {
+  // ===== Variantes (mismo formulario para agregar/editar) =====
+  const resetVarianteForm = () => {
+    setNuevaVariante({ id: "", label: "", precio: 0, stock: 0, disponible: true });
+    setEditIdx(null);
+  };
+
+  const guardarVariante = () => {
     if (!productoEditando) return;
-    if (!nuevaVariante.id || !nuevaVariante.label || nuevaVariante.precio <= 0) {
-      showToast.error("⚠️ Completa todos los campos de la variante");
+
+    // Validaciones básicas
+    if (!nuevaVariante.id || !nuevaVariante.label || (nuevaVariante.precio || 0) <= 0) {
+      showToast.error("⚠️ Completa ID, etiqueta y precio (> 0)");
       return;
     }
-    if (productoEditando.variantes?.some(v => v.id === nuevaVariante.id)) {
+
+    const variantes = productoEditando.variantes || [];
+
+    // Evitar duplicados de ID (permite mismo ID si edito esa misma fila)
+    const idDuplicado = variantes.some((v, idx) => v.id === nuevaVariante.id && idx !== editIdx);
+    if (idDuplicado) {
       showToast.error("⚠️ Ya existe una variante con ese ID");
       return;
     }
-    setProductoEditando(prev => ({
-      ...prev!,
-      variantes: [...(prev!.variantes || []), { ...nuevaVariante }]
-    }));
-    setNuevaVariante({ id: "", label: "", precio: 0, stock: 0, disponible: true });
+
+    if (isEditing) {
+      // Editar en posición existente
+      const nuevas = variantes.map((v, idx) =>
+        idx === editIdx ? { ...nuevaVariante, stock: nuevaVariante.stock || 0 } : v
+      );
+      setProductoEditando(prev => ({ ...prev!, variantes: nuevas }));
+      showToast.success("✔️ Variante actualizada");
+    } else {
+      // Agregar nueva
+      const nuevas = [...variantes, { ...nuevaVariante, stock: nuevaVariante.stock || 0 }];
+      setProductoEditando(prev => ({ ...prev!, variantes: nuevas }));
+      showToast.success("✔️ Variante agregada");
+    }
+
+    resetVarianteForm();
+  };
+
+  const iniciarEdicionVariante = (idx: number) => {
+    if (!productoEditando?.variantes) return;
+    const v = productoEditando.variantes[idx];
+    setNuevaVariante({
+      id: v.id,
+      label: v.label,
+      precio: v.precio,
+      stock: v.stock || 0,
+      disponible: v.disponible ?? true,
+    });
+    setEditIdx(idx);
+  };
+
+  const cancelarEdicionVariante = () => {
+    resetVarianteForm();
   };
 
   const eliminarVariante = (id: string) => {
     if (!productoEditando) return;
     setProductoEditando(prev => ({
       ...prev!,
-      variantes: prev!.variantes?.filter(v => v.id !== id)
+      variantes: prev!.variantes?.filter(v => v.id !== id),
     }));
+    // si justo estabas editando esta, resetea
+    if (isEditing && productoEditando.variantes![editIdx!].id === id) resetVarianteForm();
   };
 
-  // Reemplaza tu función guardarCambios actual con esta versión corregida:
-
+  // ===== Guardar producto =====
   const guardarCambios = async () => {
     if (!productoEditando) return;
 
@@ -144,22 +189,16 @@ const ProductsList = () => {
     try {
       const { id, ...datosProducto } = productoEditando;
 
-      // 🔥 CRÍTICO: Limpiar campos según el tipo de producto
+      // Limpiar según tipo
       const datosLimpios: any = { ...datosProducto };
-
       if (productoEditando.tieneVariantes) {
-        // Si tiene variantes, eliminar precio y stock simples
         delete datosLimpios.precio;
         delete datosLimpios.stock;
       } else {
-        // Si NO tiene variantes, eliminar array de variantes
         delete datosLimpios.variantes;
       }
 
-      // Guardar en Firestore con datos limpios
       await updateDoc(doc(db, "productos", id), datosLimpios);
-
-      // Actualizar estado local
       setProductos(prev => prev.map(p => (p.id === id ? productoEditando : p)));
 
       cerrarModal();
@@ -171,6 +210,7 @@ const ProductsList = () => {
       setGuardando(false);
     }
   };
+
   const toggleActivo = async (producto: ProductWithId) => {
     try {
       const nuevoEstado = !producto.activo;
@@ -195,7 +235,7 @@ const ProductsList = () => {
     }
   };
 
-  // Helper: Calcular stock total para productos con variantes
+  // Helpers
   const getStockTotal = (producto: ProductWithId): number => {
     if (producto.tieneVariantes && producto.variantes) {
       return producto.variantes.reduce((sum, v) => sum + (v.stock || 0), 0);
@@ -203,7 +243,6 @@ const ProductsList = () => {
     return producto.stock || 0;
   };
 
-  // Helper: Obtener precio para mostrar
   const getPrecioDisplay = (producto: ProductWithId): string => {
     if (producto.tieneVariantes && producto.variantes && producto.variantes.length > 0) {
       const precios = producto.variantes.map(v => v.precio);
@@ -215,7 +254,7 @@ const ProductsList = () => {
     return `$${(producto.precio || 0).toLocaleString("es-AR")}`;
   };
 
-  // Métricas actualizadas
+  // Métricas / filtros
   const total = productos.length;
   const activos = productos.filter(p => p.activo).length;
   const low = productos.filter(p => {
@@ -224,7 +263,6 @@ const ProductsList = () => {
   }).length;
   const out = productos.filter(p => getStockTotal(p) === 0).length;
 
-  // Filtro actualizado
   const productosFiltrados = useMemo(() => {
     switch (filter) {
       case "active": return productos.filter(p => p.activo);
@@ -473,46 +511,104 @@ const ProductsList = () => {
                   </div>
                 )}
 
-                {/* CASO 2: Con variantes */}
+                {/* CASO 2: Con variantes (mismo formulario para agregar/editar) */}
                 {productoEditando.tieneVariantes && (
                   <div className="space-y-4">
                     <div className="border border-purple-200 rounded-xl p-4">
-                      <h4 className="font-bold text-gray-900 mb-3">Agregar Variante</h4>
+                      <h4 className="font-bold text-gray-900 mb-3">
+                        {isEditing ? "Editar Variante" : "Agregar Variante"}
+                      </h4>
                       <div className="grid grid-cols-2 gap-3 mb-3">
-                        <input type="text" placeholder="ID (ej: 10-12)" value={nuevaVariante.id}
+                        <input
+                          type="text"
+                          placeholder="ID (ej: 10-12)"
+                          value={nuevaVariante.id}
                           onChange={(e) => setNuevaVariante(p => ({ ...p, id: e.target.value }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                        <input type="text" placeholder="Etiqueta" value={nuevaVariante.label}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Etiqueta"
+                          value={nuevaVariante.label}
                           onChange={(e) => setNuevaVariante(p => ({ ...p, label: e.target.value }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                        <input type="number" placeholder="Precio" value={nuevaVariante.precio || ""}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Precio"
+                          value={nuevaVariante.precio || ""}
                           onChange={(e) => setNuevaVariante(p => ({ ...p, precio: parseFloat(e.target.value) || 0 }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                        <input type="number" placeholder="Stock" value={nuevaVariante.stock || ""}
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Stock"
+                          value={nuevaVariante.stock || ""}
                           onChange={(e) => setNuevaVariante(p => ({ ...p, stock: parseFloat(e.target.value) || 0 }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
                       </div>
-                      <button type="button" onClick={agregarVariante}
-                        className="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 text-sm font-semibold">
-                        ➕ Agregar Variante
-                      </button>
+                      <label className="flex items-center gap-2 text-sm mb-3">
+                        <input
+                          type="checkbox"
+                          checked={nuevaVariante.disponible}
+                          onChange={(e) => setNuevaVariante(p => ({ ...p, disponible: e.target.checked }))}
+                          className="w-4 h-4"
+                        />
+                        Disponible
+                      </label>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={guardarVariante}
+                          className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 text-sm font-semibold"
+                        >
+                          {isEditing ? "💾 Guardar cambios" : "➕ Agregar Variante"}
+                        </button>
+                        {isEditing && (
+                          <button
+                            type="button"
+                            onClick={cancelarEdicionVariante}
+                            className="px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm"
+                          >
+                            ✖️ Cancelar
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Lista de variantes */}
                     {productoEditando.variantes && productoEditando.variantes.length > 0 && (
                       <div className="border border-gray-200 rounded-xl p-4">
-                        <h4 className="font-bold text-gray-900 mb-3">Variantes ({productoEditando.variantes.length})</h4>
+                        <h4 className="font-bold text-gray-900 mb-3">
+                          Variantes ({productoEditando.variantes.length})
+                        </h4>
                         <div className="space-y-2">
-                          {productoEditando.variantes.map((v) => (
+                          {productoEditando.variantes.map((v, idx) => (
                             <div key={v.id} className="flex items-center justify-between bg-purple-50 p-3 rounded-lg">
                               <div>
                                 <p className="font-semibold text-sm">{v.label}</p>
-                                <p className="text-xs text-gray-600">ID: {v.id} | ${v.precio.toLocaleString('es-AR')} | Stock: {v.stock || 0}</p>
+                                <p className="text-xs text-gray-600">
+                                  ID: {v.id} | ${v.precio.toLocaleString('es-AR')} | Stock: {v.stock || 0} | {v.disponible ? "Disponible" : "No disponible"}
+                                </p>
                               </div>
-                              <button type="button" onClick={() => eliminarVariante(v.id)}
-                                className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">
-                                🗑️
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => iniciarEdicionVariante(idx)}
+                                  className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                                >
+                                  ✏️ Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => eliminarVariante(v.id)}
+                                  className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                                >
+                                  🗑️ Eliminar
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>

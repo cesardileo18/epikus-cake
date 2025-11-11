@@ -56,7 +56,7 @@ export default function HeroCarousel() {
                   href="/products"
                   className="mt-4 md:mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-2.5 md:px-6 md:py-3 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
                 >
-                  Ver catálogo →
+                  Ver Productos →
                 </a>
               </div>
             </div>

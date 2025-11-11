@@ -211,6 +211,7 @@ const AddProduct = () => {
                     <option value="cheesecakes">🧀 Cheesecakes</option>
                     <option value="cupcakes">🧁 Cupcakes</option>
                     <option value="panaderia">🥖 Panadería</option>
+                    <option value="galletas">🍪 Galletas</option>
                     <option value="tortas-personalizadas">🎨 Tortas a medida</option>
                   </select>
                 </div>
