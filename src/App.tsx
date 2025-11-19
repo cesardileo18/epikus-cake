@@ -10,19 +10,10 @@ import ScrollToTop from "@/components/scroll/ScrollToTop";
 import ToastProvider, { showToast } from "@/components/Toast/ToastProvider";
 import { useStoreStatus } from "@/context/StoreStatusContext";
 import { useEffect } from "react";
-import { analytics } from "@/config/firebase"; // ajusta la ruta según tu estructura
-import { logEvent } from "firebase/analytics";
-import { useLocation } from "react-router-dom";
+import AnalyticsTracker from "./components/analyticsTracker/AnalyticsTracker";
+
 function App() {
   const { isStoreOpen, closedMessage } = useStoreStatus();
-  const location = useLocation();
-
-  useEffect(() => {
-    logEvent(analytics, 'page_view', {
-      page_path: location.pathname,
-      page_title: document.title
-    });
-  }, [location]);
 
   useEffect(() => {
     if (!isStoreOpen && closedMessage) {
@@ -44,6 +35,7 @@ function App() {
 
   return (
     <BrowserRouter>
+    <AnalyticsTracker />
       <ScrollToTop />
       <div className="App">
         <Navbar />
