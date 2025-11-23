@@ -11,6 +11,9 @@ import contentJson from '@/content/ProductDetailContent.json';
 import type { ProductDetailContent } from '@/interfaces/ProductDetailContent';
 const content: ProductDetailContent = contentJson as ProductDetailContent;
 
+// ⭐ NUEVO: favoritos
+import { useFavorites } from "@/hooks/useFavorites";
+
 type LocationState = { product?: ProductWithId };
 
 const currencyFmt = (n: number) =>
@@ -33,10 +36,16 @@ const ProductDetail: React.FC = () => {
   const { products, loading } = useProductsLiveQuery({ onlyActive: true });
   const topRef = useRef<HTMLDivElement | null>(null);
 
+  // ⭐ NUEVO: hook de favoritos
+  const { isFavorite, toggleFavorite } = useFavorites();
+
   const product = useMemo(() => {
     if (seedProduct && seedProduct.id === id) return seedProduct;
     return products.find((p) => p.id === id);
   }, [seedProduct, id, products]);
+
+  // ⭐ NUEVO: estado favorito del producto actual
+  const isFav = product ? isFavorite(product.id) : false;
 
   const precioActual = useMemo(() => {
     if (!product) return 0;
@@ -199,9 +208,21 @@ const ProductDetail: React.FC = () => {
 
           {/* Panel info / compra */}
           <div>
-            <h1 className="text-xl md:text-4xl font-bold text-gray-900 leading-tight mb-2 md:mb-3">
-              {product.nombre}
-            </h1>
+            {/* ⭐ NUEVO: título + corazón */}
+            <div className="flex items-start justify-between gap-3 mb-2 md:mb-3">
+              <h1 className="text-xl md:text-4xl font-bold text-gray-900 leading-tight">
+                {product.nombre}
+              </h1>
+              <button
+                type="button"
+                onClick={() => toggleFavorite(product.id)}
+                className="mt-1 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 hover:bg-pink-50 transition-all"
+              >
+                <span className={`text-2xl ${isFav ? "text-pink-600" : "text-gray-400"}`}>
+                  {isFav ? "❤️" : "🤍"}
+                </span>
+              </button>
+            </div>
 
             <div className="flex items-center flex-wrap gap-2 md:gap-3 mb-3 md:mb-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs md:text-sm font-semibold">

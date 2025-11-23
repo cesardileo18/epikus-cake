@@ -5,6 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { showToast } from '../Toast/ToastProvider';
 import { useStoreStatus } from "@/context/StoreStatusContext";
+// ⭐ NUEVO: hook de favoritos
+import { useFavorites } from "@/hooks/useFavorites";
 
 type CartItem = { productId: string; quantity: number };
 
@@ -63,6 +65,8 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
     const [variantesSeleccionadas, setVariantesSeleccionadas] = useState<Record<string, string>>({});
     const navigate = useNavigate();
     const { isStoreOpen, closedMessage } = useStoreStatus();
+    // ⭐ NUEVO: favoritos
+    const { isFavorite, toggleFavorite } = useFavorites();
 
     const seleccionarVariante = (productId: string, variantId: string) => {
         setVariantesSeleccionadas(prev => ({ ...prev, [productId]: variantId }));
@@ -103,23 +107,26 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {productos.map((producto) => {
                 const varianteSeleccionada = variantesSeleccionadas[producto.id];
-                
+
                 // ✅ CAMBIO: Obtener stock máximo (total disponible)
                 const stockMaximo = getStockMaximo(producto, varianteSeleccionada);
-                
+
                 const itemKey = varianteSeleccionada ? `${producto.id}-${varianteSeleccionada}` : producto.id;
                 const enCarrito = items?.find((it) => it.productId === itemKey)?.quantity ?? 0;
-                
+
                 // ✅ Disponible es solo para mostrar al usuario
                 const disponible = Math.max(0, stockMaximo - enCarrito);
                 const sinStock = stockMaximo <= 0;
                 const stockBajo = disponible > 0 && disponible <= 3;
-                
+
                 const isProcessing = procesando?.has(producto.id) ?? false;
 
                 const tieneAlgunStock = producto.tieneVariantes && producto.variantes
                     ? producto.variantes.some(v => (v.stock ?? 0) > 0)
                     : (producto.stock ?? 0) > 0;
+
+                // ⭐ NUEVO: estado de favorito
+                const isFav = isFavorite(producto.id);
 
                 return (
                     <div
@@ -136,6 +143,17 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                     }`}
                                 onError={handleImageError}
                             />
+
+                            {/* ⭐ NUEVO: botón de favorito */}
+                            <button
+                                type="button"
+                                onClick={() => toggleFavorite(producto.id)}
+                                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:scale-110 hover:bg-pink-50 transition-all"
+                            >
+                                <span className={`text-lg ${isFav ? "text-pink-600" : "text-gray-400"}`}>
+                                    {isFav ? "❤️" : "🤍"}
+                                </span>
+                            </button>
 
                             {/* Badges */}
                             {catalogMode && !tieneAlgunStock && (
@@ -226,7 +244,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                         </div>
                                         {varianteSeleccionada && (
                                             <div className="text-sm text-gray-600">
-                                                Stock:{' '}
+                                                Stock{' '}
                                                 <span className={stockBajo ? 'text-yellow-600 font-bold' : 'text-gray-800'}>
                                                     {disponible}
                                                 </span>

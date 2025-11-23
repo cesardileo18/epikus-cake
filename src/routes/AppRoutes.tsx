@@ -24,6 +24,10 @@ const MyOrders = lazy(() => import("@/views/MyOrders"));
 const OrderSuccess = lazy(() => import("@/views/OrderSuccess"));
 const OrdersAdmin = lazy(() => import("@/views/admin/sells/OrdersAdmin"));
 const PaymentSuccess = lazy(() => import("@/views/payment/PaymentSuccess"));
+const AdminUsersPage = lazy(() => import("@/views/admin/users/AdminUsersPage"));
+const AnalyticsDashboard = lazy(() => import("@/views/admin/analyticsDashboard/AnalyticsDashboard"));
+const SalesDashboard = lazy(() => import("@/views/admin/sells/SalesDashboard"));
+const Favorites = lazy(() => import("@/views/Favorites"));
 // ====== tipos de rol (mantener en sync con lo que guardás en Firestore) ======
 type Role = "admin" | "customer" | "viewer";
 
@@ -96,6 +100,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/favorites" element={<Favorites />} />
 
         {/* admin protegidas */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>
@@ -105,6 +110,9 @@ const AppRoutes: React.FC = () => {
             <Route path="/admin/products" element={<ProductsList />} />
             <Route path="/admin/products/add" element={<AddProduct />} />
             <Route path="/admin/sells" element={<OrdersAdmin />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+            <Route path="/admin/sales-dashboard" element={<SalesDashboard />} />
           </Route>
         </Route>
 

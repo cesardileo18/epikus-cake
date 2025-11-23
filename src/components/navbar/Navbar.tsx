@@ -43,7 +43,10 @@ const Navbar: React.FC = () => {
         { name: 'Dashboard', to: '/admin/dashboard', icon: '📊' },
         { name: 'Productos (admin)', to: '/admin/products', icon: '📦' },
         { name: 'Agregar Producto', to: '/admin/products/add', icon: '➕' },
-        { name: 'Ventas / Pedidos', to: '/admin/sells', icon: '🧾' },
+        { name: 'Pedidos', to: '/admin/sells', icon: '🧾' },
+        { name: 'Usuarios', to: '/admin/users', icon: '👥' },
+        { name: 'Analytics', to: '/admin/analytics', icon: '📈' },
+        { name: 'Sales Dashboard', to: '/admin/sales-dashboard', icon: '💰' },
       ]
       : [];
 
@@ -139,7 +142,7 @@ const Navbar: React.FC = () => {
               {!isStoreOpen ? (
                 <div
                   title={closedMessage || "Tienda cerrada"}
-                 className="flex items-center gap-2 px-4 py-2 rounded-full 
+                  className="flex items-center gap-2 px-4 py-2 rounded-full 
 bg-white text-pink-600 font-semibold shadow-[0_2px_8px_rgba(216,30,119,0.25)] 
 border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0.35)] transition-all duration-300"
 
@@ -193,6 +196,7 @@ border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0
                     <div className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-xl">
                       <Link to="/profile" className="block px-4 py-3 text-sm hover:bg-pink-50">Mi perfil</Link>
                       <Link to="/my-orders" className="block px-4 py-3 text-sm hover:bg-pink-50">Mis pedidos</Link>
+                      <Link to="/favorites" className="block px-4 py-3 text-sm hover:bg-pink-50">Favoritos</Link>
                       <button onClick={signOut} className="block w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50" type="button">
                         Salir
                       </button>
@@ -296,6 +300,7 @@ border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0
                   <div className="overflow-hidden">
                     <Link to="/profile" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mi perfil</Link>
                     <Link to="/my-orders" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mis pedidos</Link>
+                    <Link to="/favorites" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Favoritos</Link>
                   </div>
                 </div>
               </div>
