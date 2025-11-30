@@ -77,6 +77,26 @@ const Footer: React.FC = () => {
                 >
                   <FaInstagram className="h-7 w-7" />
                 </a>
+                {/* PedidosYa */}
+                <a
+                  href="https://www.pedidosya.com.ar/restaurantes/buenos-aires/epikuscake-3a2a8180-a027-4a0d-a981-04efdf2d04c4-menu?origin=shop_list"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Pedí en PedidosYa"
+                  className="
+                    inline-flex h-10 w-10 items-center justify-center
+                    rounded-full shadow overflow-hidden
+                    hover:shadow-md transition hover:-translate-y-0.5
+                    focus:outline-none focus:ring-2 focus:ring-[#FA0050]/40
+                  "
+                >
+                  <img
+                    src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1764536245/icon-384x384_rlwlja.png"
+                    alt="PedidosYa"
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </a>
               </div>
             </div>
 
