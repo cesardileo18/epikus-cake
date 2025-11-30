@@ -20,6 +20,9 @@ const ProductsList = () => {
   const [guardando, setGuardando] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
 
+  // 🔍 Buscador
+  const [searchTerm, setSearchTerm] = useState("");
+
   // --- Estado para AGREGAR/EDITAR variante (mismo formulario) ---
   const [nuevaVariante, setNuevaVariante] = useState({
     id: "",
@@ -265,16 +268,40 @@ const ProductsList = () => {
   const out = productos.filter(p => getStockTotal(p) === 0).length;
 
   const productosFiltrados = useMemo(() => {
+    // Primero filtro por estado (chips)
+    let base = productos;
     switch (filter) {
-      case "active": return productos.filter(p => p.activo);
-      case "low": return productos.filter(p => {
-        const stock = getStockTotal(p);
-        return stock <= 5 && stock > 0;
-      });
-      case "out": return productos.filter(p => getStockTotal(p) === 0);
-      default: return productos;
+      case "active":
+        base = productos.filter(p => p.activo);
+        break;
+      case "low":
+        base = productos.filter(p => {
+          const stock = getStockTotal(p);
+          return stock <= 5 && stock > 0;
+        });
+        break;
+      case "out":
+        base = productos.filter(p => getStockTotal(p) === 0);
+        break;
+      default:
+        base = productos;
     }
-  }, [productos, filter]);
+
+    // Luego filtro por buscador
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return base;
+
+    return base.filter(p => {
+      const nombre = p.nombre?.toLowerCase() || "";
+      const descripcion = p.descripcion?.toLowerCase() || "";
+      const categoria = p.categoria?.toLowerCase() || "";
+      return (
+        nombre.includes(term) ||
+        descripcion.includes(term) ||
+        categoria.includes(term)
+      );
+    });
+  }, [productos, filter, searchTerm]);
 
   if (loading) {
     return (
@@ -288,7 +315,7 @@ const ProductsList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 pt-20 pb-10">
+    <div className="min-h-screen bg-[#ff7bab3a] pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-4 md:mb-8">
@@ -317,12 +344,39 @@ const ProductsList = () => {
           <MetricCard value={out} label="Sin Stock" color="text-red-600" />
         </div>
 
-        {/* Filtros */}
-        <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-2">
-          <Chip active={filter === "all"} onClick={() => setFilter("all")}>Todos ({total})</Chip>
-          <Chip active={filter === "active"} onClick={() => setFilter("active")}>Activos ({activos})</Chip>
-          <Chip active={filter === "low"} onClick={() => setFilter("low")}>Stock bajo ({low})</Chip>
-          <Chip active={filter === "out"} onClick={() => setFilter("out")}>Sin stock ({out})</Chip>
+        {/* Filtros + Buscador */}
+        <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <Chip active={filter === "all"} onClick={() => setFilter("all")}>Todos ({total})</Chip>
+            <Chip active={filter === "active"} onClick={() => setFilter("active")}>Activos ({activos})</Chip>
+            <Chip active={filter === "low"} onClick={() => setFilter("low")}>Stock bajo ({low})</Chip>
+            <Chip active={filter === "out"} onClick={() => setFilter("out")}>Sin stock ({out})</Chip>
+          </div>
+
+          {/* 🔍 Buscador */}
+          <div className="w-full md:w-72">
+            <Field label="Buscar producto">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">🔍</span>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Nombre, descripción o categoría..."
+                  className="w-full border border-gray-300 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent bg-white/80"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </Field>
+          </div>
         </div>
 
         {/* Lista */}
@@ -415,9 +469,11 @@ const ProductsList = () => {
                         <span className="text-lg font-bold text-gray-900">{getPrecioDisplay(p)}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStockTotal(p) === 0 ? "bg-red-100 text-red-800"
-                          : getStockTotal(p) <= 5 ? "bg-yellow-100 text-yellow-800"
-                            : "bg-green-100 text-green-800"
+                        <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStockTotal(p) === 0
+                            ? "bg-red-100 text-red-800"
+                            : getStockTotal(p) <= 5
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-800"
                           }`}>📦 {getStockTotal(p)}</span>
                       </td>
                       <td className="px-6 py-4">
@@ -431,10 +487,27 @@ const ProductsList = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          <button onClick={() => abrirModalEdicion(p)} className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600">Editar</button>
-                          <button onClick={() => toggleActivo(p)} className={`px-3 py-1 text-sm rounded-lg ${p.activo ? "bg-yellow-500 text-white hover:bg-yellow-600" : "bg-green-500 text-white hover:bg-green-600"
-                            }`}>{p.activo ? "Desactivar" : "Activar"}</button>
-                          <button onClick={() => eliminarProducto(p)} className="px-3 py-1 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600">Eliminar</button>
+                          <button
+                            onClick={() => abrirModalEdicion(p)}
+                            className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => toggleActivo(p)}
+                            className={`px-3 py-1 text-sm rounded-lg ${p.activo
+                                ? "bg-yellow-500 text-white hover:bg-yellow-600"
+                                : "bg-green-500 text-white hover:bg-green-600"
+                              }`}
+                          >
+                            {p.activo ? "Desactivar" : "Activar"}
+                          </button>
+                          <button
+                            onClick={() => eliminarProducto(p)}
+                            className="px-3 py-1 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600"
+                          >
+                            Eliminar
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -451,26 +524,45 @@ const ProductsList = () => {
             <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">Editar Producto</h2>
-                <button onClick={cerrarModal} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
+                <button
+                  onClick={cerrarModal}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  ✕
+                </button>
               </div>
 
               <div className="p-6 space-y-6">
                 {/* Nombre */}
                 <Field label="Nombre del Producto *">
-                  <input type="text" name="nombre" value={productoEditando.nombre} onChange={handleCambioFormulario}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={productoEditando.nombre}
+                    onChange={handleCambioFormulario}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  />
                 </Field>
 
                 {/* Descripción */}
                 <Field label="Descripción">
-                  <textarea name="descripcion" value={productoEditando.descripcion} onChange={handleCambioFormulario} rows={3}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent resize-none" />
+                  <textarea
+                    name="descripcion"
+                    value={productoEditando.descripcion}
+                    onChange={handleCambioFormulario}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent resize-none"
+                  />
                 </Field>
 
                 {/* Categoría */}
                 <Field label="Categoría *">
-                  <select name="categoria" value={productoEditando.categoria} onChange={handleCambioFormulario}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent">
+                  <select
+                    name="categoria"
+                    value={productoEditando.categoria}
+                    onChange={handleCambioFormulario}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  >
                     <option value="">Seleccionar categoría</option>
                     <option value="tortas">🍰 Tortas</option>
                     <option value="cheesecakes">🧀 Cheesecakes</option>
@@ -482,15 +574,24 @@ const ProductsList = () => {
 
                 {/* Imagen */}
                 <Field label="URL de la Imagen *">
-                  <input type="url" name="imagen" value={productoEditando.imagen} onChange={handleCambioFormulario}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
+                  <input
+                    type="url"
+                    name="imagen"
+                    value={productoEditando.imagen}
+                    onChange={handleCambioFormulario}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  />
                 </Field>
 
                 {/* Toggle Variantes */}
                 <div className="border-2 border-dashed border-purple-200 rounded-xl p-4">
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={productoEditando.tieneVariantes} onChange={handleTieneVariantesChange}
-                      className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
+                    <input
+                      type="checkbox"
+                      checked={productoEditando.tieneVariantes}
+                      onChange={handleTieneVariantesChange}
+                      className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
                     <div>
                       <span className="text-sm font-bold text-purple-900">🎯 Producto con variantes</span>
                       <p className="text-xs text-purple-700">Para tortas con diferentes porciones</p>
@@ -502,17 +603,29 @@ const ProductsList = () => {
                 {!productoEditando.tieneVariantes && (
                   <div className="grid grid-cols-2 gap-4">
                     <Field label="Precio (ARS) *">
-                      <input type="number" name="precio" value={productoEditando.precio || ""} onChange={handleCambioFormulario} min={0}
-                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
+                      <input
+                        type="number"
+                        name="precio"
+                        value={productoEditando.precio || ""}
+                        onChange={handleCambioFormulario}
+                        min={0}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                      />
                     </Field>
                     <Field label="Stock *">
-                      <input type="number" name="stock" value={productoEditando.stock || ""} onChange={handleCambioFormulario} min={0}
-                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent" />
+                      <input
+                        type="number"
+                        name="stock"
+                        value={productoEditando.stock || ""}
+                        onChange={handleCambioFormulario}
+                        min={0}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                      />
                     </Field>
                   </div>
                 )}
 
-                {/* CASO 2: Con variantes (mismo formulario para agregar/editar) */}
+                {/* CASO 2: Con variantes */}
                 {productoEditando.tieneVariantes && (
                   <div className="space-y-4">
                     <div className="border border-purple-200 rounded-xl p-4">
@@ -622,25 +735,40 @@ const ProductsList = () => {
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-900">Configuración</h3>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="activo" checked={productoEditando.activo} onChange={handleCambioFormulario}
-                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500" />
+                    <input
+                      type="checkbox"
+                      name="activo"
+                      checked={productoEditando.activo}
+                      onChange={handleCambioFormulario}
+                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+                    />
                     <span className="text-sm font-semibold text-gray-800">Producto activo</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="destacado" checked={productoEditando.destacado} onChange={handleCambioFormulario}
-                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500" />
+                    <input
+                      type="checkbox"
+                      name="destacado"
+                      checked={productoEditando.destacado}
+                      onChange={handleCambioFormulario}
+                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+                    />
                     <span className="text-sm font-semibold text-gray-800">Producto destacado</span>
                   </label>
                 </div>
               </div>
 
               <div className="p-6 border-t border-gray-200 flex gap-4">
-                <button onClick={cerrarModal}
-                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50">
+                <button
+                  onClick={cerrarModal}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50"
+                >
                   Cancelar
                 </button>
-                <button onClick={guardarCambios} disabled={guardando}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-500 disabled:opacity-50">
+                <button
+                  onClick={guardarCambios}
+                  disabled={guardando}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-500 disabled:opacity-50"
+                >
                   {guardando ? "Guardando..." : "Guardar Cambios"}
                 </button>
               </div>
@@ -651,4 +779,5 @@ const ProductsList = () => {
     </div>
   );
 };
+
 export default ProductsList;
