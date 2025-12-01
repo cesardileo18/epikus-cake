@@ -7,6 +7,7 @@ import { showToast } from '../Toast/ToastProvider';
 import { useStoreStatus } from "@/context/StoreStatusContext";
 // ⭐ NUEVO: hook de favoritos
 import { useFavorites } from "@/hooks/useFavorites";
+import { RatingStars } from '../RatingStars/RatingStars';
 
 type CartItem = { productId: string; quantity: number };
 
@@ -187,7 +188,11 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                     {producto.descripcion}
                                 </p>
                             </div>
-
+                            {/* ⭐ RANKING DEL PRODUCTO (solo si tiene calificaciones) */}
+                            <RatingStars
+                                avgRating={producto.avgRating}
+                                ratingCount={producto.ratingCount}
+                            />
                             {/* Selector de variantes */}
                             {catalogMode && producto.tieneVariantes && producto.variantes && producto.variantes.length > 0 && (
                                 <div className="space-y-2">

@@ -3,7 +3,6 @@ import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthProvider";
 
-
 // ====== lazy imports (code-splitting) ======
 const Home = lazy(() => import("@/views/Home"));
 const Products = lazy(() => import("@/views/Products"));
@@ -28,6 +27,8 @@ const AdminUsersPage = lazy(() => import("@/views/admin/users/AdminUsersPage"));
 const AnalyticsDashboard = lazy(() => import("@/views/admin/analyticsDashboard/AnalyticsDashboard"));
 const SalesDashboard = lazy(() => import("@/views/admin/sells/SalesDashboard"));
 const Favorites = lazy(() => import("@/views/Favorites"));
+const ProductReviewsPage = lazy(() => import("@/views/ProductReviewsPage"));
+const MyReviewsPage = lazy(() => import("@/views/MyReviewsPage"));
 // ====== tipos de rol (mantener en sync con lo que guardás en Firestore) ======
 type Role = "admin" | "customer" | "viewer";
 
@@ -101,6 +102,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/favorites" element={<Favorites />} />
+        <Route path="/products/:id/opiniones" element={<ProductReviewsPage />} />
+        <Route path="/my-reviews" element={<MyReviewsPage />} />
 
         {/* admin protegidas */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>

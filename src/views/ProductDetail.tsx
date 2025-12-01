@@ -13,6 +13,7 @@ const content: ProductDetailContent = contentJson as ProductDetailContent;
 
 // ⭐ NUEVO: favoritos
 import { useFavorites } from "@/hooks/useFavorites";
+import { RatingStars } from '@/components/RatingStars/RatingStars';
 
 type LocationState = { product?: ProductWithId };
 
@@ -223,7 +224,22 @@ const ProductDetail: React.FC = () => {
                 </span>
               </button>
             </div>
-
+            {/* ⭐⭐ CLICK EN LAS ESTRELLAS → OPINIONES */}
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/products/${product.id}/opiniones`, {
+                  state: { from: location.pathname + location.search },
+                })
+              }
+              className="mb-2 inline-flex items-center hover:opacity-80 cursor-pointer"
+            >
+              <RatingStars
+                avgRating={product.avgRating}
+                ratingCount={product.ratingCount}
+                size="sm"
+              />
+            </button>
             <div className="flex items-center flex-wrap gap-2 md:gap-3 mb-3 md:mb-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs md:text-sm font-semibold">
                 {product.categoria.charAt(0).toUpperCase() + product.categoria.slice(1)}
@@ -393,8 +409,8 @@ const ProductDetail: React.FC = () => {
                       }}
                       disabled={!isStoreOpen}
                       className={`flex-1 px-4 py-2 rounded-xl font-semibold border-2 transition-all duration-300 ${isStoreOpen
-                          ? "border-pink-500 text-pink-600 hover:bg-pink-50"
-                          : "border-gray-300 text-gray-400 cursor-not-allowed bg-gray-100"
+                        ? "border-pink-500 text-pink-600 hover:bg-pink-50"
+                        : "border-gray-300 text-gray-400 cursor-not-allowed bg-gray-100"
                         }`}
                       type="button"
                     >
