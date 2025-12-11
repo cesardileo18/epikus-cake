@@ -147,9 +147,8 @@ export default function AboutUs() {
                   style={{ animationDelay: `${i * 150}ms` }}
                 >
                   <span
-                    className={`absolute left-0 top-1 h-6 w-6 rounded-full border-4 border-white shadow-lg hover:scale-125 transition-transform ${
-                      i % 2 === 0 ? "bg-[#FF7BAC]" : "bg-[#D81E77]"
-                    }`}
+                    className={`absolute left-0 top-1 h-6 w-6 rounded-full border-4 border-white shadow-lg hover:scale-125 transition-transform ${i % 2 === 0 ? "bg-[#FF7BAC]" : "bg-[#D81E77]"
+                      }`}
                   />
                   <h4 className="font-bold text-gray-900">{t.title}</h4>
                   <p className="mt-1 text-sm text-gray-600">{t.desc}</p>
@@ -161,9 +160,8 @@ export default function AboutUs() {
               {content.gallery.map((g, i) => (
                 <img
                   key={i}
-                  className={`${
-                    i === 2 ? "col-span-2 h-56" : "h-52"
-                  } w-full rounded-2xl object-cover shadow-lg hover:shadow-2xl hover:scale-105 hover:rotate-1 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-pink-300`}
+                  className={`${i === 2 ? "col-span-2 h-56" : "h-52"
+                    } w-full rounded-2xl object-cover shadow-lg hover:shadow-2xl hover:scale-105 hover:rotate-1 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-pink-300`}
                   src={g.src}
                   alt={g.alt}
                   loading="lazy"

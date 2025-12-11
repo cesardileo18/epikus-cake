@@ -16,6 +16,11 @@ import contentJson from '@/content/homeContent.json';
 import type { HomeTextContent } from '@/interfaces/HomeContent'; // o '@/content/types'
 import HeroCarousel from '@/components/home/HeroCarousel';
 import { Badge } from '@/components/aboutUs/Badge';
+import { InstagramSection } from '@/components/aboutUs/InstagramSection';
+import aboutJson from "@/content/aboutUsContent.json";
+import type { AboutUsContent } from "@/interfaces/AboutUsContent";
+
+const contentAbout: AboutUsContent = aboutJson as AboutUsContent;
 const content: HomeTextContent = contentJson as HomeTextContent;
 
 const Home: React.FC = () => {
@@ -126,6 +131,7 @@ const Home: React.FC = () => {
         </div>
         <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-r from-pink-400 to-rose-300 rounded-full opacity-20 animate-bounce" />
       </section>
+      <InstagramSection instagram={contentAbout.instagram} />
     </div>
   );
 };
