@@ -37,7 +37,7 @@ const Footer: React.FC = () => {
                     >
                       <img
                         className="w-12 h-12 md:w-14 md:h-14"
-                        src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758828059/epikus600x600px_redesy.png"
+                        src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1765297906/EpikusNuevoDise%C3%B1o_woi7ij.png"
                         alt="Logo Epikus Cake"
                         loading="lazy"
                       />

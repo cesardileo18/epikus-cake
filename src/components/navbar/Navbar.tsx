@@ -72,7 +72,7 @@ const Navbar: React.FC = () => {
                     <div className={`w-15 h-15 flex items-center justify-center ${scrolled ? 'bg-transparent shadow-none ring-0' : 'bg-white/90 ring-1 ring-black/5 shadow-md'} rounded-2xl`}>
                       <img
                         className="w-12 h-12"
-                        src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1758828059/epikus600x600px_redesy.png"
+                        src="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1765297906/EpikusNuevoDise%C3%B1o_woi7ij.png"
                         alt="Logo Epikus Cake"
                       />
                     </div>

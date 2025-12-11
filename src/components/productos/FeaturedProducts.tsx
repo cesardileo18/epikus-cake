@@ -24,7 +24,7 @@ interface FeaturedProductsProps {
     openCart?: () => void;
     procesando?: Set<string>;
 }
-
+const DESCUENTO_TRANSFERENCIA = 10; // porcentaje de descuento por transferencia bancaria
 const currency = (n: number) =>
     n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 
@@ -189,10 +189,22 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                 </p>
                             </div>
                             {/* ⭐ RANKING DEL PRODUCTO (solo si tiene calificaciones) */}
-                            <RatingStars
+                            {/* <RatingStars
                                 avgRating={producto.avgRating}
                                 ratingCount={producto.ratingCount}
-                            />
+                            /> */}
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <RatingStars
+                                    avgRating={producto.avgRating}
+                                    ratingCount={producto.ratingCount}
+                                />
+                                <div className="inline-flex items-center gap-1 px-1 py-1 bg-green-50 border border-green-200 rounded-full">
+                                    <span className="text-xs">✨</span>
+                                    <span className="text-xs font-bold text-green-600 whitespace-nowrap" title={`${DESCUENTO_TRANSFERENCIA}% OFF pagando en efectivo o transferencia`}>
+                                        {DESCUENTO_TRANSFERENCIA}% off efectivo
+                                    </span>
+                                </div>
+                            </div>
                             {/* Selector de variantes */}
                             {catalogMode && producto.tieneVariantes && producto.variantes && producto.variantes.length > 0 && (
                                 <div className="space-y-2">

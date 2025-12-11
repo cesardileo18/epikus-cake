@@ -11,7 +11,7 @@ const credentials = JSON.parse(credentialsContent).web;
 const oAuth2Client = new google.auth.OAuth2(
   credentials.client_id,
   credentials.client_secret,
-  credentials.redirect_uris[0]
+  credentials.redirect_uris[2]
 );
 
 const SCOPES = ['https://mail.google.com/'];
