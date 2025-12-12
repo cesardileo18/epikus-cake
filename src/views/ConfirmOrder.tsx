@@ -16,6 +16,10 @@ import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/Toast/ToastProvider';
 import { httpsCallable } from 'firebase/functions';
 import ConsentimientoTyC from '@/components/buttons/ConsentimientoTyC';
+import transferenciaJson from "@/content/TransferenciaData.json"
+import type { TransferenciaData } from "@/interfaces/Transferencia";
+
+const transferencia = transferenciaJson as TransferenciaData;
 
 const price = (n: number) => n.toLocaleString('es-AR');
 const WA_PHONE = import.meta.env.VITE_WA_PHONE;
@@ -129,6 +133,15 @@ const ConfirmOrder: React.FC = () => {
       form.terminosAceptados ? `\n✅ Aceptó términos y condiciones: ${form.terminosAceptados ? "ACEPTADOS" : "NO aceptados"}` : '',
       form.notas ? `\nNotas adicionales: ${form.notas}` : ''
     ].join('');
+    const transferenciaTexto =
+      paymentMethod === "transferencia"
+        ? `\n\n💳 *Datos para la seña (50%)*` +
+        `\nAlias: ${transferencia.alias}` +
+        `\nCVU: ${transferencia.cvu}` +
+        `\nTitular: ${transferencia.titular}` +
+        `\nMonto seña: $${price(pricing.senia50)}`
+        : '';
+
     const politica =
       `\n\nModalidad: *Retiro en local*` +
       `\nSi preferís, podés enviar un *Cabify/Remís* (costo a cargo del comprador).` +
@@ -144,7 +157,8 @@ const ConfirmOrder: React.FC = () => {
       `${when}\n` +
       `Método de pago: ${paymentMethod === 'transferencia' ? 'Transferencia/Efectivo' : 'MercadoPago'}\n` +
       `${cliente}${extras}\n\n` +
-      `Gracias!`
+      `Gracias!` +
+      transferenciaTexto
     );
   };
 
@@ -216,21 +230,37 @@ const ConfirmOrder: React.FC = () => {
             to: form.email,
             subject: `Confirmación de pedido #${orderId} - Epikus Cake`,
             html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #ec4899;">¡Gracias por tu pedido!</h2>
-              <p>Hola <strong>${form.nombre}</strong>,</p>
-              <p>Tu pedido <strong>#${orderId}</strong> ha sido recibido correctamente.</p>
-              <div style="background: #fdf2f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>Total:</strong> $${price(pricing.total)}</p>
-                <p><strong>Seña (50%):</strong> $${price(pricing.senia50)}</p>
-                <p><strong>Retiro:</strong> ${form.fecha} a las ${form.hora}</p>
-                <p>Términos: ${form.terminosAceptados ? "ACEPTADOS" : "NO aceptados"}</p>
-              </div>
-              <p>En breve te contactamos por WhatsApp para coordinar el pago de la seña.</p>
-              <p><strong>Recordá:</strong> Tu pedido queda confirmado al acreditar la seña del 50%.</p>
-              <p style="margin-top: 30px;">Gracias por confiar en Epikus Cake 💖</p>
-            </div>
-          `,
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ec4899;">¡Gracias por tu pedido!</h2>
+        <p>Hola <strong>${form.nombre}</strong>,</p>
+        <p>Tu pedido <strong>#${orderId}</strong> ha sido recibido correctamente.</p>
+
+        <div style="background: #fdf2f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Total:</strong> $${price(pricing.total)}</p>
+          <p><strong>Seña (50%):</strong> $${price(pricing.senia50)}</p>
+          <p><strong>Retiro:</strong> ${form.fecha} a las ${form.hora}</p>
+          <p>Términos: ${form.terminosAceptados ? "ACEPTADOS" : "NO aceptados"}</p>
+        </div>
+
+        ${paymentMethod === "transferencia"
+                ? `
+          <!-- 👇 ACÁ VAN LOS DATOS DE TRANSFERENCIA -->
+          <div style="background:#f0fdf4;padding:15px;border-radius:8px;margin:20px 0">
+            <h3 style="margin-top:0">💳 Datos para la seña (50%)</h3>
+            <p><strong>Alias:</strong> ${transferencia.alias}</p>
+            <p><strong>CVU:</strong> ${transferencia.cvu}</p>
+            <p><strong>Titular:</strong> ${transferencia.titular}</p>
+            <p><strong>Monto a transferir:</strong> $${price(pricing.senia50)}</p>
+          </div>
+          `
+                : ""
+              }
+
+        <p>En breve te contactamos por WhatsApp para coordinar el pago de la seña.</p>
+        <p><strong>Recordá:</strong> Tu pedido queda confirmado al acreditar la seña del 50%.</p>
+        <p style="margin-top: 30px;">Gracias por confiar en Epikus Cake 💖</p>
+      </div>
+    `,
             text: `Pedido #${orderId} confirmado. Total: $${price(pricing.total)}. Seña 50%: $${price(pricing.senia50)}. Retiro: ${form.fecha} ${form.hora}`,
           }).catch((err) => console.error("Email cliente falló:", err))
         );

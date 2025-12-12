@@ -131,7 +131,9 @@ const Home: React.FC = () => {
         </div>
         <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-r from-pink-400 to-rose-300 rounded-full opacity-20 animate-bounce" />
       </section>
-      <InstagramSection instagram={contentAbout.instagram} />
+      <div className='bg-[#ff7bab48]'>
+        <InstagramSection instagram={contentAbout.instagram} />
+      </div>
     </div>
   );
 };

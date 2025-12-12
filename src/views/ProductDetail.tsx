@@ -25,6 +25,7 @@ const currencyFmt = (n: number) =>
   });
 
 const ProductDetail: React.FC = () => {
+  const DESCUENTO_TRANSFERENCIA = 10; // %
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -174,6 +175,8 @@ const ProductDetail: React.FC = () => {
       ? `${content.price.from_prefix} ${currencyFmt(Math.min(...product.variantes.map(v => v.precio)))}`
       : currencyFmt(precioActual);
 
+  const sinOpiniones = !product.ratingCount || product.ratingCount === 0;
+
   return (
     <div className="min-h-screen bg-[#ff7bab48] pt-20">
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
@@ -225,21 +228,32 @@ const ProductDetail: React.FC = () => {
               </button>
             </div>
             {/* ⭐⭐ CLICK EN LAS ESTRELLAS → OPINIONES */}
-            <button
-              type="button"
-              onClick={() =>
-                navigate(`/products/${product.id}/opiniones`, {
-                  state: { from: location.pathname + location.search },
-                })
-              }
-              className="mb-2 inline-flex items-center hover:opacity-80 cursor-pointer"
-            >
-              <RatingStars
-                avgRating={product.avgRating}
-                ratingCount={product.ratingCount}
-                size="sm"
-              />
-            </button>
+            <div className='mb-2 flex items-center justify-around w-full'>
+              <button
+                className={`${sinOpiniones ? 'opacity-50' : 'cursor-pointer'}`}
+                disabled={sinOpiniones}
+                type="button"
+                onClick={() =>
+                  navigate(`/products/${product.id}/opiniones`, {
+                    state: { from: location.pathname + location.search },
+                  })
+                }
+              >
+                <div className="flex items-center gap-3 333">
+                  <RatingStars
+                    avgRating={product.avgRating}
+                    ratingCount={product.ratingCount}
+                    size="sm"
+                  />
+                </div>
+              </button>
+              <div className="inline-flex items-center gap-1 px-1 py-1 bg-green-50 border border-green-200 rounded-full">
+                <span className="text-xs">✨</span>
+                <span className="text-xs font-bold text-green-600 whitespace-nowrap" title={`${DESCUENTO_TRANSFERENCIA}% OFF pagando en efectivo o transferencia`}>
+                  {DESCUENTO_TRANSFERENCIA}% off efectivo
+                </span>
+              </div>
+            </div>
             <div className="flex items-center flex-wrap gap-2 md:gap-3 mb-3 md:mb-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs md:text-sm font-semibold">
                 {product.categoria.charAt(0).toUpperCase() + product.categoria.slice(1)}
