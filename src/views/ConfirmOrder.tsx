@@ -256,7 +256,7 @@ const ConfirmOrder: React.FC = () => {
                 : ""
               }
 
-        <p>En breve te contactamos por WhatsApp para coordinar el pago de la seña.</p>
+        <p>En breve te contactamos por WhatsApp.</p>
         <p><strong>Recordá:</strong> Tu pedido queda confirmado al acreditar la seña del 50%.</p>
         <p style="margin-top: 30px;">Gracias por confiar en Epikus Cake 💖</p>
       </div>

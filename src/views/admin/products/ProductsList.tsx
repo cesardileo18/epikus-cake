@@ -470,10 +470,10 @@ const ProductsList = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStockTotal(p) === 0
-                            ? "bg-red-100 text-red-800"
-                            : getStockTotal(p) <= 5
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-800"
+                          ? "bg-red-100 text-red-800"
+                          : getStockTotal(p) <= 5
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-green-100 text-green-800"
                           }`}>📦 {getStockTotal(p)}</span>
                       </td>
                       <td className="px-6 py-4">
@@ -496,8 +496,8 @@ const ProductsList = () => {
                           <button
                             onClick={() => toggleActivo(p)}
                             className={`px-3 py-1 text-sm rounded-lg ${p.activo
-                                ? "bg-yellow-500 text-white hover:bg-yellow-600"
-                                : "bg-green-500 text-white hover:bg-green-600"
+                              ? "bg-yellow-500 text-white hover:bg-yellow-600"
+                              : "bg-green-500 text-white hover:bg-green-600"
                               }`}
                           >
                             {p.activo ? "Desactivar" : "Activar"}
@@ -564,7 +564,8 @@ const ProductsList = () => {
                     className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                   >
                     <option value="">Seleccionar categoría</option>
-                    <option value="tortas">🍰 Tortas</option>
+                    <option value="tortas">🎂 Tortas</option>
+                    <option value="porciones-torta">🍰 Porciones</option>
                     <option value="cheesecakes">🧀 Cheesecakes</option>
                     <option value="cupcakes">🧁 Cupcakes</option>
                     <option value="panaderia">🥖 Panadería</option>

@@ -207,7 +207,8 @@ const AddProduct = () => {
                     required
                   >
                     <option value="">Seleccionar categoría</option>
-                    <option value="tortas">🍰 Tortas</option>
+                    <option value="tortas">🎂 Tortas</option>
+                    <option value="porciones-torta">🍰 Porciones</option>
                     <option value="cheesecakes">🧀 Cheesecakes</option>
                     <option value="cupcakes">🧁 Cupcakes</option>
                     <option value="panaderia">🥖 Panadería</option>
