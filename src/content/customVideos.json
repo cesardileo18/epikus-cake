@@ -1,0 +1,18 @@
+{
+  "title": "Momentos que emocionan",
+  "subtitle": "Reacciones reales y trabajos hechos a pedido.",
+  "videos": [
+    {
+      "id": "reaccion-1",
+      "src": "https://res.cloudinary.com/dyf6dtb9y/video/upload/f_auto,q_auto/v1765658132/video1_usugw9.mp4"
+    },
+    {
+      "id": "reaccion-2",
+      "src": "https://res.cloudinary.com/dyf6dtb9y/video/upload/f_auto,q_auto/v1765658131/video2_uxfztb.mp4"
+    },
+    {
+      "id": "reaccion-3",
+      "src": "https://res.cloudinary.com/dyf6dtb9y/video/upload/f_auto,q_auto/v1765658132/video4_crdyim.mp4"
+    }
+  ]
+}

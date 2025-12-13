@@ -18,8 +18,16 @@ import HeroCarousel from '@/components/home/HeroCarousel';
 import { Badge } from '@/components/aboutUs/Badge';
 import { InstagramSection } from '@/components/aboutUs/InstagramSection';
 import aboutJson from "@/content/aboutUsContent.json";
+import customVideos from "@/content/customVideos.json";
+import type { ReactionVideosSectionProps } from '@/interfaces/customVideos';
 import type { AboutUsContent } from "@/interfaces/AboutUsContent";
+import ReactionVideosSection from '@/components/reacciones/ReactionVideosSection';
+import CustomWorksSection from '@/components/home/CustomWorksSection';
+import customWorksJson from '@/content/customWorks.json';
+import type { CustomWorksContent } from '@/interfaces/CustomWorks';
 
+const customWorks = customWorksJson as CustomWorksContent;
+const videosContent: ReactionVideosSectionProps = customVideos as ReactionVideosSectionProps;
 const contentAbout: AboutUsContent = aboutJson as AboutUsContent;
 const content: HomeTextContent = contentJson as HomeTextContent;
 
@@ -68,12 +76,10 @@ const Home: React.FC = () => {
         <div className="absolute bottom-32 right-16 w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-300 rounded-full opacity-30 animate-bounce" />
         <div className="absolute top-1/3 right-8 w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-300 rounded-full opacity-25 animate-bounce" />
       </section>
-
       {/* Hero Carousel */}
       <section className="relative w-full">
         <HeroCarousel />
       </section>
-
       {/* Features */}
       <section className="relative w-full py-12 md:py-16 bg-gradient-to-br from-pink-500/10 via-rose-400/5 to-pink-600/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -94,11 +100,10 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
-
       {/* Destacados */}
-      <section className="py-10 bg-[#ff7bab48] backdrop-blur-sm">
+      <section className="pt-5 bg-[#ff7bab48] backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <div className="mb-5">
               <Badge><StarSolid className="w-4 h-4 mr-2 text-amber-300" />{content.featured_section.badge}</Badge>
             </div>
@@ -119,10 +124,10 @@ const Home: React.FC = () => {
             handleImageError={handleImageError}
           />
 
-          <div className="text-center mt-12">
+          <div className="text-center py-5">
             <Link
               to="/products"
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+              className="inline-flex items-center px-8 py-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
             >
               {content.buttons.view_all_products}
               <ChevronRightIcon className="w-5 h-5 ml-2" />
@@ -133,6 +138,19 @@ const Home: React.FC = () => {
       </section>
       <div className='bg-[#ff7bab48]'>
         <InstagramSection instagram={contentAbout.instagram} />
+      </div>
+      <div className='bg-gradient-to-br from-pink-500/10 via-rose-400/5 to-pink-600/10'>
+        <ReactionVideosSection
+          title={videosContent.title}
+          subtitle={videosContent.subtitle}
+          videos={videosContent.videos}
+        />
+      </div>
+      <div>
+        <CustomWorksSection
+          title={customWorks.title}
+          items={customWorks.items}
+        />
       </div>
     </div>
   );

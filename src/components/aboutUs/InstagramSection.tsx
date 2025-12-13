@@ -10,7 +10,7 @@ interface InstagramSectionProps {
 
 export function InstagramSection({ instagram }: InstagramSectionProps) {
   return (
-    <section className="pb-10 relative z-10">
+    <section className="pb-7 relative z-10">
       <div className="max-w-7xl mx-auto px-6">
         <div className="relative rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up">
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 animate-gradient-shift" />
