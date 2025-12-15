@@ -30,6 +30,11 @@ const ConfirmOrder: React.FC = () => {
   const enviandoRef = useRef(false);
   const [errorRecaptcha, setErrorRecaptcha] = useState<string | null>(null);
   const { executeRecaptcha } = useRecaptcha(true);
+  const CATEGORIAS_MISMO_DIA = [
+    'porciones-torta',
+    'galletas',
+    'helados',
+  ];
 
   const Styles = () => (
     <style>{`
@@ -65,6 +70,10 @@ const ConfirmOrder: React.FC = () => {
 
   const { items, total, clear } = useCart();
   const nav = useNavigate();
+
+  const tieneProductosConAnticipacion = items.some(
+    (it) => !CATEGORIAS_MISMO_DIA.includes(it.product.categoria)
+  );
 
   const [paymentMethod, setPaymentMethod] = useState<'transferencia' | 'mercadopago'>('transferencia');
   const [form, setForm] = useState({
@@ -118,7 +127,11 @@ const ConfirmOrder: React.FC = () => {
     return items.length > 0;
   }, [form, items.length, aceptoTerminos]);
 
-  const minDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+ const minDate = new Date(
+  Date.now() + (tieneProductosConAnticipacion ? 2 : 0) * 24 * 60 * 60 * 1000
+)
+  .toISOString()
+  .split('T')[0];
 
   const buildWaMessage = (orderId: string) => {
     const lines = items.map(
