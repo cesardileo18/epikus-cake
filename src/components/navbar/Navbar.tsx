@@ -47,6 +47,7 @@ const Navbar: React.FC = () => {
         { name: 'Usuarios', to: '/admin/users', icon: '👥' },
         { name: 'Visitas a la página', to: '/admin/analytics', icon: '📈' },
         { name: 'Tablero Ventas', to: '/admin/sales-dashboard', icon: '💰' },
+        { name: 'Calendario', to: '/admin/sells/calendar', icon: '📅' },
       ]
       : [];
 
