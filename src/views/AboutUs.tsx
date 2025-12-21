@@ -13,6 +13,7 @@ import { InstagramSection } from "@/components/aboutUs/InstagramSection";
 
 import aboutJson from "@/content/aboutUsContent.json";
 import type { AboutUsContent } from "@/interfaces/AboutUsContent";
+import GraduationVideoSection from "@/components/aboutUs/GraduationVideoSection";
 
 const content: AboutUsContent = aboutJson as AboutUsContent;
 const brand = { from: "#FF7BAC", to: "#D81E77" };
@@ -172,7 +173,9 @@ export default function AboutUs() {
           </div>
         </div>
       </section>
-
+      <GraduationVideoSection
+        videoSrc="https://res.cloudinary.com/dyf6dtb9y/video/upload/v1766276795/videoGraduacion_oll0rl.mp4"
+      />
       {/* Principios */}
       <section className="py-10 relative z-10">
         <div className="max-w-7xl mx-auto px-6">

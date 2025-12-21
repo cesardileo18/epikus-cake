@@ -25,12 +25,13 @@ import ReactionVideosSection from '@/components/reacciones/ReactionVideosSection
 import CustomWorksSection from '@/components/home/CustomWorksSection';
 import customWorksJson from '@/content/customWorks.json';
 import type { CustomWorksContent } from '@/interfaces/CustomWorks';
+import GraduationBanner from '@/components/home/GraduationBanner';
 
 const customWorks = customWorksJson as CustomWorksContent;
 const videosContent: ReactionVideosSectionProps = customVideos as ReactionVideosSectionProps;
 const contentAbout: AboutUsContent = aboutJson as AboutUsContent;
 const content: HomeTextContent = contentJson as HomeTextContent;
-
+// https://res.cloudinary.com/dyf6dtb9y/image/upload/v1766275946/fotoGraduacion_gaauk1.jpg
 const Home: React.FC = () => {
   const { products: productosDestacados, loading } = useFeaturedProducts({ onlyActive: true, max: 6 });
 
@@ -100,6 +101,9 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+       <GraduationBanner
+        imageUrl="https://res.cloudinary.com/dyf6dtb9y/image/upload/v1766275946/fotoGraduacion_gaauk1.jpg"
+      />
       {/* Destacados */}
       <section className="pt-5 bg-[#ff7bab48] backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">

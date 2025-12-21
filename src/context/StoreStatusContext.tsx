@@ -75,7 +75,7 @@ export const StoreStatusProvider = ({ children }: { children: React.ReactNode })
     else if (day === 6) {
       // 📅 SÁBADO
       // Cambiar los números para modificar horario
-      open = hour >= 9 && hour < 17;  // ← ACTUAL: 9:00 a 17:00
+      open = hour >= 9 && hour < 19;  // ← ACTUAL: 9:00 a 19:00
     }
     else if (day === 0) {
       // 📅 DOMINGO
