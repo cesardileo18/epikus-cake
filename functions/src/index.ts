@@ -4,7 +4,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import type { Request, Response } from "express";
 import { defineString } from "firebase-functions/params";
 import * as nodemailer from "nodemailer";
-import { google } from "googleapis";
+// import { google } from "googleapis";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 
@@ -17,10 +17,11 @@ const MP_ACCESS_TOKEN = isLocal
   : process.env.MERCADOPAGO_TOKEN_PROD;
 
 // ENV Gmail / reCAPTCHA
-const gmailClientId = defineString("GMAIL_CLIENT_ID");
-const gmailClientSecret = defineString("GMAIL_CLIENT_SECRET");
-const gmailRefreshToken = defineString("GMAIL_REFRESH_TOKEN");
+// const gmailClientId = defineString("GMAIL_CLIENT_ID");
+// const gmailClientSecret = defineString("GMAIL_CLIENT_SECRET");
+// const gmailRefreshToken = defineString("GMAIL_REFRESH_TOKEN");
 const gmailEmail = defineString("GMAIL_EMAIL");
+const gmailAppPassword = defineString("GMAIL_APP_PASSWORD");
 const recaptchaSecret = defineString("RECAPTCHA_SECRET");
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -163,44 +164,68 @@ export const mercadopagoWebhook = onRequest(async (req: Request, res: Response):
 });
 
 // Nodemailer (OAuth2)
-async function createTransporter() {
-  const OAuth2 = google.auth.OAuth2;
-  const oauth2Client = new OAuth2(
-    gmailClientId.value(),
-    gmailClientSecret.value(),
-    "https://developers.google.com/oauthplayground"
-  );
-  oauth2Client.setCredentials({ refresh_token: gmailRefreshToken.value() });
-  const accessToken = await oauth2Client.getAccessToken();
+// async function createTransporter() {
+//   const OAuth2 = google.auth.OAuth2;
+//   const oauth2Client = new OAuth2(
+//     gmailClientId.value(),
+//     gmailClientSecret.value(),
+//     "https://developers.google.com/oauthplayground"
+//   );
+//   oauth2Client.setCredentials({ refresh_token: gmailRefreshToken.value() });
+//   const accessToken = await oauth2Client.getAccessToken();
 
+//   return nodemailer.createTransport({
+//     service: "gmail",
+//     auth: {
+//       type: "OAuth2",
+//       user: gmailEmail.value(),
+//       clientId: gmailClientId.value(),
+//       clientSecret: gmailClientSecret.value(),
+//       refreshToken: gmailRefreshToken.value(),
+//       accessToken: accessToken.token || "",
+//     },
+//   });
+// }
+function createTransporter() {
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
-      type: "OAuth2",
       user: gmailEmail.value(),
-      clientId: gmailClientId.value(),
-      clientSecret: gmailClientSecret.value(),
-      refreshToken: gmailRefreshToken.value(),
-      accessToken: accessToken.token || "",
+      pass: gmailAppPassword.value(),
     },
   });
 }
-
 // sendEmail (callable)
+// export const sendEmail = onCall(async (request) => {
+//   const { to, subject, text, html } = request.data || {};
+//   if (!to || !subject) throw new Error("Faltan parámetros requeridos: to, subject");
+
+//   const transporter = await createTransporter();
+//   const result = await transporter.sendMail({
+//     from: `Epikus Cake <${gmailEmail.value()}>`,
+//     to, subject, text, html,
+//   });
+
+//   console.log("Email enviado:", result.messageId);
+//   return { success: true, messageId: result.messageId };
+// });
 export const sendEmail = onCall(async (request) => {
   const { to, subject, text, html } = request.data || {};
   if (!to || !subject) throw new Error("Faltan parámetros requeridos: to, subject");
 
-  const transporter = await createTransporter();
-  const result = await transporter.sendMail({
-    from: `Epikus Cake <${gmailEmail.value()}>`,
-    to, subject, text, html,
-  });
-
-  console.log("Email enviado:", result.messageId);
-  return { success: true, messageId: result.messageId };
+  try {
+    const transporter = createTransporter();
+    const result = await transporter.sendMail({
+      from: `Epikus Cake <${gmailEmail.value()}>`,
+      to, subject, text, html,
+    });
+    console.log("✅ Email enviado:", result.messageId);
+    return { success: true, messageId: result.messageId };
+  } catch (error: any) {
+    console.error("❌ Error email:", error);
+    throw new Error(`Error al enviar email: ${error.message}`);
+  }
 });
-
 // reCAPTCHA verify
 export const verifyRecaptcha = onRequest(async (req: Request, res: Response): Promise<void> => {
   res.set("Access-Control-Allow-Origin", "*");

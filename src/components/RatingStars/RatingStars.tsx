@@ -30,7 +30,7 @@ export function RatingStars({
           ))}
         </div>
         {showCount && (
-          <span className={`${textSizeClass} text-gray-500`}>
+          <span className={`${textSizeClass} text-gray-500 truncate max-w-[80px]`} title="Sin opiniones">
             Sin opiniones
           </span>
         )}

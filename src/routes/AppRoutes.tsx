@@ -30,6 +30,7 @@ const Favorites = lazy(() => import("@/views/Favorites"));
 const ProductReviewsPage = lazy(() => import("@/views/ProductReviewsPage"));
 const MyReviewsPage = lazy(() => import("@/views/MyReviewsPage"));
 const OrderCalendar = lazy(() => import("@/views/admin/sells/OrdersCalendar"));
+const WholesalePage = lazy(() => import("@/views/WholesalePage"));
 // ====== tipos de rol (mantener en sync con lo que guardás en Firestore) ======
 type Role = "admin" | "customer" | "viewer";
 
@@ -105,6 +106,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/products/:id/opiniones" element={<ProductReviewsPage />} />
         <Route path="/my-reviews" element={<MyReviewsPage />} />
+        <Route path="/wholesale" element={<WholesalePage />} />
 
         {/* admin protegidas */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>

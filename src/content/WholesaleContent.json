@@ -1,0 +1,172 @@
+{
+  "page": {
+    "title": "Catálogo Mayorista | Epikus Cake",
+    "hero": {
+      "badge": "Catálogo Mayorista 2025",
+      "title_prefix": "Decoraciones en pasta ballina",
+      "title_highlight": "para tu Negocio",
+      "subtitle": "Pedidos por packs para confiterías, pastelerías y empresas de eventos. Calidad artesanal, precio mayorista.",
+      "availability_note": "Stock disponible · Pedido mínimo por pack · Entrega en CABA"
+    },
+    "pack_info": {
+      "title": "¿Cómo funcionan los packs?",
+      "description": "Cada producto se vende en pack cerrado. El precio indicado es por unidad dentro del pack."
+    },
+    "table": {
+      "title_prefix": "Resumen de",
+      "title_highlight": "Precios",
+      "subtitle": "Todos los valores en pesos argentinos · Precios sujetos a actualización",
+      "columns": {
+        "product": "Producto",
+        "unit_price": "Precio unitario",
+        "pack_min": "Pack mínimo",
+        "pack_total": "Total pack"
+      }
+    },
+    "cta": {
+      "title": "¿Querés hacer un pedido?",
+      "subtitle": "Contactanos por WhatsApp para coordinar cantidades, diseños y entrega",
+      "whatsapp_label": "Consultar por WhatsApp",
+      "whatsapp_number": "+5491158651170",
+      "whatsapp_message": "Hola! Vi el catálogo mayorista y me interesa hacer un pedido"
+    },
+    "image_fallback_text": "Epikus Cake"
+  },
+  "categories": [
+    {
+      "id": "pascua",
+      "label": "Pascua",
+      "tag_variant": "rose",
+      "title_prefix": "Colección",
+      "title_highlight": "Pascua 2026",
+      "subtitle": "Figuras artesanales en pasta ballina, ideales para decorar tortas y postres"
+    },
+    {
+      "id": "flores",
+      "label": "Flores",
+      "tag_variant": "gold",
+      "title_prefix": "Colección",
+      "title_highlight": "Flores & Hojas",
+      "subtitle": "Complementos florales en pasta ballina con purpurina iridiscente"
+    }
+  ],
+  "products": [
+    {
+      "id": "huevo-pascua",
+      "category_id": "pascua",
+      "name": "Huevo de Pascua",
+      "description": "Pasta ballina con detalles en dorado comestible y decoraciones multicolor",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160157/huevoPascua_w5q2pu.jpg",
+      "price_per_unit": 80,
+      "pack_qty": 20
+    },
+    {
+      "id": "zanahoria",
+      "category_id": "pascua",
+      "name": "Zanahoria",
+      "description": "Zanahoria de pasta ballina con tallo verde, detalle brillante",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160158/zanahoria_s2ebti.jpg",
+      "price_per_unit": 70,
+      "pack_qty": 20
+    },
+    {
+      "id": "mini-conejo",
+      "category_id": "pascua",
+      "name": "Mini Conejo",
+      "description": "Conejo en pasta ballina con moño dorado, acabado artesanal premium",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160151/miniConejo_t4atix.jpg",
+      "price_per_unit": 60,
+      "pack_qty": 20
+    },
+    {
+      "id": "conejo-zanahoria",
+      "category_id": "pascua",
+      "name": "Conejo con Zanahoria",
+      "description": "Conejo sosteniendo zanahoria, figura completa con detalles pintados",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160154/conejoB_eogsbb.jpg",
+      "price_per_unit": 500,
+      "pack_qty": 4
+    },
+    {
+      "id": "conejo-estrella",
+      "category_id": "pascua",
+      "name": "Conejo con Estrella",
+      "description": "Conejo blanco con estrella azul y detalle dorado",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160155/conejoC_swfby9.jpg",
+      "price_per_unit": 500,
+      "pack_qty": 4
+    },
+    {
+      "id": "conejo-flor",
+      "category_id": "pascua",
+      "name": "Conejo con Flor",
+      "description": "Conejo con rosa lila, acabado brillante con purpurina comestible",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160156/conejoA_f3zmgo.jpg",
+      "price_per_unit": 500,
+      "pack_qty": 4
+    },
+    {
+      "id": "margarita-clasica",
+      "category_id": "flores",
+      "name": "Margarita Clásica",
+      "description": "Margarita blanca con centro amarillo, pétalos finos y delicados",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160151/margaritaA_uhjudh.jpg",
+      "price_per_unit": 100,
+      "pack_qty": 12
+    },
+    {
+      "id": "margarita-glitter",
+      "category_id": "flores",
+      "name": "Margarita Glitter",
+      "description": "Margarita con purpurina comestible, brillo especial para ocasiones",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160151/margaritaB_dwnp0i.jpg",
+      "price_per_unit": 100,
+      "pack_qty": 12
+    },
+    {
+      "id": "flor-5-petalos",
+      "category_id": "flores",
+      "name": "Flor 5 Pétalos",
+      "description": "Flor grande en crema con centro lila y purpurina iridiscente",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160152/florA_uiqucy.jpg",
+      "price_per_unit": 100,
+      "pack_qty": 12
+    },
+    {
+      "id": "flor-mini",
+      "category_id": "flores",
+      "name": "Flor Mini 5 Pétalos",
+      "description": "Versión mini con glitter, perfecta para cupcakes y petit fours",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160153/florB_v64fdo.jpg",
+      "price_per_unit": 70,
+      "pack_qty": 12
+    },
+    {
+      "id": "flor-pequena",
+      "category_id": "flores",
+      "name": "Flor Pequeña",
+      "description": "Flor compacta con purpurina, detalle de centro lila",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160152/florC_rraak8.jpg",
+      "price_per_unit": 50,
+      "pack_qty": 30
+    },
+    {
+      "id": "hoja-natural",
+      "category_id": "flores",
+      "name": "Hoja Natural",
+      "description": "Hoja verde con nervaduras en relieve, complemento ideal para flores",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160153/hoja_uzsdca.jpg",
+      "price_per_unit": 50,
+      "pack_qty": 30
+    },
+    {
+      "id": "hoja-acebo",
+      "category_id": "flores",
+      "name": "Hoja Acebo",
+      "description": "Hoja dentada verde claro, ideal para arreglos y decoraciones especiales",
+      "image": "https://res.cloudinary.com/dyf6dtb9y/image/upload/v1773160153/muerdago_c4lkw3.jpg",
+      "price_per_unit": 60,
+      "pack_qty": 20
+    }
+  ]
+}

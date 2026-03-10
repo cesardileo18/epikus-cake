@@ -189,19 +189,12 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                                 </p>
                             </div>
                             {/* ⭐ RANKING DEL PRODUCTO (solo si tiene calificaciones) */}
-                            {/* <RatingStars
-                                avgRating={producto.avgRating}
-                                ratingCount={producto.ratingCount}
-                            /> */}
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <RatingStars
-                                    avgRating={producto.avgRating}
-                                    ratingCount={producto.ratingCount}
-                                />
-                                <div className="inline-flex items-center gap-1 px-1 py-1 bg-green-50 border border-green-200 rounded-full">
-                                    <span className="text-xs">✨</span>
-                                    <span className="text-xs font-bold text-green-600 whitespace-nowrap" title={`${DESCUENTO_TRANSFERENCIA}% OFF pagando en efectivo o transferencia`}>
-                                        {DESCUENTO_TRANSFERENCIA}% off efectivo
+                            <div className="flex items-center justify-between gap-2 overflow-hidden">
+                                <RatingStars avgRating={producto.avgRating} ratingCount={producto.ratingCount} />
+                                <div className="inline-flex items-center gap-1 px-1 py-1 bg-green-50 border border-green-200 rounded-full overflow-hidden min-w-0">
+                                    <span className="text-xs flex-shrink-0">✨</span>
+                                    <span className="text-xs font-bold text-green-600 truncate" title={`${DESCUENTO_TRANSFERENCIA}% OFF pagando en transferencia o efectivo`}>
+                                        {DESCUENTO_TRANSFERENCIA}% off transferencia
                                     </span>
                                 </div>
                             </div>

@@ -34,6 +34,7 @@ const Navbar: React.FC = () => {
     { name: 'Productos', to: '/products', icon: '🍰' },
     { name: 'Sobre Nosotros', to: '/about', icon: '💝' },
     { name: 'Contacto', to: '/contact', icon: '📞' },
+    ...(!user ? [{ name: 'Mayoristas', to: '/wholesale', icon: '🏢' }] : []),
   ];
 
   // Vistas admin, acá
@@ -199,6 +200,7 @@ border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0
                       <Link to="/my-orders" className="block px-4 py-3 text-sm hover:bg-pink-50">Mis pedidos</Link>
                       <Link to="/favorites" className="block px-4 py-3 text-sm hover:bg-pink-50">Favoritos</Link>
                       <Link to="/my-reviews" className="block px-4 py-3 text-sm hover:bg-pink-50">Mis opiniones</Link>
+                      <Link to="/wholesale" className="block px-4 py-3 text-sm hover:bg-pink-50">Mayoristas</Link>
                       <button onClick={signOut} className="block w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50" type="button">
                         Salir
                       </button>
@@ -257,7 +259,6 @@ border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0
               <div>
                 <h2 className="text-white text-4xl font-['Great_Vibes']">Epikus Cake</h2>
                 <p className="text-pink-100 text-sm">
-                  {/* {!loading && user ? `Hola, ${user.displayName ?? user.email}` : 'Menú Principal'} */}
                   Menú Principal
                 </p>
               </div>
@@ -303,7 +304,8 @@ border border-pink-300 cursor-default hover:shadow-[0_3px_10px_rgba(216,30,119,0
                     <Link to="/profile" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mi perfil</Link>
                     <Link to="/my-orders" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mis pedidos</Link>
                     <Link to="/favorites" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Favoritos</Link>
-                    <Link to="/my-reviews"  onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mis opiniones</Link>
+                    <Link to="/my-reviews" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mis opiniones</Link>
+                    <Link to="/wholesale" onClick={closeMenu} className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white">Mayoristas</Link>
                   </div>
                 </div>
               </div>

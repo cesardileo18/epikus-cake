@@ -249,8 +249,8 @@ const ProductDetail: React.FC = () => {
               </button>
               <div className="inline-flex items-center gap-1 px-1 py-1 bg-green-50 border border-green-200 rounded-full">
                 <span className="text-xs">✨</span>
-                <span className="text-xs font-bold text-green-600 whitespace-nowrap" title={`${DESCUENTO_TRANSFERENCIA}% OFF pagando en efectivo o transferencia`}>
-                  {DESCUENTO_TRANSFERENCIA}% off efectivo
+                <span className="text-xs font-bold text-green-600 whitespace-nowrap" title={`${DESCUENTO_TRANSFERENCIA}% OFF pagando en transferencia o efectivo`}>
+                  {DESCUENTO_TRANSFERENCIA}% off transferencia
                 </span>
               </div>
             </div>
