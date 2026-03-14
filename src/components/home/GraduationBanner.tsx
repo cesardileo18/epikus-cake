@@ -13,12 +13,14 @@ const GraduationBanner: React.FC<GraduationBannerProps> = ({ imageUrl }) => {
         backgroundAttachment: "fixed",
       }}
     >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-white/70 backdrop-blur-sm" />
-      {/* Contenido */}
+      {/* Overlay — en dark mode más oscuro */}
+      <div
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ background: 'var(--color-graduation-overlay, rgba(255,255,255,0.70))' }}
+      />
+
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
-          {/* Imagen */}
           <img
             src={imageUrl}
             alt="Graduación Pastelero Profesional - IAG"
@@ -26,21 +28,28 @@ const GraduationBanner: React.FC<GraduationBannerProps> = ({ imageUrl }) => {
             loading="lazy"
           />
 
-          {/* Texto */}
           <div className="space-y-2 text-center md:text-left">
-            <h3 className="text-3xl md:text-4xl font-light text-gray-900">
+            <h3
+              className="text-3xl md:text-4xl font-light"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
               Formación que respalda
-              <span className="block font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+              <span className="block font-bold text-brand-gradient">
                 cada creación
               </span>
             </h3>
 
-            <p className="text-lg text-gray-700 leading-relaxed max-w-xl">
-              Pastelería profesional con formación en el Instituto Argentino de
-              Gastronomía.
+            <p
+              className="text-lg leading-relaxed max-w-xl"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Pastelería profesional con formación en el Instituto Argentino de Gastronomía.
             </p>
 
-            <p className="text-sm text-gray-600 italic">
+            <p
+              className="text-sm italic"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
               Técnica, pasión y compromiso en cada detalle.
             </p>
           </div>

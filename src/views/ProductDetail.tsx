@@ -143,10 +143,10 @@ const ProductDetail: React.FC = () => {
 
   if (loading && !product) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-bg-page)' }}>
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-600 text-sm">{content.loading.text}</p>
+          <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-3" style={{ borderColor: 'var(--color-brand)', borderTopColor: 'transparent' }} />
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{content.loading.text}</p>
         </div>
       </div>
     );
@@ -154,10 +154,10 @@ const ProductDetail: React.FC = () => {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
+      <div className="min-h-screen" style={{ background: 'var(--color-bg-page)' }}>
         <section className="max-w-5xl mx-auto px-4 md:px-6 py-10 md:py-16 text-center">
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">{content.not_found.title}</h1>
-          <p className="text-gray-600 mb-6 md:mb-8">{content.not_found.desc}</p>
+          <h1 className="text-2xl md:text-4xl font-bold mb-3 md:mb-4" style={{ color: 'var(--color-text-primary)' }}>{content.not_found.title}</h1>
+          <p className="mb-6 md:mb-8" style={{ color: 'var(--color-text-secondary)' }}>{content.not_found.desc}</p>
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center px-5 py-3 rounded-xl bg-white border border-gray-200 hover:border-pink-300 shadow-md hover:shadow-lg transition"
@@ -178,19 +178,19 @@ const ProductDetail: React.FC = () => {
   const sinOpiniones = !product.ratingCount || product.ratingCount === 0;
 
   return (
-    <div className="min-h-screen bg-[#ff7bab48] pt-20">
+    <div className="min-h-screen section-brand-bg pt-20">
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
 
-      <nav className="max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 text-xs md:text-sm text-gray-600 truncate">
-        <Link to={content.routes.home} className="hover:text-pink-600">{content.breadcrumbs.home}</Link>
-        <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle text-gray-400" />
-        <Link to={content.routes.products} className="hover:text-pink-600">{content.breadcrumbs.products}</Link>
-        <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle text-gray-400" />
-        <Link to={`${content.routes.products}?cat=${product.categoria}`} className="hover:text-pink-600">
+      <nav className="max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 text-xs md:text-sm truncate" style={{ color: 'var(--color-text-secondary)' }}>
+        <Link to={content.routes.home} style={{ color: 'inherit' }} className="hover:underline">{content.breadcrumbs.home}</Link>
+        <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle" style={{ color: 'var(--color-border-brand)' }} />
+        <Link to={content.routes.products} style={{ color: 'inherit' }} className="hover:underline">{content.breadcrumbs.products}</Link>
+        <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle" style={{ color: 'var(--color-border-brand)' }} />
+        <Link to={`${content.routes.products}?cat=${product.categoria}`} style={{ color: 'inherit' }} className="hover:underline">
           {product.categoria.charAt(0).toUpperCase() + product.categoria.slice(1)}
         </Link>
-        <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle text-gray-400" />
-        <span className="text-gray-800 inline-block max-w-[45vw] md:max-w-none align-middle truncate">
+        <ChevronRightIcon className="inline-block w-4 h-4 mx-1 align-middle" style={{ color: 'var(--color-border-brand)' }} />
+        <span className="inline-block max-w-[45vw] md:max-w-none align-middle truncate" style={{ color: 'var(--color-text-primary)' }}>
           {product.nombre}
         </span>
       </nav>
@@ -200,7 +200,7 @@ const ProductDetail: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
           {/* Galería */}
           <div>
-            <div className="rounded-2xl md:rounded-3xl overflow-hidden bg-white shadow-md md:shadow-xl border border-white/70 flex items-center justify-center">
+            <div className="rounded-2xl md:rounded-3xl overflow-hidden shadow-md md:shadow-xl flex items-center justify-center" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}>
               <img
                 src={product.imagen}
                 alt={product.nombre}
@@ -300,7 +300,7 @@ const ProductDetail: React.FC = () => {
             )}
 
             {/* Precio */}
-            <div className="text-3xl md:text-4xl font-extrabold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text mb-3 md:mb-4">
+            <div className="text-3xl md:text-4xl font-extrabold text-brand-gradient mb-3 md:mb-4">
               {precioDisplay}
             </div>
 
@@ -321,7 +321,7 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* Controles de compra en mobile (arriba) */}
-            <div className="block md:hidden rounded-2xl bg-white/80 backdrop-blur border border-white/70 shadow-lg p-4 mb-4">
+            <div className="block md:hidden rounded-2xl backdrop-blur shadow-lg p-4 mb-4" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}>
               {enCarrito > 0 ? (
                 <div className="space-y-3">
                   <div className="text-sm text-gray-600">
@@ -387,7 +387,7 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* Controles compra (desktop/tablet) */}
-            <div className="hidden md:block rounded-3xl bg-white/80 backdrop-blur border border-white/70 shadow-xl p-5 mb-6">
+            <div className="hidden md:block rounded-3xl backdrop-blur shadow-xl p-5 mb-6" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}>
               {enCarrito > 0 ? (
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600">

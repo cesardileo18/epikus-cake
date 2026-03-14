@@ -1,11 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query
-} from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { subscribeToUsers, subscribeToOrdersForUsers } from "@/services/users.service";
 import UsersTable from "@/components/admin/UsersTable";
 import UserOrdersPanel from "@/components/admin/UserOrdersPanel";
 import type { Order, User } from "@/interfaces/admin/Users";
@@ -19,58 +13,26 @@ const AdminUsersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Listener para usuarios
-    const usersUnsub = onSnapshot(
-      collection(db, "users"),
-      (snap) => {
-        const usersData: User[] = snap.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            email: data.email ?? "",
-            username: data.username ?? "",
-            role: data.role ?? "customer",
-            createdAt: data.createdAt,
-            lastLogin: data.lastLogin,
-          };
-        });
+    const usersUnsub = subscribeToUsers(
+      (usersData) => {
         setUsers(usersData);
         console.log('👥 USUARIOS TRAÍDOS:', usersData.map(u => ({ id: u.id, email: u.email })));
       },
-      (err) => {
-        console.error("Error cargando usuarios:", err);
-        setError("Error al cargar usuarios");
-      }
+      () => setError("Error al cargar usuarios")
     );
 
-    // Listener para pedidos
-    const pedidosQuery = query(collection(db, "pedidos"), orderBy("createdAt", "desc"));
-    const ordersUnsub = onSnapshot(
-      pedidosQuery,
-      (snap) => {
-        const ordersData: Order[] = snap.docs.map((doc) => {
-          const data = doc.data();
-          const total = data.total ?? data.pricing?.total ?? 0;
-          return {
-            id: doc.id,
-            userId: data.userUid ?? data.userId ?? data.userUID ?? data.user_id,
-            total: typeof total === "number" ? total : Number(total) || 0,
-            status: data.status ?? "",
-            createdAt: data.createdAt,
-          };
-        });
+    const ordersUnsub = subscribeToOrdersForUsers(
+      (ordersData: Order[]) => {
         setOrders(ordersData);
         setLoading(false);
-        console.log('🔥 PEDIDOS TRAÍDOS:', ordersData.map(o => ({ id: o.id, userId: o.userId, total: o.total })));
+        console.log('🔥 PEDIDOS TRAÍDOS:', ordersData.map((o: Order) => ({ id: o.id, userId: o.userId, total: o.total })));
       },
-      (err) => {
-        console.error("Error cargando pedidos:", err);
+      () => {
         setError("Error al cargar pedidos");
         setLoading(false);
       }
     );
 
-    // Cleanup: desuscribirse cuando el componente se desmonte
     return () => {
       usersUnsub();
       ordersUnsub();

@@ -2,8 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthProvider';
 import { useCart } from '@/context/CartProvider';
-import { db } from '@/config/firebase';
-import { collection, query, where, getDocs, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { type Timestamp } from 'firebase/firestore';
+import {
+  getOrdersByUser,
+  getOrdersByUserSubcollection,
+  getAllOrders,
+} from '@/services/orders.service';
+import { getAllProducts } from '@/services/products.service';
 import {
   ClockIcon,
   CheckCircleIcon,
@@ -73,38 +78,21 @@ const MyOrders: React.FC = () => {
 
     const fetchOrders = async () => {
       try {
-        let q = query(collection(db, 'pedidos'), where('userUid', '==', user.uid));
-        let snapshot = await getDocs(q);
+        let ordersData = await getOrdersByUser(user.uid) as Order[];
 
-        if (snapshot.empty) {
-          q = query(collection(db, `users/${user.uid}/pedidos`));
-          snapshot = await getDocs(q);
+        if (ordersData.length === 0) {
+          ordersData = await getOrdersByUserSubcollection(user.uid) as Order[];
         }
 
-        if (snapshot.empty && user.phoneNumber) {
-          const allOrdersQuery = query(collection(db, 'pedidos'));
-          const allOrdersSnapshot = await getDocs(allOrdersQuery);
-
-          const filteredOrders = allOrdersSnapshot.docs.filter(d => {
-            const data = d.data() as any;
-            return data.customer?.whatsapp === user.phoneNumber?.replace('+', '');
-          });
-
-          const ordersData = filteredOrders.map(d => ({ id: d.id, ...(d.data() as any) })) as Order[];
-          ordersData.sort((a, b) => {
-            if (!a.createdAt || !b.createdAt) return 0;
-            return b.createdAt.toMillis() - a.createdAt.toMillis();
-          });
-          setOrders(ordersData);
-          setLoading(false);
-          return;
+        if (ordersData.length === 0 && user.phoneNumber) {
+          const all = await getAllOrders() as Order[];
+          ordersData = all
+            .filter(o => o.customer?.whatsapp === user.phoneNumber?.replace('+', ''))
+            .sort((a, b) => {
+              if (!a.createdAt || !b.createdAt) return 0;
+              return b.createdAt.toMillis() - a.createdAt.toMillis();
+            });
         }
-
-        const ordersData = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) })) as Order[];
-        ordersData.sort((a, b) => {
-          if (!a.createdAt || !b.createdAt) return 0;
-          return b.createdAt.toMillis() - a.createdAt.toMillis();
-        });
 
         setOrders(ordersData);
       } catch (error) {
@@ -179,12 +167,13 @@ const MyOrders: React.FC = () => {
   const handleReorder = async (order: Order) => {
     setReordering(order.id);
     try {
-      for (const item of order.items) {
-        const productRef = doc(db, 'productos', item.productId);
-        const productSnap = await getDoc(productRef);
-        if (!productSnap.exists()) continue;
+      const allProducts = await getAllProducts();
+      const productMap = Object.fromEntries(allProducts.map(p => [p.id, p]));
 
-        const productData: any = productSnap.data();
+      for (const item of order.items) {
+        const productData: any = productMap[item.productId];
+        if (!productData) continue;
+
         const isActive = productData.activo !== false;
         if (!isActive) continue;
 
@@ -228,7 +217,7 @@ const MyOrders: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--color-bg-page)' }}>
         <div className="text-center">
           <ClipboardDocumentListIcon className="w-20 h-20 mx-auto text-gray-300 mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-4">{content.auth_gate.title}</h2>
@@ -246,9 +235,9 @@ const MyOrders: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-bg-page)' }}>
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: 'var(--color-brand)', borderTopColor: 'transparent' }} />
           <p className="text-gray-600">{content.loading.text}</p>
         </div>
       </div>
@@ -256,7 +245,7 @@ const MyOrders: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#ff7bab48] py-22 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen section-brand-bg py-22 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -293,10 +282,10 @@ const MyOrders: React.FC = () => {
               return (
                 <div
                   key={order.id}
-                  className="bg-white rounded-3xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                  className="rounded-3xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow" style={{ background: 'var(--color-bg-card)' }}
                 >
                   {/* Header del pedido */}
-                  <div className="bg-gradient-to-r from-pink-500 to-rose-400 px-6 py-4">
+                  <div className="px-6 py-4" style={{ background: 'var(--gradient-brand)' }}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <ClipboardDocumentListIcon className="w-6 h-6 text-white" />
@@ -327,7 +316,7 @@ const MyOrders: React.FC = () => {
                         {order.items.map((item, idx) => (
                           <div
                             key={idx}
-                            className="flex justify-between items-center bg-gray-50 rounded-xl p-3"
+                            className="flex justify-between items-center rounded-xl p-3" style={{ background: 'var(--color-bg-section-alt)' }}
                           >
                             <div className="flex-1">
                               <p className="font-medium text-gray-900">{item.nombre}</p>
@@ -389,7 +378,7 @@ const MyOrders: React.FC = () => {
                     {/* Total */}
                     <div className="border-t pt-4 flex justify-between items-center">
                       <span className="text-lg font-semibold text-gray-900">{content.sections.total_label}</span>
-                      <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+                      <span className="text-2xl font-bold text-brand-gradient">
                         {content.i18n.currency_prefix}{formatPrice(getOrderTotal(order))}
                       </span>
                     </div>
@@ -399,7 +388,7 @@ const MyOrders: React.FC = () => {
                       <button
                         onClick={() => handleReorder(order)}
                         disabled={reordering === order.id}
-                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-pink-500 text-pink-500 font-semibold rounded-xl hover:bg-pink-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn-brand-outline w-full flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {reordering === order.id ? (
                           <>

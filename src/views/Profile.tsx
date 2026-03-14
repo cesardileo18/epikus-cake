@@ -53,14 +53,14 @@ const Profile: React.FC = () => {
   const createdAt = (user?.metadata as any)?.creationTime;
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--color-bg-page)' }}>
         <div className="text-center">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
             Debes iniciar sesión
           </h2>
           <Link
             to="/login"
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+            className="btn-brand inline-flex items-center px-6 py-3"
           >
             Ir al Login
           </Link>
@@ -70,13 +70,13 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#ff7bab48] py-16 sm:py-22 px-3 xs:px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen section-brand-bg py-16 sm:py-22 px-3 xs:px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 mb-3 sm:mb-4">
             Mi{' '}
-            <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+            <span className="font-bold text-brand-gradient">
               Perfil
             </span>
           </h1>
@@ -86,9 +86,9 @@ const Profile: React.FC = () => {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden mb-6">
-          {/* Header con gradiente - altura reducida en móvil */}
-          <div className="bg-gradient-to-r from-pink-500 to-rose-400 h-24 sm:h-32 relative">
+        <div className="rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden mb-6" style={{ background: 'var(--color-bg-card)' }}>
+          {/* Header con gradiente */}
+          <div className="h-24 sm:h-32 relative" style={{ background: 'var(--gradient-brand)' }}>
             <div className="absolute -bottom-12 sm:-bottom-16 left-1/2 transform -translate-x-1/2">
               <div className="bg-white rounded-full p-1.5 sm:p-2 shadow-lg">
                 {photoURL ? (
@@ -203,7 +203,7 @@ const Profile: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <Link
                   to="/my-orders"
-                  className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white text-sm sm:text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                  className="btn-brand flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base"
                 >
                   <ClipboardDocumentListIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   Ver Mis Pedidos
@@ -211,7 +211,7 @@ const Profile: React.FC = () => {
 
                 <Link
                   to="/products"
-                  className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white border-2 border-pink-500 text-pink-500 text-sm sm:text-base font-semibold rounded-xl hover:bg-pink-50 transition-all duration-300"
+                  className="btn-brand-outline flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base"
                 >
                   <ShoppingBagIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   Ir a Comprar
@@ -220,7 +220,8 @@ const Profile: React.FC = () => {
 
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-gray-100 text-gray-700 text-sm sm:text-base font-semibold rounded-xl hover:bg-gray-200 transition-all duration-300"
+                className="w-full flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-xl transition-all duration-300"
+                style={{ background: 'var(--color-bg-section-alt)', color: 'var(--color-text-primary)' }}
               >
                 <ArrowRightOnRectangleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 Cerrar Sesión
@@ -230,10 +231,10 @@ const Profile: React.FC = () => {
         </div>
 
         {/* Info adicional */}
-        <div className="text-center text-xs sm:text-sm text-gray-500 px-4">
+        <div className="text-center text-xs sm:text-sm px-4" style={{ color: 'var(--color-text-secondary)' }}>
           <p>
             ¿Necesitas ayuda?{' '}
-            <Link to="/contact" className="text-pink-500 hover:text-pink-600 font-semibold">
+            <Link to="/contact" className="font-semibold" style={{ color: 'var(--color-brand)' }}>
               Contáctanos
             </Link>
           </p>

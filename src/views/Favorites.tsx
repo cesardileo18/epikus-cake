@@ -6,7 +6,7 @@ import useProductsLiveQuery, {
   type ProductWithId,
 } from "@/hooks/useProductsLiveQuery";
 import { useCart } from "@/context/CartProvider";
-import FeaturedProducts from "@/components/productos/FeaturedProducts";
+import ProductGrid from "@/components/productos/ProductGrid";
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
@@ -39,14 +39,14 @@ const Favorites: React.FC = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-100 grid place-items-center">
+      <main className="min-h-screen grid place-items-center" style={{ background: 'var(--color-bg-page)' }}>
         <div className="h-8 w-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-100 text-gray-800 relative overflow-hidden pt-24 pb-20">
+    <main className="min-h-screen relative overflow-hidden pt-24 pb-20" style={{ background: 'var(--color-bg-page)', color: 'var(--color-text-primary)' }}>
       {/* blobs decorativos tipo AboutUs */}
       <div className="absolute top-16 left-8 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
       <div className="absolute top-40 right-12 w-72 h-72 bg-rose-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
@@ -54,9 +54,9 @@ const Favorites: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4 md:px-6 relative z-10">
         {/* H1 con el mismo estilo que AboutUs */}
-        <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-10 animate-fade-in-up">
+        <h1 className="text-4xl md:text-5xl font-light mb-10 animate-fade-in-up" style={{ color: 'var(--color-text-primary)' }}>
           Mis{" "}
-          <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 bg-clip-text">
+          <span className="font-bold text-brand-gradient">
             favoritos
           </span>
         </h1>
@@ -79,7 +79,7 @@ const Favorites: React.FC = () => {
           </div>
         ) : (
           <div className="animate-fade-in-up">
-            <FeaturedProducts
+            <ProductGrid
               productos={productosFavoritos}
               loading={false}
               handleImageError={handleImageError}

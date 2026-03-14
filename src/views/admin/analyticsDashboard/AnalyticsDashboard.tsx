@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-
-interface Visit {
-  visitDate: string;
-  userAgent: string;
-  platform: string;
-  referrer: string | null;
-  createdAt: any;
-}
+import { getAllVisits } from '@/services/analytics.service';
 
 interface BrowserStat {
   name: string;
@@ -67,9 +58,7 @@ const AnalyticsDashboard: React.FC = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      // Obtener visitas de Firestore
-      const visitsSnap = await getDocs(collection(db, "visits"));
-      const visits: Visit[] = visitsSnap.docs.map(doc => doc.data() as Visit);
+      const visits = await getAllVisits();
 
       // Calcular estadísticas
       const today = new Date().toISOString().slice(0, 10);

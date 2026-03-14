@@ -24,14 +24,14 @@ const WholesaleProductCard: React.FC<WholesaleProductCardProps> = ({
     };
 
     return (
-        <div className="group relative bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div className="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1" style={{ background: 'var(--color-bg-card)' }}>
             {/* Tag */}
             <span className={`absolute top-3 left-3 z-10 text-xs font-semibold px-3 py-1 rounded-full ${tagStyles[category.tag_variant]}`}>
                 {category.label}
             </span>
 
             {/* Imagen */}
-            <div className="relative w-full h-56 bg-pink-50 overflow-hidden">
+            <div className="relative w-full h-56 overflow-hidden" style={{ background: 'var(--color-bg-section-alt)' }}>
                 <img
                     src={product.image}
                     alt={product.name}
@@ -41,8 +41,8 @@ const WholesaleProductCard: React.FC<WholesaleProductCardProps> = ({
             </div>
 
             {/* Body */}
-            <div className="p-4 sm:p-5 bg-[#e70ee71c] flex flex-col justify-between min-h-[210px]">
-                <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-1 font-serif">
+            <div className="p-4 sm:p-5 flex flex-col justify-between min-h-[210px]" style={{ background: 'var(--color-bg-card-inner)' }}>
+                <h3 className="font-bold text-base sm:text-lg mb-1 font-serif" style={{ color: 'var(--color-text-primary)' }}>
                     {product.name}
                 </h3>
                 <p className="text-sm leading-relaxed mb-4">
@@ -55,13 +55,13 @@ const WholesaleProductCard: React.FC<WholesaleProductCardProps> = ({
                         <span className="text-[10px] uppercase tracking-widest text-gray-400 mb-0.5">
                             Precio unitario
                         </span>
-                        <span className="text-2xl font-bold text-rose-500 leading-none">
+                        <span className="text-2xl font-bold leading-none" style={{ color: 'var(--color-brand)' }}>
                             <sup className="text-sm align-super">$</sup>
                             {product.price_per_unit.toLocaleString('es-AR')}
                         </span>
                     </div>
 
-                    <div className="flex flex-col items-center bg-pink-50 text-rose-500 rounded-xl px-3 py-2 text-center">
+                    <div className="flex flex-col items-center rounded-xl px-3 py-2 text-center" style={{ background: 'var(--color-bg-section-alt)', color: 'var(--color-brand)' }}>
                         <span className="text-sm font-bold leading-none">
                             Pack x{product.pack_qty}
                         </span>

@@ -7,18 +7,18 @@ import { doc, getDoc } from 'firebase/firestore';
 
 type Role = 'admin' | 'customer' | 'viewer';
 
-interface AuthCtx {
+interface AuthContextValue {
   user: User | null;
   role: Role | null;
   loading: boolean;
-  logout: () => Promise<void>;  // 👈 Agregamos logout
+  logout: () => Promise<void>;
 }
 
-const Ctx = createContext<AuthCtx>({
+const AuthContext = createContext<AuthContextValue>({
   user: null,
   role: null,
   loading: true,
-  logout: async () => {},  // 👈 Función vacía por defecto
+  logout: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -27,14 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Suscribirnos a cambios de sesión
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
 
-      if (u) {
-        const snap = await getDoc(doc(db, 'users', u.uid));
-        const r = snap.exists() ? (snap.data()?.role as Role | undefined) : undefined;
-        setRole(r ?? null);
+      if (firebaseUser) {
+        const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
+        const userRole = snap.exists() ? (snap.data()?.role as Role | undefined) : undefined;
+        setRole(userRole ?? null);
       } else {
         setRole(null);
       }
@@ -45,17 +44,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsub;
   }, []);
 
-  // 👇 Nueva función logout
   const logout = async (): Promise<void> => {
     await signOut(auth);
-    // onAuthStateChanged se encargará de limpiar user y role automáticamente
+    // onAuthStateChanged limpia user y role automáticamente
   };
 
   return (
-    <Ctx.Provider value={{ user, role, loading, logout }}>
+    <AuthContext.Provider value={{ user, role, loading, logout }}>
       {children}
-    </Ctx.Provider>
+    </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(Ctx);
+export const useAuth = () => useContext(AuthContext);

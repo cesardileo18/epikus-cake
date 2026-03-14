@@ -1,13 +1,6 @@
 // src/views/admin/dashboard/Dashboard.tsx
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/config/firebase";
-import type { Product } from "@/interfaces/Product";
-
-
-interface ProductWithId extends Product {
-  id: string;
-}
+import { getAllProducts, type ProductWithId } from "@/services/products.service";
 
 const Dashboard = () => {
   const [productos, setProductos] = useState<ProductWithId[]>([]);
@@ -20,12 +13,7 @@ const Dashboard = () => {
   const cargarProductos = async () => {
     try {
       setLoading(true);
-      const querySnapshot = await getDocs(collection(db, "productos"));
-      const productosData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ProductWithId));
-      
+      const productosData = await getAllProducts();
       setProductos(productosData);
     } catch (error) {
       console.error("Error al cargar productos:", error);

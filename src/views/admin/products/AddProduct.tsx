@@ -1,7 +1,6 @@
 // src/views/admin/products/AddProduct.tsx
 import { useState } from "react";
-import { collection, addDoc } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { createProduct } from "@/services/products.service";
 import type { Product } from "@/interfaces/Product";
 import { showToast } from "@/components/Toast/ToastProvider";
 
@@ -102,22 +101,15 @@ const AddProduct = () => {
     setLoading(true);
 
     try {
-      // CRÍTICO: Limpiar campos según el tipo de producto
       const datosLimpios: any = { ...form };
-
       if (form.tieneVariantes) {
-        // Si tiene variantes, eliminar precio y stock simples
         delete datosLimpios.precio;
         delete datosLimpios.stock;
       } else {
-        // Si NO tiene variantes, eliminar array de variantes
         delete datosLimpios.variantes;
       }
 
-      // Agregar fecha de creación
-      datosLimpios.fechaCreacion = new Date();
-
-      await addDoc(collection(db, "productos"), datosLimpios);
+      await createProduct(datosLimpios);
 
       showToast.success("✅ Producto guardado exitosamente");
       // Resetear formulario

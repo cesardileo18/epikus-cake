@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import type { Product } from '@/interfaces/Product';
+import { subscribeToProducts, type ProductWithId } from '@/services/products.service';
 
-export type ProductWithId = Product & { id: string };
+export type { ProductWithId };
 
 type Options = {
   /** Por defecto sólo trae productos activos */
@@ -21,15 +19,8 @@ export function useProductsLiveQuery({ onlyActive = true }: Options = {}) {
 
   useEffect(() => {
     setLoading(true);
-    const ref = collection(db, 'productos');
-
-    const unsub = onSnapshot(
-      ref,
-      (snap) => {
-        const list: ProductWithId[] = snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Product),
-        }));
+    const unsub = subscribeToProducts(
+      (list) => {
         setProducts(onlyActive ? list.filter((p) => (p as any).activo) : list);
         setLoading(false);
         setError(null);
@@ -40,7 +31,6 @@ export function useProductsLiveQuery({ onlyActive = true }: Options = {}) {
         setLoading(false);
       }
     );
-
     return unsub;
   }, [onlyActive]);
 

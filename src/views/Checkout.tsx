@@ -24,21 +24,21 @@ const Checkout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#ff7bab48] pt-24 pb-20">
+    <div className="min-h-screen section-brand-bg pt-24 pb-20">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <h1 className="mb-8 leading-tight text-[clamp(2rem,6vw,3.5rem)] font-light text-gray-900">
           {content.hero.title_prefix}{' '}
-          <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+          <span className="font-bold text-brand-gradient">
             {content.hero.title_highlight}
           </span>
         </h1>
 
         {items.length === 0 ? (
-          <div className="rounded-2xl bg-white p-10 shadow-lg text-center">
+          <div className="rounded-2xl p-10 shadow-lg text-center" style={{ background: 'var(--color-bg-card)' }}>
             <p className="text-gray-600 mb-6">{content.empty_state.message}</p>
             <Link
               to={content.routes.products}
-              className="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold shadow-lg hover:shadow-xl"
+              className="btn-brand inline-flex items-center px-6 py-3"
             >
               {content.empty_state.cta_label}
             </Link>
@@ -56,7 +56,7 @@ const Checkout: React.FC = () => {
                 return (
                   <div
                     key={it.productId}
-                    className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 bg-white rounded-2xl p-4 shadow"
+                    className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 rounded-2xl p-4 shadow" style={{ background: 'var(--color-bg-card)' } as React.CSSProperties}
                   >
                     <img
                       src={it.product.imagen}
@@ -106,7 +106,8 @@ const Checkout: React.FC = () => {
                       <button
                         onClick={() => updateQty(it.productId, it.quantity + 1)}
                         disabled={it.quantity >= stockMaximo}
-                        className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 flex items-center justify-center"
+                        className="w-8 h-8 rounded-full text-white flex items-center justify-center"
+                        style={{ background: 'var(--color-brand)' }}
                         type="button"
                         aria-label={content.list.buttons.inc_aria}
                         title={it.quantity >= stockMaximo ? content.list.stock.max_reached_tooltip : undefined}
@@ -135,10 +136,10 @@ const Checkout: React.FC = () => {
             </div>
 
             {/* Resumen */}
-            <aside className="bg-white p-5 sm:p-6 rounded-2xl shadow-lg h-fit lg:sticky lg:top-24">
+            <aside className="p-5 sm:p-6 rounded-2xl shadow-lg h-fit lg:sticky lg:top-24" style={{ background: 'var(--color-bg-card)' }}>
               <div className="flex justify-between items-center text-lg font-semibold mb-4">
                 <span>{content.summary.total_label}</span>
-                <span className="text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+                <span className="text-brand-gradient">
                   {content.i18n.currency_prefix}{price(total)}
                 </span>
               </div>
@@ -146,9 +147,7 @@ const Checkout: React.FC = () => {
               {items.length > 0 ? (
                 <button
                   onClick={handleRealizarPedido}
-                  className="block text-center w-full py-3 rounded-xl font-semibold shadow-lg
-                    bg-gradient-to-r from-pink-500 to-rose-400 text-white
-                    hover:from-pink-600 hover:to-rose-500 transition-all"
+                  className="btn-brand block text-center w-full py-3"
                   type="button"
                 >
                   {content.summary.checkout_label}
@@ -165,7 +164,7 @@ const Checkout: React.FC = () => {
 
               <Link
                 to={content.routes.products}
-                className="block text-center mt-3 text-pink-600 hover:underline"
+                className="block text-center mt-3 hover:underline" style={{ color: 'var(--color-brand)' } as React.CSSProperties}
               >
                 {content.summary.continue_label}
               </Link>

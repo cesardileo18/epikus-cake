@@ -12,146 +12,124 @@ import type { Product } from '@/interfaces/Product';
 
 export interface ProductWithId extends Product { id: string; }
 
-// 🔥 ACTUALIZADO: CartItem ahora incluye variantId y precio específico
 export type CartItem = {
-  productId: string; // Ahora puede ser "producto-id" o "producto-id-variant-id"
+  productId: string;       // "producto-id" o "producto-id-variant-id"
   quantity: number;
   product: ProductWithId;
-  variantId?: string; // 🆕 ID de la variante si aplica
-  variantLabel?: string; // 🆕 Label para mostrar (ej: "10-12 porciones")
-  precio: number; // 🆕 Precio específico (del producto o de la variante)
+  variantId?: string;      // ID de la variante si aplica
+  variantLabel?: string;   // Label para mostrar (ej: "10-12 porciones")
+  precio: number;          // Precio específico del producto o variante
 };
 
-type CartCtx = {
+interface CartContextValue {
   items: CartItem[];
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  add: (p: ProductWithId, qty?: number, variantId?: string) => void; // 🔥 ACTUALIZADO
+  add: (p: ProductWithId, qty?: number, variantId?: string) => void;
   updateQty: (productId: string, qty: number) => void;
   remove: (productId: string) => void;
   clear: () => void;
   count: number;
   total: number;
-};
+}
 
-const Ctx = createContext<CartCtx | null>(null);
+const CartContext = createContext<CartContextValue | null>(null);
 
-// clave de storage (versionada por si cambias estructura)
-const CART_STORAGE_KEY = 'epikus:cart:v2'; // 🔥 CAMBIADO: v2 para nueva estructura
+// Clave versionada — incrementar si cambia la estructura de CartItem
+const CART_STORAGE_KEY = 'epikus:cart:v2';
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  // ---- Rehidratación al montar
+  // Rehidratación desde localStorage al montar
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CART_STORAGE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as { items?: CartItem[] };
       if (Array.isArray(parsed?.items)) {
-        // defensivo: solo cantidades > 0 y con precio válido
         setItems(parsed.items.filter(it => it && it.quantity > 0 && it.precio > 0));
       }
     } catch {
-      // si falla parsing, ignoramos y seguimos vacío
+      // Si falla el parsing, arrancamos con carrito vacío
     }
   }, []);
 
-  // ---- Persistencia en cada cambio
+  // Persistencia en cada cambio de items
   useEffect(() => {
     try {
-      localStorage.setItem(
-        CART_STORAGE_KEY,
-        JSON.stringify({ items })
-      );
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ items }));
     } catch {
-      // si storage falla/lleno, no romper la UI
+      // Si storage está lleno o falla, no romper la UI
     }
   }, [items]);
 
-  // ---- Acciones
-  // 🔥 ACTUALIZADO: add ahora recibe variantId opcional
-  const add: CartCtx['add'] = useCallback((p, qty = 1, variantId?: string) => {
+  const add: CartContextValue['add'] = useCallback((product, qty = 1, variantId?: string) => {
     if (qty <= 0) return;
 
-    // Obtener precio y otros datos según si tiene variante o no
     let precio = 0;
     let variantLabel: string | undefined;
 
-    if (p.tieneVariantes && p.variantes && variantId) {
-      const variante = p.variantes.find(v => v.id === variantId);
-      if (!variante) {
-        console.error('Variante no encontrada:', variantId);
+    if (product.tieneVariantes && product.variantes && variantId) {
+      const variant = product.variantes.find(v => v.id === variantId);
+      if (!variant) {
+        console.error('CartProvider: variante no encontrada:', variantId);
         return;
       }
-      precio = variante.precio;
-      variantLabel = variante.label;
+      precio = variant.precio;
+      variantLabel = variant.label;
     } else {
-      precio = p.precio ?? 0;
+      precio = product.precio ?? 0;
     }
 
     if (precio <= 0) {
-      console.error('Precio inválido para producto:', p.id, variantId);
+      console.error('CartProvider: precio inválido para producto:', product.id, variantId);
       return;
     }
 
-    // Key única: si tiene variante, concatenar con guión
-    const itemKey = variantId ? `${p.id}-${variantId}` : p.id;
+    const itemKey = variantId ? `${product.id}-${variantId}` : product.id;
 
     setItems(prev => {
-      const cur = prev.find(i => i.productId === itemKey);
-      if (cur) {
-        // Ya existe, incrementar cantidad
+      const existing = prev.find(i => i.productId === itemKey);
+      if (existing) {
         return prev.map(i =>
           i.productId === itemKey ? { ...i, quantity: i.quantity + qty } : i
         );
       }
-      // Nuevo item
-      return [...prev, { 
-        productId: itemKey, 
-        product: p, 
-        quantity: qty,
-        variantId,
-        variantLabel,
-        precio
-      }];
+      return [...prev, { productId: itemKey, product, quantity: qty, variantId, variantLabel, precio }];
     });
   }, []);
 
-  const updateQty: CartCtx['updateQty'] = useCallback((productId, qty) => {
+  const updateQty: CartContextValue['updateQty'] = useCallback((productId, qty) => {
     setItems(prev =>
       qty <= 0
         ? prev.filter(i => i.productId !== productId)
-        : prev.map(i =>
-            i.productId === productId ? { ...i, quantity: qty } : i
-          )
+        : prev.map(i => i.productId === productId ? { ...i, quantity: qty } : i)
     );
   }, []);
 
-  const remove: CartCtx['remove'] = useCallback((productId) => {
+  const remove: CartContextValue['remove'] = useCallback((productId) => {
     setItems(prev => prev.filter(i => i.productId !== productId));
   }, []);
 
-  const clear: CartCtx['clear'] = useCallback(() => {
+  const clear: CartContextValue['clear'] = useCallback(() => {
     setItems([]);
     try { localStorage.removeItem(CART_STORAGE_KEY); } catch {}
   }, []);
 
-  // ---- Derivados
   const count = useMemo(
-    () => items.reduce((n, i) => n + i.quantity, 0),
+    () => items.reduce((acc, i) => acc + i.quantity, 0),
     [items]
   );
 
-  // 🔥 ACTUALIZADO: total ahora usa i.precio en lugar de i.product.precio
   const total = useMemo(
-    () => items.reduce((n, i) => n + i.quantity * i.precio, 0),
+    () => items.reduce((acc, i) => acc + i.quantity * i.precio, 0),
     [items]
   );
 
-  const value: CartCtx = {
+  const value: CartContextValue = {
     items,
     isOpen,
     openCart: () => setIsOpen(true),
@@ -164,11 +142,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     total,
   };
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export const useCart = () => {
-  const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('useCart must be used inside <CartProvider>');
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error('useCart debe usarse dentro de <CartProvider>');
   return ctx;
 };

@@ -7,24 +7,58 @@ export default {
   ],
   theme: {
     extend: {
+      // ── Colores del Design System ──────────────────────────
+      // Apuntan a las CSS variables de index.css.
+      // Uso: bg-brand, text-brand, border-brand, etc.
+      colors: {
+        brand: {
+          DEFAULT: 'var(--color-brand)',
+          light:   'var(--color-brand-light)',
+          dark:    'var(--color-brand-dark)',
+        },
+        'bg-section':  'var(--color-bg-section)',
+        'bg-card':     'var(--color-bg-card)',
+        'text-muted':  'var(--color-text-muted)',
+      },
+
+      // ── Gradientes de marca ────────────────────────────────
+      backgroundImage: {
+        'brand':       'var(--gradient-brand)',
+        'brand-hover': 'var(--gradient-brand-hover)',
+      },
+
+      // ── Box shadows de marca ───────────────────────────────
+      boxShadow: {
+        'brand':       'var(--shadow-brand)',
+        'brand-hover': 'var(--shadow-brand-hover)',
+        'card':        'var(--shadow-card)',
+        'card-hover':  'var(--shadow-card-hover)',
+      },
+
+      // ── Border radius del Design System ───────────────────
+      borderRadius: {
+        'card':  'var(--radius-card)',
+        'btn':   'var(--radius-btn)',
+      },
+
+      // ── Tipografía ─────────────────────────────────────────
       fontFamily: {
-        greatVibes: ['"Great Vibes"', 'cursive'], // nombre custom
+        greatVibes: ['"Great Vibes"', 'cursive'],
       },
-      // Agregamos backdrop-blur que usa el navbar
+
+      // ── Misc ───────────────────────────────────────────────
       backdropBlur: {
-        'xs': '2px',
+        xs: '2px',
       },
-      // Extendemos las animaciones de transformación
       transitionProperty: {
-        'height': 'height',
-        'spacing': 'margin, padding',
+        height:  'height',
+        spacing: 'margin, padding',
       },
-      // Duración de transiciones personalizadas
       transitionDuration: {
-        '400': '400ms',
-        '600': '600ms',
-      }
-    }
+        400: '400ms',
+        600: '600ms',
+      },
+    },
   },
   plugins: [
     require('flowbite/plugin')

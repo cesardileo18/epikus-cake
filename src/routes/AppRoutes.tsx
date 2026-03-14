@@ -36,8 +36,11 @@ type Role = "admin" | "customer" | "viewer";
 
 // ====== Loader simple ======
 const Loader = () => (
-  <div className="grid place-items-center min-h-[40vh]">
-    <div className="h-10 w-10 border-4 border-gray-300 border-t-transparent rounded-full animate-spin" />
+  <div className="grid place-items-center min-h-[40vh]" style={{ background: 'var(--color-bg-page)' }}>
+    <div
+      className="h-10 w-10 border-4 border-t-transparent rounded-full animate-spin"
+      style={{ borderColor: 'var(--color-brand)', borderTopColor: 'transparent' }}
+    />
   </div>
 );
 
@@ -75,10 +78,21 @@ const AdminLayout: React.FC = () => {
 
 // ====== 404 ======
 const NotFound = () => (
-  <div className="grid place-items-center min-h-[50vh] text-center">
-    <h1 className="text-3xl font-bold mb-2">404</h1>
-    <p className="text-gray-600 mb-6">La página que buscás no existe.</p>
-    <a href="/" className="text-pink-600 font-semibold hover:underline">Volver al inicio</a>
+  <div
+    className="grid place-items-center min-h-[50vh] text-center px-4"
+    style={{ background: 'var(--color-bg-page)' }}
+  >
+    <div>
+      <div className="text-6xl mb-4">🎂</div>
+      <h1 className="text-5xl font-bold mb-2 text-brand-gradient">404</h1>
+      <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>La página que buscás no existe.</p>
+      <a
+        href="/"
+        className="btn-brand px-6 py-3 inline-block"
+      >
+        Volver al inicio
+      </a>
+    </div>
   </div>
 );
 

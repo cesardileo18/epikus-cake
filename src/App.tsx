@@ -23,10 +23,10 @@ function App() {
           icon: "🕒",
           duration: 6000,
           style: {
-            background: "linear-gradient(135deg, #fff 0%, #fdf2f8 100%)",
-            border: "2px solid #fbcfe8",
+            background: "var(--color-bg-card)",
+            border: "2px solid var(--color-border)",
             fontWeight: "600",
-            color: "#1f2937",
+            color: "var(--color-text-primary)",
           },
         }
       );
@@ -35,7 +35,7 @@ function App() {
 
   return (
     <BrowserRouter>
-    <AnalyticsTracker />
+      <AnalyticsTracker />
       <ScrollToTop />
       <div className="App">
         <Navbar />

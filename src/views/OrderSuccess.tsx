@@ -1,8 +1,8 @@
 // src/views/OrderSuccess.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { db } from '@/config/firebase';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { type Timestamp } from 'firebase/firestore';
+import { getOrderById } from '@/services/orders.service';
 import {
     CheckCircleIcon,
     ClipboardDocumentCheckIcon,
@@ -70,22 +70,16 @@ const OrderSuccess: React.FC = () => {
 
         const fetchOrder = async () => {
             try {
-                const orderRef = doc(db, 'pedidos', orderId);
-                const orderSnap = await getDoc(orderRef);
-
-                if (!orderSnap.exists()) {
+                const orderData = await getOrderById(orderId);
+                if (!orderData) {
                     console.error('❌ Pedido no encontrado');
                     navigate('/products');
                     return;
                 }
-
-                const orderData = {
-                    id: orderSnap.id,
-                    ...orderSnap.data(),
-                    paymentId: paymentId || orderSnap.data().paymentId,
-                } as Order;
-
-                setOrder(orderData);
+                setOrder({
+                  ...orderData,
+                  paymentId: paymentId || (orderData as any).paymentId,
+                } as Order);
             } catch (error) {
                 console.error('❌ Error al cargar el pedido:', error);
                 navigate('/products');
@@ -165,9 +159,9 @@ const OrderSuccess: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-bg-page)' }}>
                 <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mx-auto mb-4" />
+                    <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: 'var(--color-brand)', borderTopColor: 'transparent' }} />
                     <p className="text-gray-600">Cargando tu pedido...</p>
                 </div>
             </div>
@@ -177,17 +171,17 @@ const OrderSuccess: React.FC = () => {
     if (!order) return null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--color-bg-page)' }}>
             <div className="max-w-3xl mx-auto">
                 {/* Animación de éxito */}
                 <div className="text-center mb-8 animate-bounce">
                     <div className="inline-flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-4">
                         <CheckCircleIcon className="w-16 h-16 text-green-500" />
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                         ¡Pago Exitoso! 🎉
                     </h1>
-                    <p className="text-xl text-gray-600">
+                    <p className="text-xl" style={{ color: 'var(--color-text-secondary)' }}>
                         Tu pedido ha sido confirmado
                     </p>
                 </div>
@@ -195,10 +189,11 @@ const OrderSuccess: React.FC = () => {
                 {/* Comprobante */}
                 <div
                     id="receipt"
-                    className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-6"
+                    className="rounded-3xl shadow-2xl overflow-hidden mb-6"
+                    style={{ background: 'var(--color-bg-card)' }}
                 >
                     {/* Header del comprobante */}
-                    <div className="bg-gradient-to-r from-pink-500 to-rose-400 px-6 py-6 text-white">
+                    <div className="px-6 py-6 text-white" style={{ background: 'var(--gradient-brand)' }}>
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <ClipboardDocumentCheckIcon className="w-8 h-8" />
@@ -241,7 +236,8 @@ const OrderSuccess: React.FC = () => {
                                 {order.items.map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className="flex justify-between items-center bg-gray-50 rounded-xl p-3"
+                                        className="flex justify-between items-center rounded-xl p-3"
+                                    style={{ background: 'var(--color-bg-section-alt)' }}
                                     >
                                         <div className="flex-1">
                                             <p className="font-medium text-gray-900">{item.nombre}</p>
@@ -301,7 +297,7 @@ const OrderSuccess: React.FC = () => {
                                 <span className="text-xl font-semibold text-gray-900">
                                     TOTAL PAGADO
                                 </span>
-                                <span className="text-3xl font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+                                <span className="text-3xl font-bold text-brand-gradient">
                                     ${formatPrice(order.total)}
                                 </span>
                             </div>
@@ -313,7 +309,8 @@ const OrderSuccess: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <button
                         onClick={handleShare}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white font-semibold rounded-xl shadow-lg hover:bg-green-600 transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold rounded-xl shadow-lg transition-all"
+                        style={{ background: 'var(--color-success)' }}
                     >
                         <ShareIcon className="w-5 h-5" />
                         Compartir por WhatsApp
@@ -342,7 +339,7 @@ const OrderSuccess: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Link
                         to="/my-orders"
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-pink-500 text-pink-500 font-semibold rounded-xl hover:bg-pink-50 transition-all"
+                        className="btn-brand-outline flex-1 flex items-center justify-center gap-2 px-6 py-3"
                     >
                         <ClipboardDocumentCheckIcon className="w-5 h-5" />
                         Ver Mis Pedidos
@@ -350,7 +347,7 @@ const OrderSuccess: React.FC = () => {
 
                     <Link
                         to="/products"
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                        className="btn-brand flex-1 flex items-center justify-center gap-2 px-6 py-3"
                     >
                         <HomeIcon className="w-5 h-5" />
                         Volver al Inicio

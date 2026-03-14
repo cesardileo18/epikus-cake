@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import type { Product } from '@/interfaces/Product';
+import { subscribeToProducts, type ProductWithId } from '@/services/products.service';
 
-export type ProductWithId = Product & { id: string };
+export type { ProductWithId };
 
 type Options = {
   onlyActive?: boolean;
@@ -22,12 +20,8 @@ export default function useFeaturedProducts(opts: Options = {}) {
   const [error, setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'productos'),
-      (snap) => {
-        const all = snap.docs.map(
-          (d) => ({ id: d.id, ...d.data() } as ProductWithId)
-        );
+    const unsub = subscribeToProducts(
+      (all) => {
         let list = all.filter((p) => (p as any).destacado);
         if (onlyActive) list = list.filter((p) => (p as any).activo);
         setProducts(list.slice(0, max));

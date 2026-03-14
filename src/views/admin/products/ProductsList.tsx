@@ -1,14 +1,14 @@
 // src/views/admin/products/ProductsList.tsx
 import { useState, useEffect, useMemo } from "react";
-import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/config/firebase";
-import type { Product } from "@/interfaces/Product";
+import {
+  getAllProducts,
+  updateProduct,
+  toggleProductActive,
+  deleteProduct,
+  type ProductWithId,
+} from "@/services/products.service";
 import { showToast } from "@/components/Toast/ToastProvider";
 import { MetricCard, MetricCardMobile, Chip, Badge, IconBtn, Field } from "@/components/admin/ui";
-
-interface ProductWithId extends Product {
-  id: string;
-}
 
 type FilterKey = "all" | "active" | "low" | "out";
 
@@ -41,11 +41,7 @@ const ProductsList = () => {
   const cargarProductos = async () => {
     try {
       setLoading(true);
-      const querySnapshot = await getDocs(collection(db, "productos"));
-      const productosData = querySnapshot.docs.map(d => ({
-        id: d.id,
-        ...d.data()
-      } as ProductWithId));
+      const productosData = await getAllProducts();
       setProductos(productosData);
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -179,7 +175,6 @@ const ProductsList = () => {
   const guardarCambios = async () => {
     if (!productoEditando) return;
 
-    // Validaciones
     if (productoEditando.tieneVariantes && (!productoEditando.variantes || productoEditando.variantes.length === 0)) {
       showToast.error("⚠️ Debes agregar al menos una variante");
       return;
@@ -192,8 +187,6 @@ const ProductsList = () => {
     setGuardando(true);
     try {
       const { id, ...datosProducto } = productoEditando;
-
-      // Limpiar según tipo
       const datosLimpios: any = { ...datosProducto };
       if (productoEditando.tieneVariantes) {
         delete datosLimpios.precio;
@@ -202,9 +195,8 @@ const ProductsList = () => {
         delete datosLimpios.variantes;
       }
 
-      await updateDoc(doc(db, "productos", id), datosLimpios);
+      await updateProduct(id, datosLimpios);
       setProductos(prev => prev.map(p => (p.id === id ? productoEditando : p)));
-
       cerrarModal();
       showToast.success("✅ Producto actualizado correctamente");
     } catch (error) {
@@ -218,7 +210,7 @@ const ProductsList = () => {
   const toggleActivo = async (producto: ProductWithId) => {
     try {
       const nuevoEstado = !producto.activo;
-      await updateDoc(doc(db, "productos", producto.id), { activo: nuevoEstado });
+      await toggleProductActive(producto.id, nuevoEstado);
       setProductos(prev => prev.map(p => (p.id === producto.id ? { ...p, activo: nuevoEstado } : p)));
       showToast.success(`✅ Producto ${nuevoEstado ? "activado" : "desactivado"}`);
     } catch (error) {
@@ -230,7 +222,7 @@ const ProductsList = () => {
   const eliminarProducto = async (producto: ProductWithId) => {
     if (!confirm(`¿Estás seguro de eliminar "${producto.nombre}"?`)) return;
     try {
-      await deleteDoc(doc(db, "productos", producto.id));
+      await deleteProduct(producto.id);
       setProductos(prev => prev.filter(p => p.id !== producto.id));
       showToast.success("✅ Producto eliminado");
     } catch (error) {

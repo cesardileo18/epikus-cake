@@ -14,8 +14,8 @@ export function SectionHeader({ kicker, title, desc }: SectionHeaderProps) {
           <Badge>{kicker}</Badge>
         </div>
       )}
-      <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-gray-900">{title}</h2>
-      {desc && <p className="mt-2 text-gray-600">{desc}</p>}
+      <h2 className="text-2xl md:text-3xl font-semibold tracking-tight" style={{ color: 'var(--color-text-primary)' }}>{title}</h2>
+      {desc && <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>{desc}</p>}
     </header>
   )
 }

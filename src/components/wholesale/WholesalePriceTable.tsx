@@ -40,9 +40,9 @@ const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({ products, tab
    return (
     <section className="max-w-5xl mx-auto px-4 py-5">
         <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-light text-gray-900 mb-2">
+            <h2 className="text-3xl md:text-4xl font-light mb-2" style={{ color: 'var(--color-text-primary)' }}>
                 {table.title_prefix}{' '}
-                <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+                <span className="font-bold text-brand-gradient">
                     {table.title_highlight}
                 </span>
             </h2>
@@ -58,10 +58,10 @@ const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({ products, tab
             </button> */}
         </div>
 
-        <div ref={tableRef} style={{ borderRadius: '16px', overflow: 'auto', boxShadow: '0 2px 16px #ff7bab22', background: '#ffffff' }}>
-            <table style={{ width: '100%', minWidth: '560px', background: '#ffffff', fontSize: '14px', borderCollapse: 'collapse' }}>
+        <div ref={tableRef} style={{ borderRadius: '16px', overflow: 'auto', boxShadow: 'var(--shadow-card)', background: 'var(--color-bg-card)' }}>
+            <table style={{ width: '100%', minWidth: '560px', background: 'var(--color-bg-card)', fontSize: '14px', borderCollapse: 'collapse' }}>
                 <thead>
-                    <tr style={{ background: '#ff7bab', color: '#ffffff' }}>
+                    <tr style={{ background: 'var(--color-brand)', color: '#ffffff' }}>
                         <th style={{ padding: '14px 16px', width: '64px' }} />
                         <th style={{ padding: '14px 16px', textAlign: 'left', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, color: '#ffffff' }}>
                             {table.columns.product}
@@ -81,7 +81,7 @@ const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({ products, tab
                     {products.map((product, index) => {
                         const packTotal = product.price_per_unit * product.pack_qty;
                         return (
-                            <tr key={product.id} style={{ background: index % 2 === 0 ? '#ffffff' : '#fff4f8', borderBottom: '1px solid #ffe4f0' }}>
+                            <tr key={product.id} style={{ background: index % 2 === 0 ? 'var(--color-bg-card)' : 'var(--color-bg-section-alt)', borderBottom: '1px solid var(--color-border)' }}>
                                 <td style={{ padding: '10px 16px' }}>
                                     <img
                                         src={product.image}

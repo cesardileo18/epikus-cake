@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { subscribeToOrders } from "@/services/orders.service";
 
 interface Order {
   id: string;
@@ -27,15 +26,13 @@ const SalesDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "pedidos"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      const ordersData = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Order[];
-      setOrders(ordersData);
-      setLoading(false);
-    });
+    const unsub = subscribeToOrders(
+      (rows) => {
+        setOrders(rows as Order[]);
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
     return () => unsub();
   }, []);
 

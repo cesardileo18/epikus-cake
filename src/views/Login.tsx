@@ -68,7 +68,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 overflow-hidden">
+    <main className="relative min-h-screen overflow-hidden" style={{ background: 'var(--color-bg-page)' }}>
       {/* Shapes del fondo */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-10 -left-10 w-44 h-44 rounded-full bg-gradient-to-r from-pink-400 to-rose-300 opacity-20 blur-2xl animate-bounce" />
@@ -79,15 +79,15 @@ const Login: React.FC = () => {
       <div className="relative z-10 pt-28 md:pt-32 pb-24">
         <div className="max-w-7xl mx-auto px-6">
           <section className="grid place-items-center">
-            <div className="w-full max-w-xl rounded-3xl bg-white/70 backdrop-blur-xl border border-pink-100 shadow-[0_20px_60px_rgba(244,114,182,0.15)] p-8 md:p-10">
+            <div className="w-full max-w-xl rounded-3xl backdrop-blur-xl p-8 md:p-10" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', boxShadow: '0 20px 60px rgba(232,50,124,0.12)' }}>
               <header className="text-center mb-8">
-                <h1 className="text-[clamp(2rem,6.5vw,3.5rem)] leading-[1.1] font-extralight tracking-tight text-slate-900">
+                <h1 className="text-[clamp(2rem,6.5vw,3.5rem)] leading-[1.1] font-extralight tracking-tight" style={{ color: 'var(--color-text-primary)' }}>
                   {content.hero.title_prefix}{' '}
-                  <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+                  <span className="font-bold text-brand-gradient">
                     {content.hero.title_highlight}
                   </span>
                 </h1>
-                <p className="mt-3 text-[clamp(0.95rem,1.6vw,1.25rem)] text-gray-600">
+                <p className="mt-3 text-[clamp(0.95rem,1.6vw,1.25rem)]" style={{ color: 'var(--color-text-secondary)' }}>
                   {content.hero.subtitle}
                 </p>
               </header>
@@ -97,8 +97,7 @@ const Login: React.FC = () => {
                 type="button"
                 onClick={handleGoogle}
                 disabled={loadingGoogle}
-                className="group relative w-full inline-flex items-center justify-center gap-3 rounded-2xl px-5 py-4 text-white font-semibold
-                bg-gradient-to-r from-pink-500 to-rose-400 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:hover:translate-y-0"
+                className="btn-brand group relative w-full inline-flex items-center justify-center gap-3 rounded-2xl px-5 py-4 disabled:opacity-70"
                 aria-label={content.google.aria}
                 title={content.google.aria}
               >
@@ -117,7 +116,7 @@ const Login: React.FC = () => {
               </button>
 
               {/* Divider */}
-              <div className="my-8 flex items-center gap-4 text-gray-400">
+              <div className="my-8 flex items-center gap-4" style={{ color: 'var(--color-text-secondary)' }}>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-pink-200 to-transparent" />
                 <span className="text-sm font-medium">{content.divider.text}</span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-pink-200 to-transparent" />
@@ -126,7 +125,7 @@ const Login: React.FC = () => {
               {/* Email */}
               <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-gray-700">
+                  <span className="mb-2 block text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
                     {content.email.label}
                   </span>
                   <div className="relative">
@@ -149,7 +148,7 @@ const Login: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12l-4 4-4-4m8-4l-4 4-4-4" />
                     </svg>
                   </div>
-                  <small id="email-help" className="mt-1 block text-xs text-gray-500">
+                  <small id="email-help" className="mt-1 block text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                     {content.email.help}
                   </small>
                 </label>
@@ -157,8 +156,7 @@ const Login: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!canSubmitEmail}
-                  className="w-full rounded-2xl border border-pink-200 bg-white/70 px-5 py-3.5 font-semibold text-gray-800 shadow-sm
-                  hover:shadow transition disabled:opacity-60 disabled:cursor-not-allowed relative"
+                  className="btn-brand-outline w-full rounded-2xl px-5 py-3.5 font-semibold shadow-sm hover:shadow transition disabled:opacity-60 disabled:cursor-not-allowed relative"
                 >
                   {loadingEmail
                     ? content.email.sending_label
@@ -192,8 +190,8 @@ const Login: React.FC = () => {
               </form>
 
               {/* Footer */}
-              <div className="mt-8 flex items-center justify-center text-xs text-gray-500">
-                <Link to={content.routes.home} className="font-semibold text-pink-600 hover:text-rose-500">
+              <div className="mt-8 flex items-center justify-center text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                <Link to={content.routes.home} className="font-semibold" style={{ color: 'var(--color-brand)' }}>
                   {content.footer.back_home_label}
                 </Link>
               </div>

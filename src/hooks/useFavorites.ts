@@ -1,15 +1,12 @@
 // src/hooks/useFavorites.ts
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { db } from "@/config/firebase";
 import {
-  collection,
-  doc,
-  onSnapshot,
-  setDoc,
-  deleteDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+  subscribeToFavorites,
+  addFavorite,
+  removeFavorite,
+  migrateFavoritesToFirestore,
+} from "@/services/favorites.service";
 
 const LOCAL_STORAGE_KEY = "epikus_favorites";
 
@@ -58,36 +55,15 @@ export const useFavorites = () => {
       if (justLoggedIn) {
         const localFavs = readLocalFavorites();
         if (localFavs.length > 0) {
-          const userFavsCol = collection(db, "users", currentUid, "favorites");
-
-          // migramos de forma simple (uno por uno)
-          localFavs.forEach(async (productId) => {
-            const favDoc = doc(userFavsCol, productId);
-            try {
-              await setDoc(
-                favDoc,
-                {
-                  productId,
-                  createdAt: serverTimestamp(),
-                },
-                { merge: true }
-              );
-            } catch (err) {
-              console.error("Error migrando favorito", productId, err);
-            }
-          });
-
-          // limpiar localStorage después de migrar
+          migrateFavoritesToFirestore(currentUid, localFavs);
           writeLocalFavorites([]);
         }
       }
 
       // 🟣 2) Escuchar favoritos de Firestore en tiempo real
-      const favsCol = collection(db, "users", currentUid, "favorites");
-      unsubscribe = onSnapshot(
-        favsCol,
-        (snap) => {
-          const ids = snap.docs.map((d) => d.id);
+      unsubscribe = subscribeToFavorites(
+        currentUid,
+        (ids) => {
           setFavorites(ids);
           setLoading(false);
         },
@@ -139,17 +115,12 @@ export const useFavorites = () => {
       }
 
       // 🟣 Modo logueado → Firestore
-      const favDocRef = doc(db, "users", currentUid, "favorites", productId);
       const alreadyFav = favorites.includes(productId);
-
       try {
         if (alreadyFav) {
-          await deleteDoc(favDocRef);
+          await removeFavorite(currentUid, productId);
         } else {
-          await setDoc(favDocRef, {
-            productId,
-            createdAt: serverTimestamp(),
-          });
+          await addFavorite(currentUid, productId);
         }
       } catch (err) {
         console.error("Error al actualizar favorito:", err);

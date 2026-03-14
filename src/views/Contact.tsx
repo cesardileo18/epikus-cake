@@ -52,26 +52,28 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#ff7bab48]">
+    <div className="min-h-screen section-brand-bg">
       {/* Contenedor y paddings alineados a Home/Products */}
-      <section className="py-22">
+      <section className="page-hero">
         <div className="max-w-7xl mx-auto px-6">
           {/* Título */}
-          <h1 className="text-4xl md:text-5xl font-light text-gray-900 mb-4">
-            {content.header.title_prefix}{' '}
-            <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
-              {content.header.title_highlight}
-            </span>
-          </h1>
+          <div className="mb-10">
+            <h1 className="text-4xl md:text-5xl font-light mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              {content.header.title_prefix}{' '}
+              <span className="font-bold text-brand-gradient">
+                {content.header.title_highlight}
+              </span>
+            </h1>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Formulario */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-pink-100 p-6 md:p-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">{content.form.title}</h2>
+            <div className="backdrop-blur-sm rounded-3xl shadow-xl p-6 md:p-8" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}>
+              <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text-primary)' }}>{content.form.title}</h2>
 
               <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="name" className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
                     {content.form.fields.name.label}
                   </label>
                   <input
@@ -80,7 +82,8 @@ const Contact: React.FC = () => {
                     name="name"
                     value={form.name}
                     onChange={onChange}
-                    className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-400"
+                    className="w-full rounded-lg px-4 py-3 outline-none transition-all"
+                    style={{ background: 'var(--color-bg-page)', border: '2px solid var(--color-border)', color: 'var(--color-text-primary)' }}
                     placeholder={content.form.fields.name.placeholder}
                     required
                     autoComplete={content.form.fields.name.autocomplete}
@@ -89,7 +92,7 @@ const Contact: React.FC = () => {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
                       {content.form.fields.email.label}
                     </label>
                     <input
@@ -98,7 +101,8 @@ const Contact: React.FC = () => {
                       type="email"
                       value={form.email}
                       onChange={onChange}
-                      className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-400"
+                      className="w-full rounded-lg px-4 py-3 outline-none transition-all"
+                      style={{ background: 'var(--color-bg-page)', border: '2px solid var(--color-border)', color: 'var(--color-text-primary)' }}
                       placeholder={mdText(content.form.fields.email.placeholder)}
                       required
                       autoComplete={content.form.fields.email.autocomplete}
@@ -106,7 +110,7 @@ const Contact: React.FC = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="phone" className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
                       {content.form.fields.phone.label}
                     </label>
                     <input
@@ -114,7 +118,8 @@ const Contact: React.FC = () => {
                       name="phone"
                       value={form.phone}
                       onChange={onChange}
-                      className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-400"
+                      className="w-full rounded-lg px-4 py-3 outline-none transition-all"
+                      style={{ background: 'var(--color-bg-page)', border: '2px solid var(--color-border)', color: 'var(--color-text-primary)' }}
                       placeholder={content.form.fields.phone.placeholder}
                       autoComplete={content.form.fields.phone.autocomplete}
                     />
@@ -122,7 +127,7 @@ const Contact: React.FC = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="message" className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
                     {content.form.fields.message.label}
                   </label>
                   <textarea
@@ -131,7 +136,8 @@ const Contact: React.FC = () => {
                     value={form.message}
                     onChange={onChange}
                     rows={content.form.fields.message.rows}
-                    className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 outline-none focus:ring-2 focus:ring-pink-400"
+                    className="w-full rounded-lg px-4 py-3 outline-none transition-all resize-none"
+                    style={{ background: 'var(--color-bg-page)', border: '2px solid var(--color-border)', color: 'var(--color-text-primary)' }}
                     placeholder={content.form.fields.message.placeholder}
                     required
                   />
@@ -163,10 +169,7 @@ const Contact: React.FC = () => {
                     type="submit"
                     disabled={submitDisabled}
                     aria-busy={sending}
-                    className={`flex-1 py-3 rounded-xl font-semibold text-white shadow-lg transition-all ${submitDisabled
-                      ? 'bg-pink-300 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-pink-500 to-rose-400 hover:shadow-xl'
-                      }`}
+                    className={`flex-1 py-3 rounded-xl font-semibold text-white shadow-lg transition-all ${submitDisabled ? 'cursor-not-allowed opacity-60' : ''} btn-brand`}
                   >
                     {sending ? content.form.buttons.submitting : content.form.buttons.submit}
                   </button>
@@ -175,7 +178,7 @@ const Contact: React.FC = () => {
                     href={whatsappLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 text-center py-3 rounded-xl font-semibold border border-pink-200 text-pink-600 bg-white/80 hover:bg-white transition"
+                    className="btn-brand-outline flex-1 text-center py-3"
                   >
                     {content.form.buttons.whatsapp}
                   </a>
@@ -184,8 +187,8 @@ const Contact: React.FC = () => {
             </div>
 
             {/* Mapa */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-pink-100 p-6 md:p-8 self-start">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">{content.map_section.title}</h2>
+            <div className="backdrop-blur-sm rounded-3xl shadow-xl p-6 md:p-8 self-start" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>{content.map_section.title}</h2>
 
               <div className="aspect-[4/3] sm:aspect-video w-full overflow-hidden rounded-2xl border border-pink-100 shadow">
                 <iframe
@@ -198,25 +201,25 @@ const Contact: React.FC = () => {
                 />
               </div>
 
-              <p className="text-sm text-gray-600 mt-4">{content.map_section.disclaimer}</p>
+              <p className="text-sm mt-4" style={{ color: 'var(--color-text-secondary)' }}>{content.map_section.disclaimer}</p>
             </div>
 
             {/* Datos rápidos */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-pink-100 p-6 md:p-8">
-              <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div className="rounded-xl bg-[#e70ee71c] p-4">
-                  <p className="font-semibold text-gray-900 mb-1">{content.quick_info.email.label}</p>
+            <div className="backdrop-blur-sm rounded-3xl shadow-xl p-6 md:p-8" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)' }}>
+              <div className="grid sm:grid-cols-2 gap-4 text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                <div className="rounded-xl p-4" style={{ background: 'var(--color-bg-card-inner)' }}>
+                  <p className="font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{content.quick_info.email.label}</p>
                   <p>{mdText(content.quick_info.email.value)}</p>
                 </div>
-                <div className="rounded-xl bg-[#e70ee71c] p-4">
-                  <p className="font-semibold text-gray-900 mb-1">{content.quick_info.schedule.label}</p>
+                <div className="rounded-xl p-4" style={{ background: 'var(--color-bg-card-inner)' }}>
+                  <p className="font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{content.quick_info.schedule.label}</p>
                   <p>{content.quick_info.schedule.value}</p>
                   {content.quick_info.schedule.note && (
                     <p className="text-xs text-gray-500">{content.quick_info.schedule.note}</p>
                   )}
                 </div>
-                <div className="rounded-xl bg-[#e70ee71c] p-4 sm:col-span-2">
-                  <p className="font-semibold text-gray-900 mb-1">{content.quick_info.pickup_delivery.label}</p>
+                <div className="rounded-xl p-4 sm:col-span-2" style={{ background: 'var(--color-bg-card-inner)' }}>
+                  <p className="font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{content.quick_info.pickup_delivery.label}</p>
                   <p>{content.quick_info.pickup_delivery.value}</p>
                 </div>
               </div>
