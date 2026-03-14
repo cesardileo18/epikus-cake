@@ -23,13 +23,12 @@ export function RatingStars({
       <div className="flex items-center gap-2">
         <div className={`flex ${starSizeClass}`}>
           {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} style={{ color: 'var(--color-border)' }}>★</span>
+            <span key={i} className="star-empty">★</span>
           ))}
         </div>
         {showCount && (
           <span
-            className={`${textSizeClass} truncate max-w-[80px]`}
-            style={{ color: 'var(--color-text-secondary)' }}
+            className={`star-text ${textSizeClass} truncate max-w-[80px]`}
             title="Sin opiniones"
           >
             Sin opiniones
@@ -45,15 +44,12 @@ export function RatingStars({
     <div className="flex items-center gap-2">
       <div className={`flex ${starSizeClass}`}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <span
-            key={i}
-            style={{ color: rounded >= i + 1 ? 'var(--color-warning)' : 'var(--color-border)' }}
-          >
+          <span key={i} className={rounded >= i + 1 ? 'star-filled' : 'star-empty'}>
             ★
           </span>
         ))}
       </div>
-      <span className={textSizeClass} style={{ color: 'var(--color-text-secondary)' }}>
+      <span className={`star-text ${textSizeClass}`}>
         {safeAvg.toFixed(1)}
         {showCount && ` (${safeCount})`}
       </span>

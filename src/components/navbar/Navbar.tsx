@@ -37,12 +37,19 @@ const Navbar: React.FC = () => {
   const toggleMenu = () => setIsMenuOpen(v => !v);
   const closeMenu  = () => setIsMenuOpen(false);
 
+  // Links base (siempre visibles en desktop y mobile)
   const publicItems: MenuItem[] = [
-    { name: 'Inicio',          to: '/',         icon: '🏠' },
-    { name: 'Productos',       to: '/products', icon: '🍰' },
-    { name: 'Sobre Nosotros',  to: '/about',    icon: '💝' },
-    { name: 'Contacto',        to: '/contact',  icon: '📞' },
+    { name: 'Inicio',         to: '/',         icon: '🏠' },
+    { name: 'Productos',      to: '/products', icon: '🍰' },
+    { name: 'Sobre Nosotros', to: '/about',    icon: '💝' },
+    { name: 'Contacto',       to: '/contact',  icon: '📞' },
+    // Desktop: visible solo si NO hay sesión (cuando hay sesión va al dropdown de usuario)
     ...(!user ? [{ name: 'Mayoristas', to: '/wholesale', icon: '🏢' }] : []),
+  ];
+
+  // Mobile: Mayoristas siempre visible (independiente de si hay sesión)
+  const mobileOnlyItems: MenuItem[] = [
+    { name: 'Mayoristas', to: '/wholesale', icon: '🏢' },
   ];
 
   const adminItems: MenuItem[] = role === 'admin' ? [
@@ -344,8 +351,7 @@ const Navbar: React.FC = () => {
       >
         {/* Fondo */}
         <div
-          className="absolute inset-0 backdrop-blur-lg"
-          style={{ background: 'var(--color-mobile-menu-bg, linear-gradient(135deg, rgba(232,50,124,0.96) 0%, rgba(255,123,172,0.94) 50%, rgba(196,24,94,0.96) 100%))' }}
+          className="absolute inset-0 mobile-menu-overlay"
           onClick={closeMenu}
         />
 
@@ -356,7 +362,7 @@ const Navbar: React.FC = () => {
           aria-modal="true"
         >
           {/* Header mobile */}
-          <div className="flex items-center justify-between p-6 border-b border-white/20">
+          <div className="flex items-center justify-between p-6 mobile-menu-header">
             <h2 className="text-white text-4xl font-['Great_Vibes']">Epikus Cake</h2>
             <p className="text-white/70 text-sm">Menú Principal</p>
             <button
@@ -379,7 +385,7 @@ const Navbar: React.FC = () => {
               <div className="mb-4">
                 <button
                   onClick={() => setMobileAccountOpen(o => !o)}
-                  className="w-full flex items-center gap-3 rounded-2xl bg-white/10 border border-white/20 p-4 text-white"
+                  className="w-full flex items-center gap-3 rounded-2xl p-4 mobile-menu-item transition-all"
                   type="button"
                   aria-expanded={mobileAccountOpen}
                 >
@@ -405,29 +411,29 @@ const Navbar: React.FC = () => {
                       { to: '/my-orders',  label: 'Mis pedidos' },
                       { to: '/favorites',  label: 'Favoritos' },
                       { to: '/my-reviews', label: 'Mis opiniones' },
-                      { to: '/wholesale',  label: 'Mayoristas' },
                     ].map(item => (
                       <Link
                         key={item.to}
                         to={item.to}
                         onClick={closeMenu}
-                        className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"
+                        className="block mt-2 px-4 py-3 rounded-xl mobile-menu-subitem transition-all"
                       >
                         {item.label}
                       </Link>
                     ))}
+
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Links públicos */}
-            {publicItems.map((item) => (
+            {/* Links públicos + mobile only */}
+            {[...publicItems, ...mobileOnlyItems].map((item) => (
               <Link
                 key={item.name}
                 to={item.to}
                 onClick={closeMenu}
-                className="group flex items-center space-x-4 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
+                className="group flex items-center space-x-4 p-4 rounded-2xl mobile-menu-item backdrop-blur-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
               >
                 <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
                   {item.icon}
@@ -447,7 +453,7 @@ const Navbar: React.FC = () => {
               <div className="mt-2">
                 <button
                   onClick={() => setMobileAdminOpen(o => !o)}
-                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/10 border border-white/20 text-white"
+                  className="w-full flex items-center justify-between p-4 rounded-2xl mobile-menu-item transition-all"
                   type="button"
                   aria-expanded={mobileAdminOpen}
                 >
@@ -463,7 +469,7 @@ const Navbar: React.FC = () => {
                         key={it.to}
                         to={it.to}
                         onClick={closeMenu}
-                        className="block mt-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"
+                        className="block mt-2 px-4 py-3 rounded-xl mobile-menu-subitem transition-all"
                       >
                         {it.name}
                       </Link>
@@ -478,7 +484,7 @@ const Navbar: React.FC = () => {
               <Link
                 to={`/login?redirect=${redirect}`}
                 onClick={closeMenu}
-                className="mt-4 text-center p-4 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition"
+                className="mt-4 text-center p-4 rounded-2xl mobile-menu-item font-semibold transition"
               >
                 Iniciar sesión
               </Link>
@@ -487,10 +493,10 @@ const Navbar: React.FC = () => {
 
           {/* Salir (fijo abajo, logueado) */}
           {!loading && user && (
-            <div className="sticky bottom-0 p-6 border-t border-white/20 bg-white/10 backdrop-blur-sm">
+            <div className="sticky bottom-0 p-6 mobile-menu-footer">
               <button
                 onClick={() => { closeMenu(); signOut(); }}
-                className="w-full text-center p-4 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white/20 transition"
+                className="w-full text-center p-4 rounded-2xl mobile-menu-item font-semibold transition"
                 type="button"
               >
                 Salir

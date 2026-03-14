@@ -22,14 +22,12 @@ export default function CartButton({ className = '', size = 'md' }: Props) {
     <button
       onClick={() => navigate('/checkout')}
       type="button"
-      className={['relative rounded-2xl text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300', s.btn, className].join(' ')}
-      style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
+      className={['cart-btn relative rounded-2xl text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300', s.btn, className].join(' ')}
       aria-label="Ir al carrito"
     >
       <ShoppingBagIcon className={s.icon} />
       <span
-        className={['absolute font-bold rounded-full flex items-center justify-center animate-pulse', s.badge].join(' ')}
-        style={{ background: '#facc15', color: '#000' }}
+        className={['cart-badge absolute font-bold rounded-full flex items-center justify-center animate-pulse', s.badge].join(' ')}
       >
         {count}
       </span>

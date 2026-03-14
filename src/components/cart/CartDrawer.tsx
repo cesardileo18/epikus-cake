@@ -25,11 +25,11 @@ export default function CartDrawer(): ReactElement | null {
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeCart} />
 
             {/* Panel */}
-            <aside className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl sm:rounded-l-3xl flex flex-col">
+            <aside className="cart-bg absolute right-0 top-0 h-full w-full max-w-md shadow-2xl sm:rounded-l-3xl flex flex-col">
 
                 {/* Header */}
-                <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--color-border)' }}>
-                    <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Carrito</h2>
+                <div className="cart-border p-5 border-b flex items-center justify-between">
+                    <h2 className="cart-title text-xl font-bold">Carrito</h2>
                     <button
                         onClick={closeCart}
                         className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition"
@@ -43,9 +43,9 @@ export default function CartDrawer(): ReactElement | null {
                 {/* Lista */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-4">
                     {isEmpty ? (
-                        <p style={{ color: 'var(--color-text-secondary)' }}>Tu carrito está vacío.</p>
+                        <p className="cart-empty-text">Tu carrito está vacío.</p>
                     ) : items.map((i) => (
-                        <div key={i.productId} className="flex gap-3 p-3 rounded-xl" style={{ background: 'var(--color-bg-section)' }}>
+                        <div key={i.productId} className="cart-item-bg flex gap-3 p-3 rounded-xl">
                             <img
                                 src={i.product.imagen}
                                 alt={i.product.nombre}
@@ -58,15 +58,15 @@ export default function CartDrawer(): ReactElement | null {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1">
-                                        <h3 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                                        <h3 className="cart-item-name font-semibold">
                                             {i.product.nombre}
                                         </h3>
                                         {i.variantLabel && (
-                                            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                                            <p className="cart-item-variant text-xs mt-0.5">
                                                 📦 {i.variantLabel}
                                             </p>
                                         )}
-                                        <p className="font-bold" style={{ color: 'var(--color-brand)' }}>
+                                        <p className="cart-item-price font-bold">
                                             ${price(i.precio)}
                                         </p>
                                     </div>
@@ -93,8 +93,7 @@ export default function CartDrawer(): ReactElement | null {
 
                                     <button
                                         onClick={() => updateQty(i.productId, i.quantity + 1)}
-                                        className="w-8 h-8 rounded-full text-white flex items-center justify-center transition"
-                                        style={{ background: 'var(--color-brand)' }}
+                                        className="cart-qty-btn-plus w-8 h-8 rounded-full flex items-center justify-center transition"
                                         type="button"
                                     >
                                         <PlusIcon className="w-4 h-4" />
@@ -110,7 +109,7 @@ export default function CartDrawer(): ReactElement | null {
                 </div>
 
                 {/* Footer */}
-                <div className="p-5 border-t" style={{ borderColor: 'var(--color-border)' }}>
+                <div className="cart-border p-5 border-t">
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-lg font-semibold">Total</span>
                         <span className="text-lg font-bold text-brand-gradient">

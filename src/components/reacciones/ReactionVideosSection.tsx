@@ -22,36 +22,24 @@ const ReactionVideosSection: React.FC<ReactionVideosSectionProps> = ({ videos })
     <section>
       <div className="max-w-6xl mx-auto py-5 px-4">
 
-        {/* Header */}
         <div className="text-center mb-8">
-          <h2
-            className="text-3xl md:text-4xl lg:text-5xl font-light mb-4"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
+          <h2 className="reaction-title text-3xl md:text-4xl lg:text-5xl font-light mb-4">
             Momentos que{' '}
             <span className="font-bold text-brand-gradient">emocionan</span>
           </h2>
-          <p className="text-sm md:text-base" style={{ color: 'var(--color-text-secondary)' }}>
+          <p className="reaction-subtitle text-sm md:text-base">
             Reacciones reales y trabajos hechos a pedido.
           </p>
         </div>
 
-        {/* Grid de videos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {videos.map((video, index) => (
             <button
               key={video.id}
               onClick={() => handleOpenVideo(video.src)}
-              className="group relative rounded-3xl p-[2px] shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2"
-              style={{
-                background: 'var(--gradient-brand)',
-                focusRingColor: 'var(--color-brand)',
-              } as React.CSSProperties}
+              className="reaction-card group relative rounded-3xl p-[2px] shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2"
             >
-              <div
-                className="rounded-[22px] overflow-hidden"
-                style={{ background: 'var(--color-bg-card)' }}
-              >
+              <div className="reaction-card-inner rounded-[22px] overflow-hidden">
                 <div className="relative h-[420px] sm:h-[380px] md:h-[340px] lg:h-[320px] bg-gradient-to-br from-gray-900 to-gray-800">
                   <video
                     ref={el => (videoRefs.current[index] = el)}
@@ -64,12 +52,10 @@ const ReactionVideosSection: React.FC<ReactionVideosSectionProps> = ({ videos })
 
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70 group-hover:opacity-50 transition-opacity" />
 
-                  {/* Play button */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-18 h-18 md:w-20 md:h-20 bg-white/95 backdrop-blur rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform duration-300">
                       <svg
-                        className="w-8 h-8 md:w-9 md:h-9 ml-1"
-                        style={{ color: 'var(--color-brand)' }}
+                        className="reaction-play-icon w-8 h-8 md:w-9 md:h-9 ml-1"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -84,7 +70,6 @@ const ReactionVideosSection: React.FC<ReactionVideosSectionProps> = ({ videos })
         </div>
       </div>
 
-      {/* Modal fullscreen */}
       {selectedVideo && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4"

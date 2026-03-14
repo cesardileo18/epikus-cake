@@ -7,19 +7,15 @@ const Footer: React.FC = () => {
   const year = new Date().getFullYear();
 
   const nav = [
-    { label: "Inicio",          href: "/",        icon: "🏠" },
-    { label: "Productos",       href: "/products", icon: "🍰" },
-    { label: "Sobre Nosotros",  href: "/about",    icon: "💝" },
-    { label: "Contacto",        href: "/contact",  icon: "📞" },
+    { label: "Inicio",         href: "/",        icon: "🏠" },
+    { label: "Productos",      href: "/products", icon: "🍰" },
+    { label: "Sobre Nosotros", href: "/about",    icon: "💝" },
+    { label: "Contacto",       href: "/contact",  icon: "📞" },
   ];
 
   return (
     <footer>
-      <div style={{
-        background: 'var(--color-bg-footer)',
-        borderTop: '2px solid var(--color-footer-divider)',
-        boxShadow: 'var(--color-footer-shadow)',
-      }}>
+      <div className="footer-wrapper">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 py-10 md:grid-cols-3">
 
@@ -35,30 +31,27 @@ const Footer: React.FC = () => {
                       loading="lazy"
                     />
                   </div>
-                  <span className="font-['Great_Vibes'] leading-none text-3xl" style={{ color: 'var(--color-text-primary)' }}>
+                  <span className="footer-brand-text leading-none text-3xl">
                     Epikus Cake
                   </span>
                 </div>
               </Link>
 
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="footer-text text-sm">
                 Pastelería artesanal en CABA · Ingredientes premium y pedidos personalizados.
               </p>
 
               <div className="flex items-center gap-3 pt-1">
-                {/* Instagram */}
                 <a
                   href="https://www.instagram.com/epikuscake?igsh=MXMxOGl4OWtqZ2h3bA=="
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram de Epikus Cake"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow hover:shadow-md transition hover:-translate-y-0.5 focus:outline-none focus:ring-2"
-                  style={{ background: 'linear-gradient(to top right, #f9ce34, #ee2a7b, #6228d7)'}}
+                  className="footer-instagram-btn inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow hover:shadow-md transition hover:-translate-y-0.5 focus:outline-none focus:ring-2"
                 >
                   <FaInstagram className="h-7 w-7" />
                 </a>
 
-                {/* PedidosYa */}
                 <a
                   href="https://www.pedidosya.com.ar/restaurantes/buenos-aires/epikuscake-3a2a8180-a027-4a0d-a981-04efdf2d04c4-menu?origin=shop_list"
                   target="_blank"
@@ -78,7 +71,7 @@ const Footer: React.FC = () => {
 
             {/* Navegación */}
             <nav className="md:mx-auto">
-              <h3 className="mb-3 text-sm font-semibold tracking-wide" style={{ color: 'var(--color-text-muted)' }}>
+              <h3 className="footer-text mb-3 text-sm font-semibold tracking-wide">
                 Navegación
               </h3>
               <ul className="space-y-2">
@@ -86,10 +79,7 @@ const Footer: React.FC = () => {
                   <li key={item.href}>
                     <Link
                       to={item.href}
-                      className="nav-link text-sm inline-flex items-center gap-1"
-                      style={{ color: 'var(--color-text-muted)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-brand)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                      className="footer-link text-sm inline-flex items-center gap-1"
                     >
                       <span aria-hidden>{item.icon}</span>
                       {item.label}
@@ -101,25 +91,21 @@ const Footer: React.FC = () => {
 
             {/* Legal */}
             <div className="md:ml-auto">
-              <h3 className="mb-3 text-sm font-semibold tracking-wide" style={{ color: 'var(--color-text-muted)' }}>
+              <h3 className="footer-text mb-3 text-sm font-semibold tracking-wide">
                 Información
               </h3>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/privacidad" className="text-sm transition" style={{ color: 'var(--color-text-muted)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-brand)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}>
+                  <Link to="/privacidad" className="footer-link text-sm transition">
                     Política de Privacidad
                   </Link>
                 </li>
                 <li>
-                  <Link to="/terminos" className="text-sm transition" style={{ color: 'var(--color-text-muted)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-brand)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}>
+                  <Link to="/terminos" className="footer-link text-sm transition">
                     Términos y Condiciones
                   </Link>
                 </li>
-                <li className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                <li className="footer-text text-sm">
                   CABA, Buenos Aires · Argentina
                 </li>
               </ul>
@@ -127,10 +113,10 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Copyright */}
-          <div className="border-t py-4 text-center" style={{ borderColor: 'var(--color-footer-divider, rgba(232,50,124,0.25))' }}>
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          <div className="footer-divider border-t py-4 text-center">
+            <p className="footer-text text-xs">
               © {year}{' '}
-              <span className="font-medium" style={{ color: 'var(--color-brand)' }}>Epikus Cake</span>.
+              <span className="footer-brand-name font-medium">Epikus Cake</span>.
               {' '}Todos los derechos reservados.
             </p>
           </div>

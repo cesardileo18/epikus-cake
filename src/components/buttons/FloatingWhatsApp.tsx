@@ -13,11 +13,7 @@ export default function FloatingWhatsApp() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Abrir WhatsApp"
-      className="fixed bottom-9 md:bottom-5 right-5 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full text-white shadow-xl transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
-      style={{
-        backgroundColor: 'var(--color-success)',
-        animation: 'epikus-pop 800ms ease 2.2s both',
-      }}
+      className="floating-wa fixed bottom-9 md:bottom-5 right-5 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full text-white shadow-xl transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300"
     >
       <FaWhatsapp className="h-7 w-7" aria-hidden="true" />
     </a>

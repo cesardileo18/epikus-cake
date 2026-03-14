@@ -14,19 +14,9 @@ export function InstagramSection({ instagram }: InstagramSectionProps) {
       <div className="max-w-7xl mx-auto px-6">
         <div className="relative rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up">
 
-          {/* Fondo gradiente — usa tokens para que en dark mode sea más oscuro */}
-          <div
-            className="absolute inset-0 animate-gradient-shift"
-            style={{ background: 'var(--gradient-instagram, var(--gradient-brand))' }}
-          />
+          <div className="instagram-bg absolute inset-0 animate-gradient-shift" />
 
-          {/* Patrón de puntos */}
-          <div
-            className="absolute inset-0 opacity-20 animate-slide"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}
-          />
+          <div className="instagram-pattern absolute inset-0 animate-slide" />
 
           <div className="relative grid md:grid-cols-2 gap-8 md:gap-12 p-8 md:p-12 items-center">
             <div className="text-center md:text-left space-y-5">
@@ -36,15 +26,7 @@ export function InstagramSection({ instagram }: InstagramSectionProps) {
 
               <div className="inline-flex items-center gap-3 bg-white/95 backdrop-blur rounded-full px-6 py-3 shadow-2xl hover:scale-105 transition-transform duration-300 animate-wiggle">
                 <span className="text-2xl animate-spin-slow">📸</span>
-                <span
-                  className="text-xl md:text-2xl font-black"
-                  style={{
-                    background: 'var(--gradient-brand)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
+                <span className="instagram-handle text-xl md:text-2xl font-black">
                   @{instagram.handle}
                 </span>
               </div>
@@ -54,11 +36,7 @@ export function InstagramSection({ instagram }: InstagramSectionProps) {
                   href={instagram.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 font-black px-8 py-4 rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300"
-                  style={{
-                    background: 'var(--color-bg-card)',
-                    color: 'var(--color-brand)',
-                  }}
+                  className="instagram-cta-btn inline-flex items-center gap-2 font-black px-8 py-4 rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300"
                 >
                   <span>{instagram.cta_label}</span>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,13 +54,7 @@ export function InstagramSection({ instagram }: InstagramSectionProps) {
               <div className="relative animate-float">
                 <div className="absolute -inset-6 bg-white/30 blur-3xl rounded-3xl animate-pulse" />
 
-                <div
-                  className="relative rounded-3xl p-6 shadow-2xl hover:scale-110 hover:rotate-3 transition-all duration-500"
-                  style={{
-                    background: 'var(--color-bg-card)',
-                    border: '4px solid var(--color-border)',
-                  }}
-                >
+                <div className="instagram-qr-card relative rounded-3xl p-6 shadow-2xl hover:scale-110 hover:rotate-3 transition-all duration-500">
                   <img
                     src={instagram.qr_src}
                     alt={`QR Instagram @${instagram.handle}`}
@@ -90,10 +62,7 @@ export function InstagramSection({ instagram }: InstagramSectionProps) {
                     loading="lazy"
                     decoding="async"
                   />
-                  <div
-                    className="absolute -top-4 -right-4 text-white px-4 py-2 rounded-full text-sm font-black shadow-2xl animate-bounce-subtle"
-                    style={{ background: 'var(--gradient-brand)' }}
-                  >
+                  <div className="instagram-qr-badge absolute -top-4 -right-4 text-white px-4 py-2 rounded-full text-sm font-black shadow-2xl animate-bounce-subtle">
                     ¡Escaneame!
                   </div>
                 </div>
