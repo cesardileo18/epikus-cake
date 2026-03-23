@@ -162,7 +162,7 @@ const SalesDashboard = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extralight text-gray-900 mb-2">
-            Dashboard de <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">Ventas</span>
+            Dashboard de <span className="font-bold text-brand-gradient">Ventas</span>
           </h1>
           <p className="text-gray-600">Estadísticas y análisis de ventas</p>
           <div className="w-20 h-1 bg-gradient-to-r from-pink-500 to-rose-400 mx-auto mt-4"></div>

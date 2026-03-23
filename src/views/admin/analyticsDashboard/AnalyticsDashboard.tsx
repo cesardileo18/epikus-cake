@@ -166,12 +166,12 @@ const AnalyticsDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
-      <div className="max-w-7xl mx-auto px-4 pb-10 p-22">
+      <div className="max-w-7xl mx-auto px-4 pb-10 pt-22">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-extralight text-gray-900 mb-2">
             Analíticas{" "}
-            <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+            <span className="font-bold text-brand-gradient">
               Epikus Cake
             </span>
           </h1>

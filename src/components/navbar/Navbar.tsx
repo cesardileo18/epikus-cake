@@ -48,9 +48,9 @@ const Navbar: React.FC = () => {
   ];
 
   // Mobile: Mayoristas siempre visible (independiente de si hay sesión)
-  const mobileOnlyItems: MenuItem[] = [
-    { name: 'Mayoristas', to: '/wholesale', icon: '🏢' },
-  ];
+const mobileOnlyItems: MenuItem[] = user
+  ? [{ name: 'Mayoristas', to: '/wholesale', icon: '🏢' }]
+  : [];
 
   const adminItems: MenuItem[] = role === 'admin' ? [
     { name: 'Tablero Global',     to: '/admin/dashboard',       icon: '📊' },

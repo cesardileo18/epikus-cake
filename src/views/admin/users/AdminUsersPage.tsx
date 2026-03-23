@@ -16,7 +16,6 @@ const AdminUsersPage: React.FC = () => {
     const usersUnsub = subscribeToUsers(
       (usersData) => {
         setUsers(usersData);
-        console.log('👥 USUARIOS TRAÍDOS:', usersData.map(u => ({ id: u.id, email: u.email })));
       },
       () => setError("Error al cargar usuarios")
     );
@@ -25,7 +24,6 @@ const AdminUsersPage: React.FC = () => {
       (ordersData: Order[]) => {
         setOrders(ordersData);
         setLoading(false);
-        console.log('🔥 PEDIDOS TRAÍDOS:', ordersData.map((o: Order) => ({ id: o.id, userId: o.userId, total: o.total })));
       },
       () => {
         setError("Error al cargar pedidos");
@@ -44,19 +42,14 @@ const AdminUsersPage: React.FC = () => {
 
     for (const order of orders) {
       const uid = order.userId;
-      console.log('🔗 Intentando matchear pedido:', order.id, 'con userId:', uid);
       if (!uid) continue;
       if (!ordersByUser[uid]) ordersByUser[uid] = [];
       ordersByUser[uid].push(order);
     }
 
-    console.log('📊 Orders agrupados por usuario:', ordersByUser);
-
     return users.map((u) => {
       const userOrders = ordersByUser[u.id] ?? [];
       const totalSpent = userOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-      
-      console.log('👤 Usuario:', u.id, 'tiene', userOrders.length, 'pedidos');
 
       return {
         ...u,
@@ -86,7 +79,7 @@ const AdminUsersPage: React.FC = () => {
           <div className="mb-4">
             <h1 className="text-2xl sm:text-3xl font-extralight text-gray-900">
               Usuarios{" "}
-              <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">
+              <span className="font-bold text-brand-gradient">
                 Epikus Cake
               </span>
             </h1>
