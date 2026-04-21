@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 import type { CustomWorkItem } from '@/interfaces/CustomWorks';
 
 interface CustomWorksSectionProps {
@@ -8,6 +12,55 @@ interface CustomWorksSectionProps {
 
 const CustomWorksSection: React.FC<CustomWorksSectionProps> = ({ items }) => {
   const [selected, setSelected] = useState<CustomWorkItem | null>(null);
+
+  const renderCard = (item: CustomWorkItem, index: number) => (
+    <button
+      key={item.id}
+      onClick={() => setSelected(item)}
+      className="custom-works-card group relative rounded-2xl p-1 transform hover:-translate-y-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 w-full"
+      style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.05}s both` } as React.CSSProperties}
+    >
+      <div className="custom-works-card-inner relative aspect-square rounded-xl overflow-hidden shadow-inner">
+        <img
+          src={item.src}
+          alt={item.alt ?? 'Trabajo personalizado Epikus Cake'}
+          loading="lazy"
+          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-tr from-pink-500/20 via-transparent to-rose-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        <div className="absolute inset-0 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="relative">
+            <div className="absolute inset-0 w-16 h-16 bg-pink-400/30 rounded-full animate-ping" />
+            <div className="relative w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-2xl transform scale-90 group-hover:scale-100 transition-transform duration-300">
+              <svg className="custom-works-zoom-icon w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute top-2 right-2 md:hidden">
+          <div className="w-8 h-8 bg-white/95 rounded-full flex items-center justify-center shadow-lg">
+            <svg className="custom-works-zoom-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+            </svg>
+          </div>
+        </div>
+
+        <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </div>
+
+      <div className="custom-works-card absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-50 blur-xl -z-10 transition-opacity duration-300" />
+    </button>
+  );
+
+  const pairs: CustomWorkItem[][] = [];
+  for (let i = 0; i < items.length; i += 2) {
+    pairs.push(items.slice(i, i + 2));
+  }
 
   return (
     <section className="custom-works-section relative py-5 overflow-hidden">
@@ -23,50 +76,28 @@ const CustomWorksSection: React.FC<CustomWorksSectionProps> = ({ items }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {items.map((item, index) => (
-            <button
-              key={item.id}
-              onClick={() => setSelected(item)}
-              className="custom-works-card group relative rounded-2xl p-1 transform hover:-translate-y-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-              style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.05}s both` } as React.CSSProperties}
-            >
-              <div className="custom-works-card-inner relative aspect-square rounded-xl overflow-hidden shadow-inner">
-                <img
-                  src={item.src}
-                  alt={item.alt ?? 'Trabajo personalizado Epikus Cake'}
-                  loading="lazy"
-                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-tr from-pink-500/20 via-transparent to-rose-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                <div className="absolute inset-0 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <div className="relative">
-                    <div className="absolute inset-0 w-16 h-16 bg-pink-400/30 rounded-full animate-ping" />
-                    <div className="relative w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-2xl transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                      <svg className="custom-works-zoom-icon w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
-                      </svg>
-                    </div>
-                  </div>
+        {/* Mobile: carrusel de a 2 cards apiladas */}
+        <div className="md:hidden">
+          <Swiper
+            modules={[Pagination]}
+            pagination={{ clickable: true }}
+            spaceBetween={16}
+            slidesPerView={1}
+            className="custom-works-swiper"
+          >
+            {pairs.map((pair, pairIdx) => (
+              <SwiperSlide key={pairIdx}>
+                <div className="flex flex-col gap-3 max-w-[300px] mx-auto">
+                  {pair.map((item, i) => renderCard(item, pairIdx * 2 + i))}
                 </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
 
-                <div className="absolute top-2 right-2 md:hidden">
-                  <div className="w-8 h-8 bg-white/95 rounded-full flex items-center justify-center shadow-lg">
-                    <svg className="custom-works-zoom-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-
-              <div className="custom-works-card absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-50 blur-xl -z-10 transition-opacity duration-300" />
-            </button>
-          ))}
+        {/* Desktop/Tablet: grid */}
+        <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {items.map((item, index) => renderCard(item, index))}
         </div>
 
         <div className="mt-5 text-center">
@@ -119,6 +150,24 @@ const CustomWorksSection: React.FC<CustomWorksSectionProps> = ({ items }) => {
         @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scaleIn  { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .custom-works-swiper {
+          padding-bottom: 2.5rem;
+        }
+        .custom-works-swiper .swiper-pagination {
+          bottom: 0 !important;
+        }
+        .custom-works-swiper .swiper-pagination-bullet {
+          background: var(--color-brand-light);
+          opacity: 0.5;
+          width: 10px;
+          height: 10px;
+        }
+        .custom-works-swiper .swiper-pagination-bullet-active {
+          background: var(--color-brand);
+          opacity: 1;
+          transform: scale(1.2);
+        }
       `}</style>
     </section>
   );

@@ -357,13 +357,6 @@ html.dark .badge-category {
   background: rgba(0, 0, 0, 0.75);
 }
 
-/* Navbar dark overrides */
-/* Fondo base cuando NO scrolleado */
-html.dark nav.fixed {
-  background: rgba(13, 13, 18, 0.85);
-  backdrop-filter: blur(8px);
-}
-
 /* Inputs inline (Contact, Login) en dark mode */
 html.dark input,
 html.dark textarea,

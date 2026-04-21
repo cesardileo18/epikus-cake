@@ -1,4 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 import type { ReactionVideosSectionProps } from '@/interfaces/customVideos';
 
 const ReactionVideosSection: React.FC<ReactionVideosSectionProps> = ({ videos }) => {
@@ -32,15 +36,15 @@ const ReactionVideosSection: React.FC<ReactionVideosSectionProps> = ({ videos })
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {videos.map((video, index) => (
+        {(() => {
+          const renderVideo = (video: typeof videos[number], index: number, heightClass: string) => (
             <button
               key={video.id}
               onClick={() => handleOpenVideo(video.src)}
-              className="reaction-card group relative rounded-3xl p-[2px] shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2"
+              className="reaction-card group relative rounded-3xl p-[2px] shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 w-full"
             >
               <div className="reaction-card-inner rounded-[22px] overflow-hidden">
-                <div className="relative h-[420px] sm:h-[380px] md:h-[340px] lg:h-[320px] bg-gradient-to-br from-gray-900 to-gray-800">
+                <div className={`relative ${heightClass} bg-gradient-to-br from-gray-900 to-gray-800`}>
                   <video
                     ref={el => (videoRefs.current[index] = el)}
                     src={video.src}
@@ -66,9 +70,57 @@ const ReactionVideosSection: React.FC<ReactionVideosSectionProps> = ({ videos })
                 </div>
               </div>
             </button>
-          ))}
-        </div>
+          );
+
+          return (
+            <>
+              {/* Mobile: carrusel 1 video por slide (formato reel) */}
+              <div className="sm:hidden">
+                <Swiper
+                  modules={[Pagination]}
+                  pagination={{ clickable: true }}
+                  spaceBetween={16}
+                  slidesPerView={1}
+                  className="reaction-swiper"
+                >
+                  {videos.map((video, index) => (
+                    <SwiperSlide key={video.id}>
+                      <div className="max-w-[280px] mx-auto">
+                        {renderVideo(video, index, 'h-[460px]')}
+                      </div>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
+
+              {/* Tablet/Desktop: grid */}
+              <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                {videos.map((video, index) => renderVideo(video, index, 'h-[380px] md:h-[340px] lg:h-[320px]'))}
+              </div>
+            </>
+          );
+        })()}
       </div>
+
+      <style>{`
+        .reaction-swiper {
+          padding-bottom: 2.5rem;
+        }
+        .reaction-swiper .swiper-pagination {
+          bottom: 0 !important;
+        }
+        .reaction-swiper .swiper-pagination-bullet {
+          background: var(--color-brand-light);
+          opacity: 0.5;
+          width: 10px;
+          height: 10px;
+        }
+        .reaction-swiper .swiper-pagination-bullet-active {
+          background: var(--color-brand);
+          opacity: 1;
+          transform: scale(1.2);
+        }
+      `}</style>
 
       {selectedVideo && (
         <div
