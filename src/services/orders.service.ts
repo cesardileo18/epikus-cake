@@ -135,7 +135,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 
 /**
  * Suscripción en tiempo real a todos los pedidos (admin).
- * Usado en: OrdersAdmin, SalesDashboard, AdminUsersPage
+ * Usado en: AdminOrders, AdminSales, AdminUsers
  */
 export function subscribeToOrders(
   onData: (orders: Order[]) => void,
@@ -159,7 +159,7 @@ export function subscribeToOrders(
 
 /**
  * Acredita seña/pago y mueve el pedido a en_proceso.
- * Usado en: OrdersAdmin
+ * Usado en: AdminOrders
  */
 export async function acreditarPago(orderId: string): Promise<void> {
   await updateDoc(doc(db, 'pedidos', orderId), {
@@ -171,7 +171,7 @@ export async function acreditarPago(orderId: string): Promise<void> {
 
 /**
  * Marca un pedido como entregado.
- * Usado en: OrdersAdmin
+ * Usado en: AdminOrders
  */
 export async function marcarEntregado(orderId: string): Promise<void> {
   await updateDoc(doc(db, 'pedidos', orderId), {
@@ -183,7 +183,7 @@ export async function marcarEntregado(orderId: string): Promise<void> {
 
 /**
  * Cancela un pedido sin reponer stock.
- * Usado en: OrdersAdmin
+ * Usado en: AdminOrders
  */
 export async function cancelarPedido(orderId: string): Promise<void> {
   await updateDoc(doc(db, 'pedidos', orderId), {
@@ -194,7 +194,7 @@ export async function cancelarPedido(orderId: string): Promise<void> {
 
 /**
  * Cancela un pedido Y repone el stock automáticamente.
- * Usado en: OrdersAdmin
+ * Usado en: AdminOrders
  */
 export async function cancelarYReponerStock(order: Order): Promise<void> {
   const batch = writeBatch(db);
@@ -233,7 +233,7 @@ export async function cancelarYReponerStock(order: Order): Promise<void> {
 
 /**
  * Elimina un pedido y repone el stock.
- * Usado en: OrdersAdmin
+ * Usado en: AdminOrders
  */
 export async function eliminarPedidoYReponerStock(order: Order): Promise<void> {
   const batch = writeBatch(db);

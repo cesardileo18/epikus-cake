@@ -1,4 +1,4 @@
-// src/views/admin/sells/OrdersAdmin.tsx
+// src/views/admin/orders/AdminOrders.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -24,7 +24,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { sendEmail } from '@/config/emailjs';
-import { showToast } from '@/components/Toast/ToastProvider';
+import { showToast } from '@/components/feedback/ToastProvider';
 
 // OrderStatus, OrderItem y Order ahora vienen de @/services/orders.service
 
@@ -189,7 +189,7 @@ const cancelarYReponer = async (o: Order) => {
   }
 };
 
-const OrdersAdmin: React.FC = () => {
+const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -567,4 +567,4 @@ const OrdersAdmin: React.FC = () => {
   );
 };
 
-export default OrdersAdmin;
+export default AdminOrders;

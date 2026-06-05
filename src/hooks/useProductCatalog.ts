@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCart } from '@/context/CartProvider';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
 import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
-import { showToast } from '@/components/Toast/ToastProvider';
+import { showToast } from '@/components/feedback/ToastProvider';
 
 /**
  * Centraliza toda la lógica de negocio del catálogo de productos:

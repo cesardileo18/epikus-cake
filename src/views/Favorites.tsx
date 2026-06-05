@@ -6,7 +6,7 @@ import useProductsLiveQuery, {
   type ProductWithId,
 } from "@/hooks/useProductsLiveQuery";
 import { useCart } from "@/context/CartProvider";
-import ProductGrid from "@/components/productos/ProductGrid";
+import ProductGrid from "@/components/product/ProductGrid";
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();

@@ -4,9 +4,9 @@ import Navbar from '@/components/navbar/Navbar';
 import CartDrawer from '@/components/cart/CartDrawer';
 import ScrollToTopButton from '@/components/buttons/ScrollToTopButton';
 import Footer from '@/components/footer/Footer';
-import FloatingWhatsApp from '@/components/buttons/FloatingWhatsApp';
+import WhatsAppFloat from '@/components/whatsapp/WhatsAppFloat';
 import { useStoreStatus } from '@/context/StoreStatusContext';
-import { showToast } from '@/components/Toast/ToastProvider';
+import { showToast } from '@/components/feedback/ToastProvider';
 
 const PublicLayout: React.FC = () => {
   const { isStoreOpen, closedMessage } = useStoreStatus();
@@ -33,7 +33,7 @@ const PublicLayout: React.FC = () => {
       <Footer />
       <CartDrawer />
       <ScrollToTopButton />
-      <FloatingWhatsApp />
+      <WhatsAppFloat />
     </div>
   );
 };

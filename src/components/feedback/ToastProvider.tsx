@@ -1,4 +1,4 @@
-// src/components/common/ToastProvider.tsx
+// src/components/feedback/ToastProvider.tsx
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';

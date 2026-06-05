@@ -5,7 +5,7 @@ import UserOrdersPanel from "@/components/admin/UserOrdersPanel";
 import type { Order, User } from "@/interfaces/admin/Users";
 import type { UserWithStats } from "@/interfaces/admin/UserWithStats";
 
-const AdminUsersPage: React.FC = () => {
+const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -186,4 +186,4 @@ const AdminUsersPage: React.FC = () => {
   );
 };
 
-export default AdminUsersPage;
+export default AdminUsers;

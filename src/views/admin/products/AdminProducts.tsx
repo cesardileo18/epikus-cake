@@ -1,4 +1,4 @@
-// src/views/admin/products/ProductsList.tsx
+// src/views/admin/products/AdminProducts.tsx
 import { useState, useEffect, useMemo } from "react";
 import {
   getAllProducts,
@@ -7,12 +7,12 @@ import {
   deleteProduct,
   type ProductWithId,
 } from "@/services/products.service";
-import { showToast } from "@/components/Toast/ToastProvider";
+import { showToast } from "@/components/feedback/ToastProvider";
 import { MetricCard, MetricCardMobile, Chip, Badge, IconBtn, Field } from "@/components/admin/ui";
 
 type FilterKey = "all" | "active" | "low" | "out";
 
-const ProductsList = () => {
+const AdminProducts = () => {
   const [productos, setProductos] = useState<ProductWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -774,4 +774,4 @@ const ProductsList = () => {
   );
 };
 
-export default ProductsList;
+export default AdminProducts;

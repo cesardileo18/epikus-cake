@@ -483,7 +483,7 @@ html.dark .bg-gray-200 {
   color: #000000;
 }
 
-/* ── FloatingWhatsApp ── */
+/* ── WhatsAppFloat ── */
 .floating-wa {
   background-color: var(--color-success);
   animation: epikus-pop 800ms ease 2.2s both;
@@ -858,7 +858,7 @@ html.dark .bg-gradient-to-r.from-purple-50.to-indigo-50 {
   background: rgba(99,102,241,0.06) !important;
 }
 
-/* Filters y búsqueda en ProductsList */
+/* Filters y búsqueda en AdminProducts */
 html.dark .bg-white\/80.backdrop-blur.rounded-2xl {
   background-color: var(--color-bg-card) !important;
 }

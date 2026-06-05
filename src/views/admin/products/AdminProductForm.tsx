@@ -1,10 +1,10 @@
-// src/views/admin/products/AddProduct.tsx
+// src/views/admin/products/AdminProductForm.tsx
 import { useState } from "react";
 import { createProduct } from "@/services/products.service";
 import type { Product } from "@/interfaces/Product";
-import { showToast } from "@/components/Toast/ToastProvider";
+import { showToast } from "@/components/feedback/ToastProvider";
 
-const AddProduct = () => {
+const AdminProductForm = () => {
   const [form, setForm] = useState<Product>({
     nombre: "",
     descripcion: "",
@@ -569,4 +569,4 @@ const AddProduct = () => {
   );
 };
 
-export default AddProduct;
+export default AdminProductForm;

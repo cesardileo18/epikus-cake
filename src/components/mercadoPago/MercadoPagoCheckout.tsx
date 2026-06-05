@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { showToast } from "../Toast/ToastProvider";
+import { showToast } from "@/components/feedback/ToastProvider";
 import type { MercadoPagoCheckoutProps } from "@/interfaces/mercadoPago/mercadoPago";
 import { httpsCallable } from "firebase/functions";
 import { auth, functions } from "@/config/firebase";

@@ -12,7 +12,7 @@ import type { User } from '@/interfaces/admin/Users';
 
 /**
  * Suscripción en tiempo real a la colección de usuarios.
- * Usado en: AdminUsersPage
+ * Usado en: AdminUsers
  */
 export function subscribeToUsers(
   onData: (users: User[]) => void,
@@ -42,10 +42,10 @@ export function subscribeToUsers(
 }
 
 /**
- * Suscripción en tiempo real a pedidos ordenados para AdminUsersPage.
+ * Suscripción en tiempo real a pedidos ordenados para AdminUsers.
  * Retorna unsub. Reutiliza subscribeToOrders pero por separación de dominios
  * se mantiene aquí el query con orderBy específico.
- * Usado en: AdminUsersPage
+ * Usado en: AdminUsers
  */
 export function subscribeToOrdersForUsers(
   onData: (orders: any[]) => void,

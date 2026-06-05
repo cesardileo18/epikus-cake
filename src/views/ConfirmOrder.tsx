@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import ReCaptchaInvisible from '@/components/security/ReCaptchaInvisible';
 import { sendEmail } from '@/config/emailjs';
-import { showToast } from '@/components/Toast/ToastProvider';
+import { showToast } from '@/components/feedback/ToastProvider';
 import { httpsCallable } from 'firebase/functions';
 import ConsentimientoTyC from '@/components/buttons/ConsentimientoTyC';
 import transferenciaJson from "@/content/TransferenciaData.json"

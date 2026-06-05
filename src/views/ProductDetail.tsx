@@ -4,7 +4,7 @@ import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
 import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
-import { showToast } from '@/components/Toast/ToastProvider';
+import { showToast } from '@/components/feedback/ToastProvider';
 import { useStoreStatus } from "@/context/StoreStatusContext";
 
 import contentJson from '@/content/ProductDetailContent.json';

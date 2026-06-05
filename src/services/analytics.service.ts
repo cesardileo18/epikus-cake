@@ -13,7 +13,7 @@ export interface Visit {
 
 /**
  * Obtiene todas las visitas registradas (una vez).
- * Usado en: AnalyticsDashboard
+ * Usado en: AdminMetrics
  */
 export async function getAllVisits(): Promise<Visit[]> {
   const snap = await getDocs(collection(db, 'visits'));

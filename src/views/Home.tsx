@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import useFeaturedProducts from '@/hooks/useFeaturedProducts';
-import ProductGrid from '@/components/productos/ProductGrid';
+import ProductGrid from '@/components/product/ProductGrid';
 import contentJson from '@/content/homeContent.json';
 import type { HomeTextContent } from '@/interfaces/HomeContent';
 import HeroCarousel from '@/components/home/HeroCarousel';

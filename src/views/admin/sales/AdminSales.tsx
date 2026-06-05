@@ -21,7 +21,7 @@ interface Order {
   };
 }
 
-const SalesDashboard = () => {
+const AdminSales = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -365,4 +365,4 @@ const SalesDashboard = () => {
   );
 };
 
-export default SalesDashboard;
+export default AdminSales;

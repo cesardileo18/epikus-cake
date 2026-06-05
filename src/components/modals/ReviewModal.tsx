@@ -3,7 +3,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { addReview } from "@/services/reviews";
 import { useAuth } from "@/context/AuthProvider";
-import { showToast } from "@/components/Toast/ToastProvider";
+import { showToast } from "@/components/feedback/ToastProvider";
 
 interface ReviewModalProps {
   isOpen: boolean;

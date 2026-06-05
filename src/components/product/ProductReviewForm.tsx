@@ -1,4 +1,4 @@
-// src/components/productos/ProductReviewForm.tsx
+// src/components/product/ProductReviewForm.tsx
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { addReview } from "@/services/reviews";

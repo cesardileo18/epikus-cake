@@ -1,10 +1,10 @@
-// src/components/buttons/FloatingWhatsApp.tsx
+// src/components/whatsapp/WhatsAppFloat.tsx
 import { FaWhatsapp } from 'react-icons/fa';
 
 const WA_PHONE = import.meta.env.VITE_WA_PHONE;
 const DEFAULT_WA_MSG = '¡Hola! Vengo de tu página web y quiero hacer una consulta.';
 
-export default function FloatingWhatsApp() {
+export default function WhatsAppFloat() {
   const url = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(DEFAULT_WA_MSG)}`;
 
   return (

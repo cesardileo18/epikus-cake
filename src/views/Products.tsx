@@ -1,6 +1,6 @@
 // src/views/Products.tsx
 import React from 'react';
-import ProductGrid from '@/components/productos/ProductGrid';
+import ProductGrid from '@/components/product/ProductGrid';
 import productsContent from '@/content/productsContent.json';
 import type { ProductsTextContent } from '@/interfaces/ProductsContent';
 import { useProductCatalog } from '@/hooks/useProductCatalog';

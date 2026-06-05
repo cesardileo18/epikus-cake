@@ -20,7 +20,7 @@ export type ProductWithId = Product & { id: string };
 
 /**
  * Obtiene todos los productos UNA vez (sin tiempo real).
- * Usado en: Dashboard, AddProduct
+ * Usado en: Dashboard, AdminProductForm
  */
 export async function getAllProducts(): Promise<ProductWithId[]> {
   const snap = await getDocs(collection(db, 'productos'));
@@ -53,7 +53,7 @@ export function subscribeToProducts(
 
 /**
  * Crea un nuevo producto en Firestore.
- * Usado en: AddProduct
+ * Usado en: AdminProductForm
  */
 export async function createProduct(data: Omit<Product, 'id'>): Promise<string> {
   const ref = await addDoc(collection(db, 'productos'), {
@@ -65,7 +65,7 @@ export async function createProduct(data: Omit<Product, 'id'>): Promise<string> 
 
 /**
  * Actualiza un producto existente.
- * Usado en: ProductsList (modal edición)
+ * Usado en: AdminProducts (modal edición)
  */
 export async function updateProduct(
   id: string,
@@ -76,7 +76,7 @@ export async function updateProduct(
 
 /**
  * Activa o desactiva un producto.
- * Usado en: ProductsList (toggle activo)
+ * Usado en: AdminProducts (toggle activo)
  */
 export async function toggleProductActive(
   id: string,
@@ -87,7 +87,7 @@ export async function toggleProductActive(
 
 /**
  * Elimina un producto de Firestore.
- * Usado en: ProductsList
+ * Usado en: AdminProducts
  */
 export async function deleteProduct(id: string): Promise<void> {
   await deleteDoc(doc(db, 'productos', id));

@@ -36,7 +36,7 @@ interface Stats {
   avgScreenSize: { width: number; height: number };
 }
 
-const AnalyticsDashboard: React.FC = () => {
+const AdminMetrics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({
     totalVisits: 0,
@@ -352,4 +352,4 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient }) => 
   </div>
 );
 
-export default AnalyticsDashboard;
+export default AdminMetrics;

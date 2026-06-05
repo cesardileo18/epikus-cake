@@ -7,8 +7,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 const Home = lazy(() => import('@/views/Home'));
 const Products = lazy(() => import('@/views/Products'));
 const Dashboard = lazy(() => import('@/views/admin/dashboard/Dashboard'));
-const AddProduct = lazy(() => import('@/views/admin/products/AddProduct'));
-const ProductsList = lazy(() => import('@/views/admin/products/ProductsList'));
+const AdminProductForm = lazy(() => import('@/views/admin/products/AdminProductForm'));
+const AdminProducts = lazy(() => import('@/views/admin/products/AdminProducts'));
 const Login = lazy(() => import('@/views/Login'));
 const AuthCallback = lazy(() => import('@/views/AuthCallback'));
 const Checkout = lazy(() => import('@/views/Checkout'));
@@ -21,15 +21,15 @@ const TermsAndConditions = lazy(() => import('@/views/TermsAndConditions'));
 const Profile = lazy(() => import('@/views/Profile'));
 const MyOrders = lazy(() => import('@/views/MyOrders'));
 const OrderSuccess = lazy(() => import('@/views/OrderSuccess'));
-const OrdersAdmin = lazy(() => import('@/views/admin/sells/OrdersAdmin'));
+const AdminOrders = lazy(() => import('@/views/admin/orders/AdminOrders'));
 const PaymentSuccess = lazy(() => import('@/views/payment/PaymentSuccess'));
-const AdminUsersPage = lazy(() => import('@/views/admin/users/AdminUsersPage'));
-const AnalyticsDashboard = lazy(() => import('@/views/admin/analyticsDashboard/AnalyticsDashboard'));
-const SalesDashboard = lazy(() => import('@/views/admin/sells/SalesDashboard'));
+const AdminUsers = lazy(() => import('@/views/admin/users/AdminUsers'));
+const AdminMetrics = lazy(() => import('@/views/admin/metrics/AdminMetrics'));
+const AdminSales = lazy(() => import('@/views/admin/sales/AdminSales'));
 const Favorites = lazy(() => import('@/views/Favorites'));
 const ProductReviewsPage = lazy(() => import('@/views/ProductReviewsPage'));
 const MyReviewsPage = lazy(() => import('@/views/MyReviewsPage'));
-const OrderCalendar = lazy(() => import('@/views/admin/sells/OrdersCalendar'));
+const OrdersCalendar = lazy(() => import('@/views/admin/orders/OrdersCalendar'));
 const WholesalePage = lazy(() => import('@/views/WholesalePage'));
 
 type Role = 'admin' | 'customer' | 'viewer';
@@ -92,13 +92,13 @@ const AppRoutes: React.FC = () => {
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={<Dashboard />} />
-            <Route path="/admin/products" element={<ProductsList />} />
-            <Route path="/admin/products/add" element={<AddProduct />} />
-            <Route path="/admin/sells" element={<OrdersAdmin />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
-            <Route path="/admin/sales-dashboard" element={<SalesDashboard />} />
-            <Route path="/admin/sells/calendar" element={<OrderCalendar />} />
+            <Route path="/admin/products" element={<AdminProducts />} />
+            <Route path="/admin/products/add" element={<AdminProductForm />} />
+            <Route path="/admin/sells" element={<AdminOrders />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/analytics" element={<AdminMetrics />} />
+            <Route path="/admin/sales-dashboard" element={<AdminSales />} />
+            <Route path="/admin/sells/calendar" element={<OrdersCalendar />} />
             <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Route>

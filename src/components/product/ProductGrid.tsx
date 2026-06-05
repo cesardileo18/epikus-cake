@@ -1,9 +1,9 @@
-// src/components/productos/ProductGrid.tsx
+// src/components/product/ProductGrid.tsx
 import React, { useState } from 'react';
 import type { ProductWithId } from '@/hooks/useFeaturedProducts';
 import { Link, useNavigate } from 'react-router-dom';
 import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { showToast } from '../Toast/ToastProvider';
+import { showToast } from '@/components/feedback/ToastProvider';
 import { useStoreStatus } from "@/context/StoreStatusContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { RatingStars } from '../RatingStars/RatingStars';
