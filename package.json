@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "firebase": "npm run build && firebase deploy --only hosting"
+    "firebase": "npm run build && firebase deploy --only hosting",
+    "seed:wholesale": "node scripts/seedWholesaleProducts.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

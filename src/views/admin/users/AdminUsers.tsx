@@ -1,9 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
+import { Users, X } from "lucide-react";
 import { subscribeToUsers, subscribeToOrdersForUsers } from "@/services/users.service";
 import UsersTable from "@/components/admin/UsersTable";
 import UserOrdersPanel from "@/components/admin/UserOrdersPanel";
 import type { Order, User } from "@/interfaces/user";
 import type { UserWithStats } from "@/interfaces/user";
+import {
+  AdminCard,
+  AdminHeader,
+  AdminLoader,
+  AdminPage,
+  MetricCard,
+} from "@/components/admin/ui";
+
+const formatCurrency = (value: number): string =>
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
 
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -14,9 +29,7 @@ const AdminUsers: React.FC = () => {
 
   useEffect(() => {
     const usersUnsub = subscribeToUsers(
-      (usersData) => {
-        setUsers(usersData);
-      },
+      (usersData) => setUsers(usersData),
       () => setError("Error al cargar usuarios")
     );
 
@@ -66,126 +79,67 @@ const AdminUsers: React.FC = () => {
 
   const selectedUser = usersWithStats.find((u) => u.id === selectedUserId) || null;
 
-  const handleCloseModal = () => {
-    setSelectedUserId(null);
-  };
+  const handleCloseModal = () => setSelectedUserId(null);
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 text-slate-900">
-      {/* Header fijo con padding para el navbar */}
-      <div className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm border-b border-gray-200/70 px-4 py-4">
-        <div className="max-w-7xl mx-auto">
-          {/* Title */}
-          <div className="mb-4">
-            <h1 className="text-2xl sm:text-3xl font-extralight text-gray-900">
-              Usuarios{" "}
-              <span className="font-bold text-brand-gradient">
-                Epikus Cake
-              </span>
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
-              Panel para ver clientes y sus compras.
-            </p>
-          </div>
+    <AdminPage className="flex flex-col gap-5 sm:gap-7">
+      <AdminHeader
+        eyebrow="Comunidad"
+        eyebrowIcon={<Users size={14} />}
+        title="Usuarios"
+        highlight="Epikus Cake"
+        description="Panel para ver clientes y sus compras."
+      />
 
-          {/* Stats - Grid responsive */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <div className="rounded-xl sm:rounded-2xl bg-white/90 shadow-sm px-3 py-2.5 sm:px-4 sm:py-3">
-              <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Usuarios
-              </p>
-              <p className="text-base sm:text-lg font-semibold text-gray-900 mt-0.5">
-                {totalUsers}
-              </p>
-            </div>
-            <div className="rounded-xl sm:rounded-2xl bg-white/90 shadow-sm px-3 py-2.5 sm:px-4 sm:py-3">
-              <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Pedidos
-              </p>
-              <p className="text-base sm:text-lg font-semibold text-gray-900 mt-0.5">
-                {totalOrders}
-              </p>
-            </div>
-            <div className="rounded-xl sm:rounded-2xl bg-white/90 shadow-sm px-3 py-2.5 sm:px-4 sm:py-3">
-              <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Vendido
-              </p>
-              <p className="text-sm sm:text-lg font-semibold text-gray-900 mt-0.5">
-                {new Intl.NumberFormat("es-AR", {
-                  style: "currency",
-                  currency: "ARS",
-                  maximumFractionDigits: 0,
-                }).format(totalRevenue)}
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-3 gap-3">
+        <MetricCard value={totalUsers} label="Usuarios" />
+        <MetricCard value={totalOrders} label="Pedidos" tone="blue" />
+        <MetricCard value={formatCurrency(totalRevenue)} label="Vendido" tone="pink" />
       </div>
 
-      {/* Content */}
-      <div className="px-4 py-4 sm:py-6">
-        <div className="max-w-7xl mx-auto">
-          {error && (
-            <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-xs sm:text-sm text-red-700 border border-red-100">
-              {error}
-            </div>
-          )}
+      {error && (
+        <AdminCard className="border-rose-400/25 bg-rose-400/10 !p-4">
+          <p className="text-sm font-semibold text-rose-200">{error}</p>
+        </AdminCard>
+      )}
 
-          {loading ? (
-            <div className="flex h-64 items-center justify-center">
-              <div className="text-center">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs sm:text-sm text-gray-600">Cargando usuarios...</p>
-              </div>
-            </div>
-          ) : (
-            <UsersTable
-              users={usersWithStats}
-              selectedUserId={selectedUserId}
-              onSelectUser={setSelectedUserId}
-            />
-          )}
-        </div>
-      </div>
+      {loading ? (
+        <AdminLoader label="Cargando usuarios..." />
+      ) : (
+        <UsersTable
+          users={usersWithStats}
+          selectedUserId={selectedUserId}
+          onSelectUser={setSelectedUserId}
+        />
+      )}
 
-      {/* Modal/Drawer para detalle de usuario */}
       {selectedUser && (
         <>
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
             onClick={handleCloseModal}
           />
-          
-          {/* Panel deslizante desde la derecha */}
-          <div className="fixed inset-y-0 right-0 w-full bg-white shadow-2xl z-50 overflow-hidden animate-in slide-in-from-right duration-300">
-            {/* Header del modal */}
-            <div className="sticky top-0 bg-gradient-to-r from-pink-500 to-rose-400 px-4 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">
-                Detalle de Usuario
-              </h3>
+
+          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col overflow-hidden border-l border-white/10 bg-[#0c0e1a] shadow-2xl sm:w-[32rem]">
+            <div className="flex items-center justify-between border-b border-white/10 bg-gradient-to-r from-pink-600 to-pink-500 px-5 py-4">
+              <h3 className="text-base font-bold text-white">Detalle de usuario</h3>
               <button
                 onClick={handleCloseModal}
-                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/20"
                 aria-label="Cerrar"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X size={18} />
               </button>
             </div>
-            
-            {/* Contenido scrolleable */}
-            <div className="h-[calc(100vh-64px)] overflow-y-auto">
+
+            <div className="flex-1 overflow-y-auto">
               <UserOrdersPanel user={selectedUser} />
             </div>
           </div>
         </>
       )}
-    </div>
+    </AdminPage>
   );
 };
 
 export default AdminUsers;
-
-

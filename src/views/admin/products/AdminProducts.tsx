@@ -1,6 +1,18 @@
 // src/views/admin/products/AdminProducts.tsx
 import { useState, useEffect, useMemo } from "react";
 import {
+  Pencil,
+  Power,
+  PowerOff,
+  Trash2,
+  Search,
+  X,
+  Plus,
+  Boxes,
+  Save,
+  Package,
+} from "lucide-react";
+import {
   getAllProducts,
   updateProduct,
   toggleProductActive,
@@ -8,9 +20,28 @@ import {
   type ProductWithId,
 } from "@/services/products.service";
 import { showToast } from "@/components/feedback/ToastProvider";
-import { MetricCard, MetricCardMobile, Chip, Badge, IconBtn, Field } from "@/components/admin/ui";
+import {
+  AdminButton,
+  AdminCard,
+  AdminCheckbox,
+  AdminHeader,
+  AdminInput,
+  AdminLoader,
+  AdminPage,
+  AdminSelect,
+  AdminTextarea,
+  Badge,
+  Chip,
+  EmptyState,
+  Field,
+  IconBtn,
+  MetricCard,
+  MetricCardMobile,
+} from "@/components/admin/ui";
 
 type FilterKey = "all" | "active" | "low" | "out";
+
+const formatPrice = (n: number) => `$${n.toLocaleString("es-AR")}`;
 
 const AdminProducts = () => {
   const [productos, setProductos] = useState<ProductWithId[]>([]);
@@ -19,11 +50,8 @@ const AdminProducts = () => {
   const [productoEditando, setProductoEditando] = useState<ProductWithId | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
-
-  // 🔍 Buscador
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- Estado para AGREGAR/EDITAR variante (mismo formulario) ---
   const [nuevaVariante, setNuevaVariante] = useState({
     id: "",
     label: "",
@@ -31,7 +59,7 @@ const AdminProducts = () => {
     stock: 0,
     disponible: true,
   });
-  const [editIdx, setEditIdx] = useState<number | null>(null); // null = modo agregar
+  const [editIdx, setEditIdx] = useState<number | null>(null);
   const isEditing = editIdx !== null;
 
   useEffect(() => {
@@ -45,7 +73,7 @@ const AdminProducts = () => {
       setProductos(productosData);
     } catch (error) {
       console.error("Error al cargar productos:", error);
-      showToast.error("❌ Error al cargar productos");
+      showToast.error("Error al cargar productos");
     } finally {
       setLoading(false);
     }
@@ -67,43 +95,47 @@ const AdminProducts = () => {
     if (!productoEditando) return;
     const { name, value, type } = e.target;
     const newValue =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked
-        : type === "number" ? parseFloat(value) || 0
+      type === "checkbox"
+        ? (e.target as HTMLInputElement).checked
+        : type === "number"
+          ? parseFloat(value) || 0
           : value;
-    setProductoEditando(prev => ({ ...prev!, [name]: newValue }));
+    setProductoEditando((prev) => ({ ...prev!, [name]: newValue }));
   };
 
   const handleTieneVariantesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!productoEditando) return;
     const tieneVariantes = e.target.checked;
 
-    // si estaba editando una variante y desactiva variantes, cancelo edición
     if (!tieneVariantes) resetVarianteForm();
 
     if (tieneVariantes && productoEditando.precio && productoEditando.stock !== undefined) {
-      setProductoEditando(prev => ({
+      setProductoEditando((prev) => ({
         ...prev!,
         tieneVariantes: true,
         precio: undefined,
         stock: undefined,
-        variantes: [{
-          id: "unico",
-          label: "Unitario",
-          precio: prev!.precio || 0,
-          stock: prev!.stock || 0,
-          disponible: true
-        }]
+        variantes: [
+          {
+            id: "unico",
+            label: "Unitario",
+            precio: prev!.precio || 0,
+            stock: prev!.stock || 0,
+            disponible: true,
+          },
+        ],
       }));
     } else {
-      setProductoEditando(prev => ({
+      setProductoEditando((prev) => ({
         ...prev!,
         tieneVariantes,
-        ...(tieneVariantes ? { precio: undefined, stock: undefined } : { variantes: [] })
+        ...(tieneVariantes
+          ? { precio: undefined, stock: undefined }
+          : { variantes: [] }),
       }));
     }
   };
 
-  // ===== Variantes (mismo formulario para agregar/editar) =====
   const resetVarianteForm = () => {
     setNuevaVariante({ id: "", label: "", precio: 0, stock: 0, disponible: true });
     setEditIdx(null);
@@ -112,33 +144,29 @@ const AdminProducts = () => {
   const guardarVariante = () => {
     if (!productoEditando) return;
 
-    // Validaciones básicas
     if (!nuevaVariante.id || !nuevaVariante.label || (nuevaVariante.precio || 0) <= 0) {
-      showToast.error("⚠️ Completa ID, etiqueta y precio (> 0)");
+      showToast.error("Completa ID, etiqueta y precio (> 0)");
       return;
     }
 
     const variantes = productoEditando.variantes || [];
 
-    // Evitar duplicados de ID (permite mismo ID si edito esa misma fila)
     const idDuplicado = variantes.some((v, idx) => v.id === nuevaVariante.id && idx !== editIdx);
     if (idDuplicado) {
-      showToast.error("⚠️ Ya existe una variante con ese ID");
+      showToast.error("Ya existe una variante con ese ID");
       return;
     }
 
     if (isEditing) {
-      // Editar en posición existente
       const nuevas = variantes.map((v, idx) =>
         idx === editIdx ? { ...nuevaVariante, stock: nuevaVariante.stock || 0 } : v
       );
-      setProductoEditando(prev => ({ ...prev!, variantes: nuevas }));
-      showToast.success("✔️ Variante actualizada");
+      setProductoEditando((prev) => ({ ...prev!, variantes: nuevas }));
+      showToast.success("Variante actualizada");
     } else {
-      // Agregar nueva
       const nuevas = [...variantes, { ...nuevaVariante, stock: nuevaVariante.stock || 0 }];
-      setProductoEditando(prev => ({ ...prev!, variantes: nuevas }));
-      showToast.success("✔️ Variante agregada");
+      setProductoEditando((prev) => ({ ...prev!, variantes: nuevas }));
+      showToast.success("Variante agregada");
     }
 
     resetVarianteForm();
@@ -163,24 +191,28 @@ const AdminProducts = () => {
 
   const eliminarVariante = (id: string) => {
     if (!productoEditando) return;
-    setProductoEditando(prev => ({
+    setProductoEditando((prev) => ({
       ...prev!,
-      variantes: prev!.variantes?.filter(v => v.id !== id),
+      variantes: prev!.variantes?.filter((v) => v.id !== id),
     }));
-    // si justo estabas editando esta, resetea
     if (isEditing && productoEditando.variantes![editIdx!].id === id) resetVarianteForm();
   };
 
-  // ===== Guardar producto =====
   const guardarCambios = async () => {
     if (!productoEditando) return;
 
-    if (productoEditando.tieneVariantes && (!productoEditando.variantes || productoEditando.variantes.length === 0)) {
-      showToast.error("⚠️ Debes agregar al menos una variante");
+    if (
+      productoEditando.tieneVariantes &&
+      (!productoEditando.variantes || productoEditando.variantes.length === 0)
+    ) {
+      showToast.error("Debes agregar al menos una variante");
       return;
     }
-    if (!productoEditando.tieneVariantes && (!productoEditando.precio || productoEditando.precio <= 0)) {
-      showToast.error("⚠️ Debes ingresar un precio válido");
+    if (
+      !productoEditando.tieneVariantes &&
+      (!productoEditando.precio || productoEditando.precio <= 0)
+    ) {
+      showToast.error("Debes ingresar un precio valido");
       return;
     }
 
@@ -203,12 +235,12 @@ const AdminProducts = () => {
       }
 
       await updateProduct(id, datosLimpios);
-      setProductos(prev => prev.map(p => (p.id === id ? productoEditando : p)));
+      setProductos((prev) => prev.map((p) => (p.id === id ? productoEditando : p)));
       cerrarModal();
-      showToast.success("✅ Producto actualizado correctamente");
+      showToast.success("Producto actualizado correctamente");
     } catch (error) {
       console.error("Error al actualizar:", error);
-      showToast.error("❌ Error al actualizar el producto");
+      showToast.error("Error al actualizar el producto");
     } finally {
       setGuardando(false);
     }
@@ -218,27 +250,28 @@ const AdminProducts = () => {
     try {
       const nuevoEstado = !producto.activo;
       await toggleProductActive(producto.id, nuevoEstado);
-      setProductos(prev => prev.map(p => (p.id === producto.id ? { ...p, activo: nuevoEstado } : p)));
-      showToast.success(`✅ Producto ${nuevoEstado ? "activado" : "desactivado"}`);
+      setProductos((prev) =>
+        prev.map((p) => (p.id === producto.id ? { ...p, activo: nuevoEstado } : p))
+      );
+      showToast.success(`Producto ${nuevoEstado ? "activado" : "desactivado"}`);
     } catch (error) {
       console.error("Error al cambiar estado:", error);
-      showToast.error("❌ Error al cambiar estado");
+      showToast.error("Error al cambiar estado");
     }
   };
 
   const eliminarProducto = async (producto: ProductWithId) => {
-    if (!confirm(`¿Estás seguro de eliminar "${producto.nombre}"?`)) return;
+    if (!confirm(`Estas seguro de eliminar "${producto.nombre}"?`)) return;
     try {
       await deleteProduct(producto.id);
-      setProductos(prev => prev.filter(p => p.id !== producto.id));
-      showToast.success("✅ Producto eliminado");
+      setProductos((prev) => prev.filter((p) => p.id !== producto.id));
+      showToast.success("Producto eliminado");
     } catch (error) {
       console.error("Error al eliminar:", error);
-      showToast.error("❌ Error al eliminar producto");
+      showToast.error("Error al eliminar producto");
     }
   };
 
-  // Helpers
   const getStockTotal = (producto: ProductWithId): number => {
     if (producto.tieneVariantes && producto.variantes) {
       return producto.variantes.reduce((sum, v) => sum + (v.stock || 0), 0);
@@ -248,605 +281,609 @@ const AdminProducts = () => {
 
   const getPrecioDisplay = (producto: ProductWithId): string => {
     if (producto.tieneVariantes && producto.variantes && producto.variantes.length > 0) {
-      const precios = producto.variantes.map(v => v.precio);
+      const precios = producto.variantes.map((v) => v.precio);
       const min = Math.min(...precios);
       const max = Math.max(...precios);
-      if (min === max) return `$${min.toLocaleString("es-AR")}`;
-      return `$${min.toLocaleString("es-AR")} - $${max.toLocaleString("es-AR")}`;
+      if (min === max) return formatPrice(min);
+      return `${formatPrice(min)} - ${formatPrice(max)}`;
     }
-    return `$${(producto.precio || 0).toLocaleString("es-AR")}`;
+    return formatPrice(producto.precio || 0);
   };
 
-  // Métricas / filtros
   const total = productos.length;
-  const activos = productos.filter(p => p.activo).length;
-  const low = productos.filter(p => {
+  const activos = productos.filter((p) => p.activo).length;
+  const low = productos.filter((p) => {
     const stock = getStockTotal(p);
     return stock <= 5 && stock > 0;
   }).length;
-  const out = productos.filter(p => getStockTotal(p) === 0).length;
+  const out = productos.filter((p) => getStockTotal(p) === 0).length;
 
   const productosFiltrados = useMemo(() => {
-    // Primero filtro por estado (chips)
     let base = productos;
     switch (filter) {
       case "active":
-        base = productos.filter(p => p.activo);
+        base = productos.filter((p) => p.activo);
         break;
       case "low":
-        base = productos.filter(p => {
+        base = productos.filter((p) => {
           const stock = getStockTotal(p);
           return stock <= 5 && stock > 0;
         });
         break;
       case "out":
-        base = productos.filter(p => getStockTotal(p) === 0);
+        base = productos.filter((p) => getStockTotal(p) === 0);
         break;
       default:
         base = productos;
     }
 
-    // Luego filtro por buscador
     const term = searchTerm.trim().toLowerCase();
     if (!term) return base;
 
-    return base.filter(p => {
+    return base.filter((p) => {
       const nombre = p.nombre?.toLowerCase() || "";
       const descripcion = p.descripcion?.toLowerCase() || "";
       const categoria = p.categoria?.toLowerCase() || "";
-      return (
-        nombre.includes(term) ||
-        descripcion.includes(term) ||
-        categoria.includes(term)
-      );
+      return nombre.includes(term) || descripcion.includes(term) || categoria.includes(term);
     });
   }, [productos, filter, searchTerm]);
 
   if (loading) {
-    return (
-      <div className="min-h-[50vh] flex items-center justify-center text-slate-700">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando productos...</p>
-        </div>
-      </div>
-    );
+    return <AdminLoader label="Cargando productos..." />;
   }
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 py-6 text-slate-900">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-4 md:mb-8">
-          <h1 className="text-3xl md:text-4xl font-extralight text-gray-900 mb-2">
-            Gestión de <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">Productos</span>
-          </h1>
-          <p className="text-gray-600">Panel de administración - Epikus Cake</p>
-          <div className="w-16 md:w-20 h-1 bg-gradient-to-r from-pink-500 to-rose-400 mx-auto mt-3 md:mt-4"></div>
-        </div>
+    <AdminPage className="flex flex-col gap-5 sm:gap-7">
+      <AdminHeader
+        eyebrow="Catalogo"
+        eyebrowIcon={<Boxes size={14} />}
+        title="Productos"
+        description="Gestiona el catalogo, stock y variantes de Epikus Cake."
+        actions={
+          <AdminButton
+            iconLeft={<Plus size={16} />}
+            onClick={() => (window.location.href = "/admin/products/new")}
+          >
+            Nuevo producto
+          </AdminButton>
+        }
+      />
 
-        {/* Métricas Mobile */}
-        <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory no-scrollbar mb-6">
-          <div className="flex gap-3 pb-2">
-            <MetricCardMobile value={total} label="Total" tone="default" />
-            <MetricCardMobile value={activos} label="Activos" tone="green" />
-            <MetricCardMobile value={low} label="Stock Bajo" tone="amber" />
-            <MetricCardMobile value={out} label="Sin Stock" tone="red" />
-          </div>
+      {/* Metricas */}
+      <div className="md:hidden -mx-1 overflow-x-auto snap-x snap-mandatory no-scrollbar">
+        <div className="flex gap-3 px-1 pb-2">
+          <MetricCardMobile value={total} label="Total" />
+          <MetricCardMobile value={activos} label="Activos" tone="green" />
+          <MetricCardMobile value={low} label="Stock bajo" tone="amber" />
+          <MetricCardMobile value={out} label="Sin stock" tone="red" />
         </div>
+      </div>
 
-        {/* Métricas Desktop */}
-        <div className="hidden md:grid md:grid-cols-4 gap-6 mb-6">
-          <MetricCard value={total} label="Total Productos" />
-          <MetricCard value={activos} label="Activos" color="text-green-600" />
-          <MetricCard value={low} label="Stock Bajo" color="text-yellow-600" />
-          <MetricCard value={out} label="Sin Stock" color="text-red-600" />
-        </div>
+      <div className="hidden md:grid md:grid-cols-4 gap-4">
+        <MetricCard value={total} label="Total productos" icon={<Boxes size={18} />} />
+        <MetricCard value={activos} label="Activos" tone="green" />
+        <MetricCard value={low} label="Stock bajo" tone="amber" />
+        <MetricCard value={out} label="Sin stock" tone="red" />
+      </div>
 
-        {/* Filtros + Buscador */}
-        <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3 justify-between">
+      {/* Filtros + Buscador */}
+      <AdminCard>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <Chip active={filter === "all"} onClick={() => setFilter("all")}>Todos ({total})</Chip>
-            <Chip active={filter === "active"} onClick={() => setFilter("active")}>Activos ({activos})</Chip>
-            <Chip active={filter === "low"} onClick={() => setFilter("low")}>Stock bajo ({low})</Chip>
-            <Chip active={filter === "out"} onClick={() => setFilter("out")}>Sin stock ({out})</Chip>
+            <Chip active={filter === "all"} onClick={() => setFilter("all")}>
+              Todos ({total})
+            </Chip>
+            <Chip active={filter === "active"} onClick={() => setFilter("active")}>
+              Activos ({activos})
+            </Chip>
+            <Chip active={filter === "low"} onClick={() => setFilter("low")}>
+              Stock bajo ({low})
+            </Chip>
+            <Chip active={filter === "out"} onClick={() => setFilter("out")}>
+              Sin stock ({out})
+            </Chip>
           </div>
 
-          {/* 🔍 Buscador */}
-          <div className="w-full md:w-72">
-            <Field label="Buscar producto">
-              <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">🔍</span>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Nombre, descripción o categoría..."
-                  className="w-full border border-gray-300 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent bg-white/80"
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm("")}
-                    className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </Field>
+          <div className="relative w-full lg:w-80">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar nombre, descripcion o categoria..."
+              className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-10 text-sm font-semibold text-white outline-none transition-colors placeholder:text-slate-500 focus:border-pink-500/60 focus:bg-white/[0.06]"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
+      </AdminCard>
 
-        {/* Lista */}
-        {productosFiltrados.length === 0 ? (
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-12 text-center">
-            <div className="text-6xl mb-4">🛒</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No hay productos</h3>
-            <p className="text-gray-600">Probá cambiar el filtro o agregá tu primer producto.</p>
-          </div>
-        ) : (
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden">
-            {/* Mobile cards */}
-            <div className="block lg:hidden divide-y divide-gray-100">
-              {productosFiltrados.map((p) => (
-                <div key={p.id} className="p-4">
-                  <div className="grid grid-cols-[64px_1fr_auto] gap-3">
-                    <img
-                      src={p.imagen}
-                      alt={p.nombre}
-                      className="w-16 h-16 object-cover rounded-lg"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/64x64/f8fafc/64748b?text=No+img"; }}
-                    />
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-900 line-clamp-1">{p.nombre}</h3>
-                      <p className="text-sm text-gray-600 line-clamp-2">{p.descripcion}</p>
-                      <p className="text-base font-bold text-pink-600 mt-1">{getPrecioDisplay(p)}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge tone={p.activo ? "green" : "red"}>{p.activo ? "✅ Activo" : "❌ Inactivo"}</Badge>
-                        <Badge tone={getStockTotal(p) === 0 ? "red" : getStockTotal(p) <= 5 ? "amber" : "blue"}>
-                          📦 {getStockTotal(p)}
-                        </Badge>
-                        {p.destacado && <Badge tone="amber">⭐ Destacado</Badge>}
-                        {p.mayorista && <Badge tone="amber">Mayorista</Badge>}
-                        {p.tieneVariantes && <Badge tone="purple">🎯 Variantes</Badge>}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>✏️</IconBtn>
-                      <IconBtn title={p.activo ? "Desactivar" : "Activar"} onClick={() => toggleActivo(p)}>
-                        {p.activo ? "⛔" : "✅"}
-                      </IconBtn>
-                      <IconBtn title="Eliminar" onClick={() => eliminarProducto(p)}>🗑️</IconBtn>
+      {/* Lista */}
+      {productosFiltrados.length === 0 ? (
+        <EmptyState
+          icon={<Package size={28} />}
+          title="No hay productos"
+          description="Proba cambiar el filtro o agrega tu primer producto."
+        />
+      ) : (
+        <AdminCard className="!p-0 overflow-hidden">
+          {/* Mobile */}
+          <div className="block lg:hidden divide-y divide-white/5">
+            {productosFiltrados.map((p) => (
+              <div key={p.id} className="p-4">
+                <div className="grid grid-cols-[64px_1fr_auto] gap-3">
+                  <img
+                    src={p.imagen}
+                    alt={p.nombre}
+                    className="h-16 w-16 rounded-lg object-cover ring-1 ring-white/10"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://via.placeholder.com/64x64/1f2937/9ca3af?text=No+img";
+                    }}
+                  />
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-1 text-sm font-bold text-white">{p.nombre}</h3>
+                    <p className="line-clamp-2 text-xs text-slate-400">{p.descripcion}</p>
+                    <p className="mt-1 text-sm font-bold text-pink-300">{getPrecioDisplay(p)}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Badge tone={p.activo ? "green" : "red"}>
+                        {p.activo ? "Activo" : "Inactivo"}
+                      </Badge>
+                      <Badge
+                        tone={
+                          getStockTotal(p) === 0
+                            ? "red"
+                            : getStockTotal(p) <= 5
+                              ? "amber"
+                              : "blue"
+                        }
+                      >
+                        Stock {getStockTotal(p)}
+                      </Badge>
+                      {p.destacado && <Badge tone="amber">Destacado</Badge>}
+                      {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
+                      {p.tieneVariantes && <Badge tone="purple">Variantes</Badge>}
                     </div>
                   </div>
+
+                  <div className="flex flex-col gap-2">
+                    <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
+                      <Pencil size={14} />
+                    </IconBtn>
+                    <IconBtn
+                      title={p.activo ? "Desactivar" : "Activar"}
+                      onClick={() => toggleActivo(p)}
+                    >
+                      {p.activo ? <PowerOff size={14} /> : <Power size={14} />}
+                    </IconBtn>
+                    <IconBtn title="Eliminar" tone="danger" onClick={() => eliminarProducto(p)}>
+                      <Trash2 size={14} />
+                    </IconBtn>
+                  </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Desktop tabla */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Producto</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Categoría</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Precio</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stock</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Estado</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {productosFiltrados.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-4">
-                          <img
-                            src={p.imagen}
-                            alt={p.nombre}
-                            className="w-16 h-16 object-cover rounded-lg"
-                            onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/64x64/f8fafc/64748b?text=No+img"; }}
-                          />
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{p.nombre}</h3>
-                            <p className="text-sm text-gray-600">{p.descripcion}</p>
-                            {p.tieneVariantes && (
-                              <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
-                                🎯 Con variantes
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 text-sm font-semibold rounded-full">
-                          {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-lg font-bold text-gray-900">{getPrecioDisplay(p)}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStockTotal(p) === 0
-                          ? "bg-red-100 text-red-800"
-                          : getStockTotal(p) <= 5
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-green-100 text-green-800"
-                          }`}>📦 {getStockTotal(p)}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <span className={`block px-2 py-1 text-xs font-semibold rounded-full ${p.activo ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                            }`}>{p.activo ? "✅ Activo" : "❌ Inactivo"}</span>
-                          {p.destacado && (
-                            <span className="block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">⭐ Destacado</span>
-                          )}
-                          {p.mayorista && (
-                            <span className="block px-2 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">Mayorista</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => abrirModalEdicion(p)}
-                            className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => toggleActivo(p)}
-                            className={`px-3 py-1 text-sm rounded-lg ${p.activo
-                              ? "bg-yellow-500 text-white hover:bg-yellow-600"
-                              : "bg-green-500 text-white hover:bg-green-600"
-                              }`}
-                          >
-                            {p.activo ? "Desactivar" : "Activar"}
-                          </button>
-                          <button
-                            onClick={() => eliminarProducto(p)}
-                            className="px-3 py-1 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              </div>
+            ))}
           </div>
-        )}
 
-        {/* MODAL EDICIÓN */}
-        {modalAbierto && productoEditando && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Editar Producto</h2>
-                <button
-                  onClick={cerrarModal}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+          {/* Desktop */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-white/[0.03] text-left">
+                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                    Producto
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                    Categoria
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                    Precio
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                    Stock
+                  </th>
+                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                    Estado
+                  </th>
+                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-wide text-slate-500">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {productosFiltrados.map((p) => (
+                  <tr key={p.id} className="transition-colors hover:bg-white/[0.02]">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={p.imagen}
+                          alt={p.nombre}
+                          className="h-14 w-14 rounded-lg object-cover ring-1 ring-white/10"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://via.placeholder.com/56x56/1f2937/9ca3af?text=No+img";
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <h3 className="line-clamp-1 text-sm font-bold text-white">{p.nombre}</h3>
+                          <p className="line-clamp-1 text-xs text-slate-400">{p.descripcion}</p>
+                          {p.tieneVariantes && (
+                            <Badge tone="purple" className="mt-1">
+                              Con variantes
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <Badge tone="pink">
+                        {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3 text-sm font-bold text-white">
+                      {getPrecioDisplay(p)}
+                    </td>
+                    <td className="px-5 py-3">
+                      <Badge
+                        tone={
+                          getStockTotal(p) === 0
+                            ? "red"
+                            : getStockTotal(p) <= 5
+                              ? "amber"
+                              : "green"
+                        }
+                      >
+                        {getStockTotal(p)}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge tone={p.activo ? "green" : "red"}>
+                          {p.activo ? "Activo" : "Inactivo"}
+                        </Badge>
+                        {p.destacado && <Badge tone="amber">Destacado</Badge>}
+                        {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
+                          <Pencil size={14} />
+                        </IconBtn>
+                        <IconBtn
+                          title={p.activo ? "Desactivar" : "Activar"}
+                          onClick={() => toggleActivo(p)}
+                        >
+                          {p.activo ? <PowerOff size={14} /> : <Power size={14} />}
+                        </IconBtn>
+                        <IconBtn
+                          title="Eliminar"
+                          tone="danger"
+                          onClick={() => eliminarProducto(p)}
+                        >
+                          <Trash2 size={14} />
+                        </IconBtn>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AdminCard>
+      )}
+
+      {/* Modal edicion */}
+      {modalAbierto && productoEditando && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-[#0c0e1a] shadow-2xl sm:rounded-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <div>
+                <h2 className="text-lg font-bold text-white">Editar producto</h2>
+                <p className="text-xs text-slate-400">Modifica los datos y guarda los cambios.</p>
+              </div>
+              <button
+                onClick={cerrarModal}
+                className="grid h-9 w-9 place-items-center rounded-lg text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-5 overflow-y-auto p-5">
+              <Field label="Nombre del producto *">
+                <AdminInput
+                  name="nombre"
+                  value={productoEditando.nombre}
+                  onChange={handleCambioFormulario}
+                />
+              </Field>
+
+              <Field label="Descripcion">
+                <AdminTextarea
+                  name="descripcion"
+                  value={productoEditando.descripcion}
+                  onChange={handleCambioFormulario}
+                  rows={3}
+                />
+              </Field>
+
+              <Field label="Categoria *">
+                <AdminSelect
+                  name="categoria"
+                  value={productoEditando.categoria}
+                  onChange={handleCambioFormulario}
                 >
-                  ✕
-                </button>
+                  <option value="">Seleccionar categoria</option>
+                  <option value="tortas">Tortas</option>
+                  <option value="porciones-torta">Porciones</option>
+                  <option value="cheesecakes">Cheesecakes</option>
+                  <option value="cupcakes">Cupcakes</option>
+                  <option value="panaderia">Panaderia</option>
+                  <option value="helados">Helados</option>
+                  <option value="tortas-personalizadas">Tortas a medida</option>
+                </AdminSelect>
+              </Field>
+
+              <Field label="URL de la imagen *">
+                <AdminInput
+                  type="url"
+                  name="imagen"
+                  value={productoEditando.imagen}
+                  onChange={handleCambioFormulario}
+                />
+              </Field>
+
+              <div className="rounded-xl border border-violet-400/25 bg-violet-400/[0.05] p-4">
+                <AdminCheckbox
+                  checked={productoEditando.tieneVariantes}
+                  onChange={handleTieneVariantesChange}
+                  labelText="Producto con variantes"
+                  hint="Para tortas con diferentes porciones o medidas."
+                />
               </div>
 
-              <div className="p-6 space-y-6">
-                {/* Nombre */}
-                <Field label="Nombre del Producto *">
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={productoEditando.nombre}
-                    onChange={handleCambioFormulario}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                  />
-                </Field>
-
-                {/* Descripción */}
-                <Field label="Descripción">
-                  <textarea
-                    name="descripcion"
-                    value={productoEditando.descripcion}
-                    onChange={handleCambioFormulario}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent resize-none"
-                  />
-                </Field>
-
-                {/* Categoría */}
-                <Field label="Categoría *">
-                  <select
-                    name="categoria"
-                    value={productoEditando.categoria}
-                    onChange={handleCambioFormulario}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    <option value="tortas">🎂 Tortas</option>
-                    <option value="porciones-torta">🍰 Porciones</option>
-                    <option value="cheesecakes">🧀 Cheesecakes</option>
-                    <option value="cupcakes">🧁 Cupcakes</option>
-                    <option value="panaderia">🥖 Panadería</option>
-                    <option value="helados">🍨 Helados</option>
-                    <option value="tortas-personalizadas">🎨 Tortas a medida</option>
-                  </select>
-                </Field>
-
-                {/* Imagen */}
-                <Field label="URL de la Imagen *">
-                  <input
-                    type="url"
-                    name="imagen"
-                    value={productoEditando.imagen}
-                    onChange={handleCambioFormulario}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                  />
-                </Field>
-
-                {/* Toggle Variantes */}
-                <div className="border-2 border-dashed border-purple-200 rounded-xl p-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={productoEditando.tieneVariantes}
-                      onChange={handleTieneVariantesChange}
-                      className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                    />
-                    <div>
-                      <span className="text-sm font-bold text-purple-900">🎯 Producto con variantes</span>
-                      <p className="text-xs text-purple-700">Para tortas con diferentes porciones</p>
-                    </div>
-                  </label>
-                </div>
-
-                {/* CASO 1: Sin variantes */}
-                {!productoEditando.tieneVariantes && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Precio (ARS) *">
-                      <input
-                        type="number"
-                        name="precio"
-                        value={productoEditando.precio || ""}
-                        onChange={handleCambioFormulario}
-                        min={0}
-                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                      />
-                    </Field>
-                    <Field label="Stock *">
-                      <input
-                        type="number"
-                        name="stock"
-                        value={productoEditando.stock || ""}
-                        onChange={handleCambioFormulario}
-                        min={0}
-                        className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                      />
-                    </Field>
-                  </div>
-                )}
-
-                {/* CASO 2: Con variantes */}
-                {productoEditando.tieneVariantes && (
-                  <div className="space-y-4">
-                    <div className="border border-purple-200 rounded-xl p-4">
-                      <h4 className="font-bold text-gray-900 mb-3">
-                        {isEditing ? "Editar Variante" : "Agregar Variante"}
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <input
-                          type="text"
-                          placeholder="ID (ej: 10-12)"
-                          value={nuevaVariante.id}
-                          onChange={(e) => setNuevaVariante(p => ({ ...p, id: e.target.value }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Etiqueta"
-                          value={nuevaVariante.label}
-                          onChange={(e) => setNuevaVariante(p => ({ ...p, label: e.target.value }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Precio"
-                          value={nuevaVariante.precio || ""}
-                          onChange={(e) => setNuevaVariante(p => ({ ...p, precio: parseFloat(e.target.value) || 0 }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Stock"
-                          value={nuevaVariante.stock || ""}
-                          onChange={(e) => setNuevaVariante(p => ({ ...p, stock: parseFloat(e.target.value) || 0 }))}
-                          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        />
-                      </div>
-                      <label className="flex items-center gap-2 text-sm mb-3">
-                        <input
-                          type="checkbox"
-                          checked={nuevaVariante.disponible}
-                          onChange={(e) => setNuevaVariante(p => ({ ...p, disponible: e.target.checked }))}
-                          className="w-4 h-4"
-                        />
-                        Disponible
-                      </label>
-
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={guardarVariante}
-                          className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 text-sm font-semibold"
-                        >
-                          {isEditing ? "💾 Guardar cambios" : "➕ Agregar Variante"}
-                        </button>
-                        {isEditing && (
-                          <button
-                            type="button"
-                            onClick={cancelarEdicionVariante}
-                            className="px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm"
-                          >
-                            ✖️ Cancelar
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Lista de variantes */}
-                    {productoEditando.variantes && productoEditando.variantes.length > 0 && (
-                      <div className="border border-gray-200 rounded-xl p-4">
-                        <h4 className="font-bold text-gray-900 mb-3">
-                          Variantes ({productoEditando.variantes.length})
-                        </h4>
-                        <div className="space-y-2">
-                          {productoEditando.variantes.map((v, idx) => (
-                            <div key={v.id} className="flex items-center justify-between bg-purple-50 p-3 rounded-lg">
-                              <div>
-                                <p className="font-semibold text-sm">{v.label}</p>
-                                <p className="text-xs text-gray-600">
-                                  ID: {v.id} | ${v.precio.toLocaleString('es-AR')} | Stock: {v.stock || 0} | {v.disponible ? "Disponible" : "No disponible"}
-                                </p>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => iniciarEdicionVariante(idx)}
-                                  className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
-                                >
-                                  ✏️ Editar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => eliminarVariante(v.id)}
-                                  className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
-                                >
-                                  🗑️ Eliminar
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Configuración */}
-                <div className="space-y-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="mayorista"
-                      checked={productoEditando.mayorista ?? false}
+              {!productoEditando.tieneVariantes && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Precio (ARS) *">
+                    <AdminInput
+                      type="number"
+                      name="precio"
+                      value={productoEditando.precio || ""}
                       onChange={handleCambioFormulario}
-                      className="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                      min={0}
                     />
-                    <div>
-                      <span className="text-sm font-bold text-amber-900">Disponible para mayoristas</span>
-                      <p className="text-xs text-amber-700">Controla si aparece en /wholesale.</p>
+                  </Field>
+                  <Field label="Stock *">
+                    <AdminInput
+                      type="number"
+                      name="stock"
+                      value={productoEditando.stock || ""}
+                      onChange={handleCambioFormulario}
+                      min={0}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {productoEditando.tieneVariantes && (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <h4 className="mb-3 text-sm font-black uppercase tracking-wide text-white">
+                      {isEditing ? "Editar variante" : "Agregar variante"}
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <Field label="ID (unico)">
+                        <AdminInput
+                          value={nuevaVariante.id}
+                          onChange={(e) =>
+                            setNuevaVariante((prev) => ({ ...prev, id: e.target.value }))
+                          }
+                          placeholder="10-12"
+                        />
+                      </Field>
+                      <Field label="Etiqueta">
+                        <AdminInput
+                          value={nuevaVariante.label}
+                          onChange={(e) =>
+                            setNuevaVariante((prev) => ({ ...prev, label: e.target.value }))
+                          }
+                          placeholder="10-12 porciones"
+                        />
+                      </Field>
+                      <Field label="Precio">
+                        <AdminInput
+                          type="number"
+                          value={nuevaVariante.precio || ""}
+                          onChange={(e) =>
+                            setNuevaVariante((prev) => ({
+                              ...prev,
+                              precio: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </Field>
+                      <Field label="Stock">
+                        <AdminInput
+                          type="number"
+                          value={nuevaVariante.stock || ""}
+                          onChange={(e) =>
+                            setNuevaVariante((prev) => ({
+                              ...prev,
+                              stock: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </Field>
                     </div>
-                  </label>
 
-                  {productoEditando.mayorista && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Field label="Precio mayorista unitario">
-                        <input
-                          type="number"
-                          name="precioMayorista"
-                          value={productoEditando.precioMayorista || ""}
-                          onChange={handleCambioFormulario}
-                          min={0}
-                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        />
-                      </Field>
+                    <div className="mt-4">
+                      <AdminCheckbox
+                        checked={nuevaVariante.disponible}
+                        onChange={(e) =>
+                          setNuevaVariante((prev) => ({
+                            ...prev,
+                            disponible: e.target.checked,
+                          }))
+                        }
+                        labelText="Disponible"
+                      />
+                    </div>
 
-                      <Field label="Pack minimo">
-                        <input
-                          type="number"
-                          name="packMayorista"
-                          value={productoEditando.packMayorista || ""}
-                          onChange={handleCambioFormulario}
-                          min={1}
-                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        />
-                      </Field>
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                      <AdminButton
+                        variant="primary"
+                        fullWidth
+                        iconLeft={isEditing ? <Save size={15} /> : <Plus size={15} />}
+                        onClick={guardarVariante}
+                      >
+                        {isEditing ? "Guardar cambios" : "Agregar variante"}
+                      </AdminButton>
+                      {isEditing && (
+                        <AdminButton variant="secondary" onClick={cancelarEdicionVariante}>
+                          Cancelar
+                        </AdminButton>
+                      )}
+                    </div>
+                  </div>
 
-                      <Field label="Categoria mayorista">
-                        <input
-                          type="text"
-                          name="categoriaMayorista"
-                          value={productoEditando.categoriaMayorista || ""}
-                          onChange={handleCambioFormulario}
-                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        />
-                      </Field>
-
-                      <Field label="Orden mayorista">
-                        <input
-                          type="number"
-                          name="ordenMayorista"
-                          value={productoEditando.ordenMayorista || ""}
-                          onChange={handleCambioFormulario}
-                          min={0}
-                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        />
-                      </Field>
+                  {productoEditando.variantes && productoEditando.variantes.length > 0 && (
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                      <h4 className="mb-3 text-sm font-black uppercase tracking-wide text-white">
+                        Variantes ({productoEditando.variantes.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {productoEditando.variantes.map((v, idx) => (
+                          <div
+                            key={v.id}
+                            className="flex flex-col gap-2 rounded-lg border border-white/10 bg-[#0c0e1a] p-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-white">{v.label}</p>
+                              <p className="text-xs text-slate-400">
+                                ID: {v.id} · {formatPrice(v.precio)} · Stock: {v.stock || 0} ·{" "}
+                                {v.disponible ? "Disponible" : "No disponible"}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <IconBtn title="Editar" onClick={() => iniciarEdicionVariante(idx)}>
+                                <Pencil size={14} />
+                              </IconBtn>
+                              <IconBtn
+                                title="Eliminar"
+                                tone="danger"
+                                onClick={() => eliminarVariante(v.id)}
+                              >
+                                <Trash2 size={14} />
+                              </IconBtn>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
+              )}
 
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Configuración</h3>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="activo"
-                      checked={productoEditando.activo}
-                      onChange={handleCambioFormulario}
-                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
-                    />
-                    <span className="text-sm font-semibold text-gray-800">Producto activo</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="destacado"
-                      checked={productoEditando.destacado}
-                      onChange={handleCambioFormulario}
-                      className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
-                    />
-                    <span className="text-sm font-semibold text-gray-800">Producto destacado</span>
-                  </label>
-                </div>
+              <div className="space-y-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.05] p-4">
+                <AdminCheckbox
+                  name="mayorista"
+                  checked={productoEditando.mayorista ?? false}
+                  onChange={handleCambioFormulario}
+                  labelText="Disponible para mayoristas"
+                  hint="Controla si aparece en /wholesale."
+                />
+
+                {productoEditando.mayorista && (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <Field label="Precio mayorista unitario">
+                      <AdminInput
+                        type="number"
+                        name="precioMayorista"
+                        value={productoEditando.precioMayorista || ""}
+                        onChange={handleCambioFormulario}
+                        min={0}
+                      />
+                    </Field>
+                    <Field label="Pack minimo">
+                      <AdminInput
+                        type="number"
+                        name="packMayorista"
+                        value={productoEditando.packMayorista || ""}
+                        onChange={handleCambioFormulario}
+                        min={1}
+                      />
+                    </Field>
+                    <Field label="Categoria mayorista">
+                      <AdminInput
+                        type="text"
+                        name="categoriaMayorista"
+                        value={productoEditando.categoriaMayorista || ""}
+                        onChange={handleCambioFormulario}
+                      />
+                    </Field>
+                    <Field label="Orden mayorista">
+                      <AdminInput
+                        type="number"
+                        name="ordenMayorista"
+                        value={productoEditando.ordenMayorista || ""}
+                        onChange={handleCambioFormulario}
+                        min={0}
+                      />
+                    </Field>
+                  </div>
+                )}
               </div>
 
-              <div className="p-6 border-t border-gray-200 flex gap-4">
-                <button
-                  onClick={cerrarModal}
-                  className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={guardarCambios}
-                  disabled={guardando}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-500 disabled:opacity-50"
-                >
-                  {guardando ? "Guardando..." : "Guardar Cambios"}
-                </button>
+              <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <h3 className="text-sm font-black uppercase tracking-wide text-white">
+                  Configuracion
+                </h3>
+                <AdminCheckbox
+                  name="activo"
+                  checked={productoEditando.activo}
+                  onChange={handleCambioFormulario}
+                  labelText="Producto activo"
+                />
+                <AdminCheckbox
+                  name="destacado"
+                  checked={productoEditando.destacado}
+                  onChange={handleCambioFormulario}
+                  labelText="Producto destacado"
+                />
               </div>
             </div>
+
+            <div className="flex flex-col gap-2 border-t border-white/10 p-4 sm:flex-row">
+              <AdminButton variant="secondary" fullWidth onClick={cerrarModal}>
+                Cancelar
+              </AdminButton>
+              <AdminButton
+                variant="primary"
+                fullWidth
+                onClick={guardarCambios}
+                disabled={guardando}
+                iconLeft={<Save size={16} />}
+              >
+                {guardando ? "Guardando..." : "Guardar cambios"}
+              </AdminButton>
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </AdminPage>
   );
 };
 
 export default AdminProducts;
-

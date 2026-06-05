@@ -1,5 +1,23 @@
 import { useState, useEffect } from 'react';
+import {
+  BarChart3,
+  CalendarDays,
+  Globe,
+  Link as LinkIcon,
+  Monitor,
+  Smartphone,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import { getAllVisits } from '@/services/analytics.service';
+import {
+  AdminCard,
+  AdminHeader,
+  AdminLoader,
+  AdminPage,
+  MetricCard,
+  SectionTitle,
+} from '@/components/admin/ui';
 
 interface BrowserStat {
   name: string;
@@ -48,7 +66,7 @@ const AdminMetrics: React.FC = () => {
     topPlatforms: [],
     visitsByDay: [],
     topReferrers: [],
-    avgScreenSize: { width: 0, height: 0 }
+    avgScreenSize: { width: 0, height: 0 },
   });
 
   useEffect(() => {
@@ -60,52 +78,55 @@ const AdminMetrics: React.FC = () => {
     try {
       const visits = await getAllVisits();
 
-      // Calcular estadísticas
       const today = new Date().toISOString().slice(0, 10);
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
       const totalVisits = visits.length;
-      const todayVisits = visits.filter(v => v.visitDate === today).length;
-      const weekVisits = visits.filter(v => v.visitDate >= weekAgo).length;
-      const monthVisits = visits.filter(v => v.visitDate >= monthAgo).length;
+      const todayVisits = visits.filter((v) => v.visitDate === today).length;
+      const weekVisits = visits.filter((v) => v.visitDate >= weekAgo).length;
+      const monthVisits = visits.filter((v) => v.visitDate >= monthAgo).length;
 
-      // Top navegadores
       const browserCounts: Record<string, number> = {};
-      visits.forEach(v => {
+      visits.forEach((v) => {
         const browser = getBrowserFromUA(v.userAgent);
         browserCounts[browser] = (browserCounts[browser] || 0) + 1;
       });
       const topBrowsers = Object.entries(browserCounts)
-        .map(([name, count]) => ({ name, count, percent: Math.round((count / totalVisits) * 100) }))
+        .map(([name, count]) => ({
+          name,
+          count,
+          percent: Math.round((count / totalVisits) * 100),
+        }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 4);
 
-      // Top plataformas
       const platformCounts: Record<string, number> = {};
-      visits.forEach(v => {
+      visits.forEach((v) => {
         platformCounts[v.platform] = (platformCounts[v.platform] || 0) + 1;
       });
       const topPlatforms = Object.entries(platformCounts)
-        .map(([name, count]) => ({ name, count, percent: Math.round((count / totalVisits) * 100) }))
+        .map(([name, count]) => ({
+          name,
+          count,
+          percent: Math.round((count / totalVisits) * 100),
+        }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 4);
 
-      // Visitas por día (últimos 7 días)
       const visitsByDay: DayVisit[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
         const dateStr = date.toISOString().slice(0, 10);
-        const dayVisits = visits.filter(v => v.visitDate === dateStr).length;
+        const dayVisits = visits.filter((v) => v.visitDate === dateStr).length;
         visitsByDay.push({
           date: date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }),
-          visits: dayVisits
+          visits: dayVisits,
         });
       }
 
-      // Top referrers
       const referrerCounts: Record<string, number> = {};
-      visits.forEach(v => {
+      visits.forEach((v) => {
         const ref = v.referrer ? getDomainFromURL(v.referrer) : 'Directo';
         referrerCounts[ref] = (referrerCounts[ref] || 0) + 1;
       });
@@ -124,7 +145,7 @@ const AdminMetrics: React.FC = () => {
         topPlatforms,
         visitsByDay,
         topReferrers,
-        avgScreenSize: { width: 1920, height: 1080 }
+        avgScreenSize: { width: 1920, height: 1080 },
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -154,203 +175,170 @@ const AdminMetrics: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-[50vh] flex items-center justify-center text-slate-700">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando estadísticas...</p>
-        </div>
-      </div>
-    );
+    return <AdminLoader label="Cargando estadisticas..." />;
   }
 
+  const maxVisits = Math.max(...stats.visitsByDay.map((d) => d.visits), 1);
+
   return (
-    <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 text-slate-900">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-extralight text-gray-900 mb-2">
-            Analíticas{" "}
-            <span className="font-bold text-brand-gradient">
-              Epikus Cake
-            </span>
-          </h1>
-          <p className="text-gray-600">Estadísticas de visitas y comportamiento de usuarios</p>
-        </div>
+    <AdminPage className="flex flex-col gap-5 sm:gap-7">
+      <AdminHeader
+        eyebrow="Analytics"
+        eyebrowIcon={<BarChart3 size={14} />}
+        title="Estadisticas"
+        highlight="Epikus Cake"
+        description="Visitas y comportamiento de usuarios en tiempo real."
+      />
 
-        {/* Stats principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <StatCard
-            title="Total Visitas"
-            value={stats.totalVisits.toLocaleString()}
-            icon="📊"
-            gradient="from-blue-500 to-blue-600"
-          />
-          <StatCard
-            title="Hoy"
-            value={stats.todayVisits.toLocaleString()}
-            icon="📅"
-            gradient="from-green-500 to-green-600"
-          />
-          <StatCard
-            title="Esta Semana"
-            value={stats.weekVisits.toLocaleString()}
-            icon="📈"
-            gradient="from-purple-500 to-purple-600"
-          />
-          <StatCard
-            title="Este Mes"
-            value={stats.monthVisits.toLocaleString()}
-            icon="📆"
-            gradient="from-pink-500 to-rose-500"
-          />
-          <StatCard
-            title="Dispositivos Únicos"
-            value={stats.uniqueDevices.toLocaleString()}
-            icon="📱"
-            gradient="from-orange-500 to-orange-600"
-          />
-        </div>
-
-        {/* Gráfico de visitas por día */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-            <span>📈</span> Visitas de los Últimos 7 Días
-          </h2>
-          <div className="flex items-end justify-between h-64 gap-4">
-            {stats.visitsByDay.map((day, idx) => {
-              const maxVisits = Math.max(...stats.visitsByDay.map(d => d.visits));
-              const height = maxVisits > 0 ? (day.visits / maxVisits) * 100 : 0;
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="relative w-full group">
-                    <div
-                      className="w-full bg-gradient-to-t from-pink-500 to-rose-400 rounded-t-lg transition-all duration-300 hover:from-pink-600 hover:to-rose-500"
-                      style={{ height: `${height}%`, minHeight: '20px' }}
-                    />
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {day.visits} visitas
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-600 font-medium">{day.date}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Grid de estadísticas detalladas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Navegadores */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span>🌐</span> Navegadores
-            </h2>
-            <div className="space-y-4">
-              {stats.topBrowsers.map((browser, idx) => (
-                <div key={idx}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">{browser.name}</span>
-                    <span className="text-sm text-gray-500">{browser.count} ({browser.percent}%)</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-pink-500 to-rose-400 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${browser.percent}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Plataformas */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span>💻</span> Plataformas
-            </h2>
-            <div className="space-y-4">
-              {stats.topPlatforms.map((platform, idx) => (
-                <div key={idx}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">{platform.name}</span>
-                    <span className="text-sm text-gray-500">{platform.count} ({platform.percent}%)</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${platform.percent}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Fuentes de tráfico */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span>🔗</span> Fuentes de Tráfico
-            </h2>
-            <div className="space-y-3">
-              {stats.topReferrers.map((ref, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <span className="font-medium text-gray-700">{ref.source}</span>
-                  <span className="text-lg font-bold text-pink-600">{ref.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Info adicional */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <span>📐</span> Resolución Promedio
-            </h2>
-            <div className="space-y-4">
-              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-6 border border-pink-100">
-                <p className="text-sm text-gray-600 mb-2">Tamaño de Pantalla</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {stats.avgScreenSize.width} x {stats.avgScreenSize.height}
-                </p>
-                <p className="text-xs text-gray-500 mt-2">píxeles (promedio)</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                  <p className="text-xs text-blue-600 mb-1">Móviles</p>
-                  <p className="text-2xl font-bold text-blue-900">40%</p>
-                </div>
-                <div className="bg-green-50 rounded-lg p-4 border border-green-100">
-                  <p className="text-xs text-green-600 mb-1">Desktop</p>
-                  <p className="text-2xl font-bold text-green-900">60%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <MetricCard
+          value={stats.totalVisits.toLocaleString()}
+          label="Total visitas"
+          icon={<BarChart3 size={18} />}
+        />
+        <MetricCard
+          value={stats.todayVisits.toLocaleString()}
+          label="Hoy"
+          tone="green"
+          icon={<CalendarDays size={18} />}
+        />
+        <MetricCard
+          value={stats.weekVisits.toLocaleString()}
+          label="Esta semana"
+          tone="purple"
+          icon={<TrendingUp size={18} />}
+        />
+        <MetricCard
+          value={stats.monthVisits.toLocaleString()}
+          label="Este mes"
+          tone="pink"
+          icon={<CalendarDays size={18} />}
+        />
+        <MetricCard
+          value={stats.uniqueDevices.toLocaleString()}
+          label="Dispositivos"
+          tone="amber"
+          icon={<Users size={18} />}
+        />
       </div>
-    </div>
+
+      <AdminCard>
+        <SectionTitle
+          icon={TrendingUp}
+          title="Visitas de los ultimos 7 dias"
+          description="Distribucion diaria de visitas."
+        />
+        <div className="mt-6 flex h-56 items-end justify-between gap-3">
+          {stats.visitsByDay.map((day, idx) => {
+            const height = (day.visits / maxVisits) * 100;
+            return (
+              <div key={idx} className="flex flex-1 flex-col items-center gap-2">
+                <div className="group relative w-full">
+                  <div
+                    className="w-full rounded-t-lg bg-gradient-to-t from-pink-600 to-pink-400 transition-all hover:from-pink-500 hover:to-pink-300"
+                    style={{ height: `${height}%`, minHeight: '12px' }}
+                  />
+                  <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-[#0c0e1a] px-2 py-1 text-[11px] font-semibold text-slate-200 opacity-0 transition-opacity group-hover:opacity-100">
+                    {day.visits} visitas
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-slate-500">{day.date}</span>
+              </div>
+            );
+          })}
+        </div>
+      </AdminCard>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <AdminCard>
+          <SectionTitle icon={Globe} title="Navegadores" />
+          <div className="mt-5 space-y-4">
+            {stats.topBrowsers.map((browser, idx) => (
+              <div key={idx}>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-bold text-white">{browser.name}</span>
+                  <span className="text-xs text-slate-400">
+                    {browser.count} ({browser.percent}%)
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.05]">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-pink-500 to-pink-400 transition-all duration-500"
+                    style={{ width: `${browser.percent}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminCard>
+
+        <AdminCard>
+          <SectionTitle icon={Monitor} title="Plataformas" />
+          <div className="mt-5 space-y-4">
+            {stats.topPlatforms.map((platform, idx) => (
+              <div key={idx}>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-bold text-white">{platform.name}</span>
+                  <span className="text-xs text-slate-400">
+                    {platform.count} ({platform.percent}%)
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.05]">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-500"
+                    style={{ width: `${platform.percent}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </AdminCard>
+
+        <AdminCard>
+          <SectionTitle icon={LinkIcon} title="Fuentes de trafico" />
+          <div className="mt-5 space-y-2">
+            {stats.topReferrers.map((ref, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06]"
+              >
+                <span className="text-sm font-bold text-white">{ref.source}</span>
+                <span className="text-base font-bold text-pink-300">{ref.count}</span>
+              </div>
+            ))}
+          </div>
+        </AdminCard>
+
+        <AdminCard>
+          <SectionTitle icon={Smartphone} title="Resolucion promedio" />
+          <div className="mt-5 space-y-4">
+            <div className="rounded-xl border border-pink-500/25 bg-pink-500/[0.06] p-5">
+              <p className="text-xs font-bold uppercase tracking-wide text-pink-300">
+                Tamano de pantalla
+              </p>
+              <p className="mt-2 text-2xl font-bold text-white">
+                {stats.avgScreenSize.width} × {stats.avgScreenSize.height}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">pixeles (promedio)</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-sky-400/20 bg-sky-400/[0.05] p-4">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-sky-300">Movil</p>
+                <p className="mt-1 text-xl font-bold text-white">40%</p>
+              </div>
+              <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] p-4">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300">
+                  Desktop
+                </p>
+                <p className="mt-1 text-xl font-bold text-white">60%</p>
+              </div>
+            </div>
+          </div>
+        </AdminCard>
+      </div>
+    </AdminPage>
   );
 };
 
-interface StatCardProps {
-  title: string;
-  value: string;
-  icon: string;
-  gradient: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient }) => (
-  <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-    <div className="flex items-start justify-between mb-3">
-      <span className="text-3xl">{icon}</span>
-      <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${gradient} opacity-20`} />
-    </div>
-    <p className="text-sm text-gray-600 font-medium mb-1">{title}</p>
-    <p className="text-3xl font-bold text-gray-900">{value}</p>
-  </div>
-);
-
 export default AdminMetrics;
-

@@ -1,6 +1,5 @@
 // src/views/admin/orders/AdminOrders.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { type Timestamp } from 'firebase/firestore';
 import {
@@ -15,18 +14,29 @@ import {
   type OrderItem,
 } from '@/services/orders.service';
 import {
-  MagnifyingGlassIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  TruckIcon,
-  XCircleIcon,
-  BanknotesIcon,
-  FunnelIcon,
-} from '@heroicons/react/24/outline';
+  Banknote,
+  CheckCircle2,
+  Clock,
+  Filter,
+  PackageCheck,
+  ReceiptText,
+  Search,
+  Truck as TruckIcon,
+  XCircle,
+} from 'lucide-react';
 import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/feedback/ToastProvider';
-
-// OrderStatus, OrderItem y Order ahora vienen de @/services/orders.service
+import {
+  AdminButton,
+  AdminCard,
+  AdminHeader,
+  AdminLoader,
+  AdminPage,
+  AdminSelect,
+  Badge,
+  type BadgeTone,
+  EmptyState,
+} from '@/components/admin/ui';
 
 const price = (n: number | undefined | null) => Number(n ?? 0).toLocaleString('es-AR');
 
@@ -50,70 +60,52 @@ const getOrderTotal = (o: Order) =>
 const fmtDateTime = (ts?: Timestamp) =>
   ts
     ? ts.toDate().toLocaleDateString('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     : '—';
 
-const statusCfg = (s: OrderStatus) => {
-  const map = {
-    pendiente: {
-      label: 'Pendiente',
-      badge: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      Icon: ClockIcon,
-    },
-    en_proceso: {
-      label: 'Preparación',
-      badge: 'bg-blue-100 text-blue-800 border-blue-200',
-      Icon: TruckIcon,
-    },
-    entregado: {
-      label: 'Entregado',
-      badge: 'bg-green-100 text-green-800 border-green-200',
-      Icon: CheckCircleIcon,
-    },
-    cancelado: {
-      label: 'Cancelado',
-      badge: 'bg-red-100 text-red-700 border-red-200',
-      Icon: XCircleIcon,
-    },
-  } as const;
-  return map[s] ?? map.pendiente;
-};
+interface StatusInfo {
+  label: string;
+  tone: BadgeTone;
+  Icon: React.ComponentType<any>;
+}
 
-const eliminarPedido = async (o: Order) => {
-  const ok = await confirmToast(
-    `¿Eliminar definitivamente el pedido #${o.id}? Se devolverá el stock automáticamente.`
-  );
-  if (!ok) return;
-  try {
-    await eliminarPedidoYReponerStock(o);
-    showToast.success(`Pedido #${o.id} eliminado y stock revertido ✨`);
-  } catch (error) {
-    console.error('Error:', error);
-    showToast.error('Error al eliminar el pedido');
-  }
+const statusCfg = (s: OrderStatus): StatusInfo => {
+  const map: Record<OrderStatus, StatusInfo> = {
+    pendiente: { label: 'Pendiente', tone: 'amber', Icon: Clock },
+    en_proceso: { label: 'Preparacion', tone: 'blue', Icon: TruckIcon },
+    entregado: { label: 'Entregado', tone: 'green', Icon: CheckCircle2 },
+    cancelado: { label: 'Cancelado', tone: 'red', Icon: XCircle },
+  };
+  return map[s] ?? map.pendiente;
 };
 
 const confirmToast = (msg: string): Promise<boolean> =>
   new Promise((resolve) => {
     const id = toast.custom(
       () => (
-        <div className="max-w-sm w-full bg-white rounded-2xl border-2 border-rose-200 shadow-lg p-4">
-          <p className="text-sm text-gray-800 mb-3">{msg}</p>
-          <div className="flex items-center gap-2 justify-end">
+        <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0c0e1a] p-4 shadow-2xl">
+          <p className="text-sm text-slate-200">{msg}</p>
+          <div className="mt-3 flex items-center justify-end gap-2">
             <button
-              onClick={() => { toast.dismiss(id); resolve(false); }}
-              className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50"
+              onClick={() => {
+                toast.dismiss(id);
+                resolve(false);
+              }}
+              className="h-9 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-sm font-bold text-slate-200 hover:bg-white/[0.08]"
             >
               Cancelar
             </button>
             <button
-              onClick={() => { toast.dismiss(id); resolve(true); }}
-              className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600"
+              onClick={() => {
+                toast.dismiss(id);
+                resolve(true);
+              }}
+              className="h-9 rounded-lg bg-rose-500 px-3 text-sm font-bold text-white hover:bg-rose-400"
             >
               Confirmar
             </button>
@@ -177,12 +169,26 @@ const mailEntregado = (o: Order) => ({
   text: `Pedido #${o.id} entregado. ¡Gracias por tu compra!`,
 });
 
+const eliminarPedido = async (o: Order) => {
+  const ok = await confirmToast(
+    `Eliminar definitivamente el pedido #${o.id}? Se devolvera el stock automaticamente.`
+  );
+  if (!ok) return;
+  try {
+    await eliminarPedidoYReponerStock(o);
+    showToast.success(`Pedido #${o.id} eliminado y stock revertido`);
+  } catch (error) {
+    console.error('Error:', error);
+    showToast.error('Error al eliminar el pedido');
+  }
+};
+
 const cancelarYReponer = async (o: Order) => {
-  const ok = await confirmToast(`¿Cancelar el pedido #${o.id} y reponer stock automáticamente?`);
+  const ok = await confirmToast(`Cancelar el pedido #${o.id} y reponer stock automaticamente?`);
   if (!ok) return;
   try {
     await cancelarYReponerStock(o);
-    showToast.success(`Pedido #${o.id} cancelado y stock repuesto ✨`);
+    showToast.success(`Pedido #${o.id} cancelado y stock repuesto`);
   } catch (error) {
     console.error('Error:', error);
     showToast.error('No se pudo cancelar/reponer');
@@ -241,8 +247,9 @@ const AdminOrders: React.FC = () => {
     await acreditarPago(o.id);
     if (o.customer?.email) {
       const m = mailAcreditado(o);
-      sendEmail({ to: o.customer.email, subject: m.subject, html: m.html, text: m.text })
-        .catch(console.error);
+      sendEmail({ to: o.customer.email, subject: m.subject, html: m.html, text: m.text }).catch(
+        console.error
+      );
     }
   };
 
@@ -250,322 +257,373 @@ const AdminOrders: React.FC = () => {
     await marcarEntregadoService(o.id);
     if (o.customer?.email) {
       const m = mailEntregado(o);
-      sendEmail({ to: o.customer.email, subject: m.subject, html: m.html, text: m.text })
-        .catch(console.error);
+      sendEmail({ to: o.customer.email, subject: m.subject, html: m.html, text: m.text }).catch(
+        console.error
+      );
     }
   };
 
   const cancelarPedido = async (o: Order) => {
-    const ok = await confirmToast(`¿Cancelar el pedido #${o.id}? Esto no repone stock automáticamente.`);
+    const ok = await confirmToast(
+      `Cancelar el pedido #${o.id}? Esto no repone stock automaticamente.`
+    );
     if (!ok) return;
-
     await cancelarPedidoService(o.id);
     showToast.success(`Pedido #${o.id} cancelado`);
   };
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 px-4 py-6 text-slate-900">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-extralight text-gray-900">
-            Gestión de <span className="font-bold text-transparent bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text">Pedidos</span>
-          </h1>
-          <p className="text-gray-600">Acreditá señas, pasá a preparación y marcá entregas.</p>
-        </div>
+    <AdminPage className="flex flex-col gap-5 sm:gap-7">
+      <AdminHeader
+        eyebrow="Operaciones"
+        eyebrowIcon={<ReceiptText size={14} />}
+        title="Pedidos"
+        description="Acredita senas, pasa a preparacion y marca entregas."
+      />
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl border border-pink-100 shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <label className="relative">
-              <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                className="w-full rounded-xl border border-gray-200 pl-11 pr-3 py-2 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
-                placeholder="Buscar por ID, nombre, WhatsApp, email, ID MP..."
-                value={qText}
-                onChange={(e) => setQText(e.target.value)}
-              />
-            </label>
+      <AdminCard>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="relative">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+            <input
+              className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm font-semibold text-white outline-none transition-colors placeholder:text-slate-500 focus:border-pink-500/60 focus:bg-white/[0.06]"
+              placeholder="Buscar por ID, nombre, WhatsApp, email, ID MP..."
+              value={qText}
+              onChange={(e) => setQText(e.target.value)}
+            />
+          </div>
 
-            <label className="flex items-center gap-2">
-              <FunnelIcon className="w-5 h-5 text-gray-400" />
-              <select
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
-              >
-                <option value="todos">Todos los estados</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="en_proceso">Preparación</option>
-                <option value="entregado">Entregado</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-            </label>
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="shrink-0 text-slate-500" />
+            <AdminSelect value={status} onChange={(e) => setStatus(e.target.value as any)}>
+              <option value="todos">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="en_proceso">Preparacion</option>
+              <option value="entregado">Entregado</option>
+              <option value="cancelado">Cancelado</option>
+            </AdminSelect>
+          </div>
 
-            <label className="flex items-center gap-2">
-              <BanknotesIcon className="w-5 h-5 text-gray-400" />
-              <select
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none"
-                value={metodo}
-                onChange={(e) => setMetodo(e.target.value as any)}
-              >
-                <option value="todos">Todos los métodos</option>
-                <option value="transferencia">Transferencia/Efectivo</option>
-                <option value="mercadopago">MercadoPago</option>
-              </select>
-            </label>
+          <div className="flex items-center gap-2">
+            <Banknote size={16} className="shrink-0 text-slate-500" />
+            <AdminSelect value={metodo} onChange={(e) => setMetodo(e.target.value as any)}>
+              <option value="todos">Todos los metodos</option>
+              <option value="transferencia">Transferencia/Efectivo</option>
+              <option value="mercadopago">MercadoPago</option>
+            </AdminSelect>
           </div>
         </div>
+      </AdminCard>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center bg-white/60 border border-pink-100 rounded-2xl p-12">
-            <p className="text-gray-600">No hay pedidos con los filtros actuales.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {filtered.map((o) => {
-              const cfg = statusCfg(o.status);
-              const StatusIcon = cfg.Icon;
-              const total = getOrderTotal(o);
-              const senia = o.pago?.seniaMonto ?? Math.round(total * 0.5);
+      {loading ? (
+        <AdminLoader label="Cargando pedidos..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<ReceiptText size={28} />}
+          title="Sin pedidos"
+          description="No hay pedidos con los filtros actuales."
+        />
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((o) => {
+            const cfg = statusCfg(o.status);
+            const StatusIcon = cfg.Icon;
+            const total = getOrderTotal(o);
+            const senia = o.pago?.seniaMonto ?? Math.round(total * 0.5);
 
-              const puedeAcreditar =
-                o.status === 'pendiente' &&
-                (o.pago?.metodoSeleccionado === 'transferencia' || o.pago?.metodoSeleccionado === 'mercadopago') &&
-                !o.pago?.acreditado;
+            const puedeAcreditar =
+              o.status === 'pendiente' &&
+              (o.pago?.metodoSeleccionado === 'transferencia' ||
+                o.pago?.metodoSeleccionado === 'mercadopago') &&
+              !o.pago?.acreditado;
 
-              const puedePreparacion = puedeAcreditar;
+            const puedePreparacion = puedeAcreditar;
 
-              const puedeEntregar =
-                (o.status === 'en_proceso' && (o.pago?.metodoSeleccionado === 'transferencia' ? !!o.pago?.acreditado : true)) ||
-                (o.status === 'pendiente' && o.pago?.metodoSeleccionado === 'mercadopago' && o.pago?.acreditado);
+            const puedeEntregar =
+              (o.status === 'en_proceso' &&
+                (o.pago?.metodoSeleccionado === 'transferencia'
+                  ? !!o.pago?.acreditado
+                  : true)) ||
+              (o.status === 'pendiente' &&
+                o.pago?.metodoSeleccionado === 'mercadopago' &&
+                o.pago?.acreditado);
 
-              const mpStatus = o.pago?.mercadopago?.status;
-              const mpRefunded = mpStatus === 'refunded' || mpStatus === 'charged_back' || mpStatus === 'cancelled';
+            const mpStatus = o.pago?.mercadopago?.status;
+            const mpRefunded =
+              mpStatus === 'refunded' || mpStatus === 'charged_back' || mpStatus === 'cancelled';
 
-              return (
-                <div key={o.id} className="bg-white rounded-2xl border border-pink-100 shadow">
-                  <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b">
-                    <div className="flex items-center gap-3">
-                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border ${cfg.badge}`}>
-                        <StatusIcon className="w-4 h-4" />
-                        {cfg.label}
-                      </div>
-                      <div className="text-sm text-gray-500">#{o.id}</div>
+            return (
+              <AdminCard key={o.id} className="!p-0">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-3">
+                  <div className="flex items-center gap-3">
+                    <Badge tone={cfg.tone}>
+                      <StatusIcon size={12} />
+                      {cfg.label}
+                    </Badge>
+                    <span className="font-mono text-xs text-slate-400">#{o.id}</span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    Creado:{' '}
+                    <span className="font-semibold text-slate-200">{fmtDateTime(o.createdAt)}</span>
+                  </div>
+                </div>
+
+                {mpRefunded && (
+                  <div className="mx-5 mt-4 rounded-lg border border-rose-400/25 bg-rose-400/10 p-3 text-sm font-semibold text-rose-200">
+                    MercadoPago reporta estado <strong>{mpStatus}</strong>. Considera cancelar y
+                    reponer stock.
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-3">
+                  <div className="space-y-2">
+                    <h4 className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                      Cliente
+                    </h4>
+                    <div className="text-sm text-slate-200">
+                      <div className="font-semibold text-white">{o.customer?.nombre ?? '—'}</div>
+                      {o.customer?.whatsapp && (
+                        <div className="text-slate-400">WhatsApp: {o.customer.whatsapp}</div>
+                      )}
+                      {o.customer?.email && (
+                        <div className="text-slate-400">Email: {o.customer.email}</div>
+                      )}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      Creado: <span className="font-medium">{fmtDateTime(o.createdAt)}</span>
+
+                    <h4 className="mt-4 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                      Retiro / envio
+                    </h4>
+                    <div className="text-sm text-slate-300">
+                      <div>
+                        {o.entrega?.tipo === 'envio' ? 'Envio' : 'Retiro en local'}
+                        {o.entrega?.tipo === 'envio' && o.entrega?.direccion
+                          ? ` · ${o.entrega.direccion}`
+                          : ''}
+                      </div>
+                      <div className="text-slate-400">
+                        {o.entrega?.fecha} {o.entrega?.hora ? `· ${o.entrega.hora}` : ''}
+                      </div>
                     </div>
                   </div>
 
-                  {mpRefunded && (
-                    <div className="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                      ⚠️ MercadoPago reporta estado <strong>{mpStatus}</strong>. Considerá cancelar y reponer stock.
-                    </div>
-                  )}
-
-                  <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-gray-800">Cliente</h4>
-                      <div className="text-sm text-gray-700">
-                        <div>{o.customer?.nombre ?? '—'}</div>
-                        {o.customer?.whatsapp && <div>📱 {o.customer.whatsapp}</div>}
-                        {o.customer?.email && <div>✉️ {o.customer.email}</div>}
-                      </div>
-
-                      <h4 className="text-sm font-semibold text-gray-800 mt-4">Retiro/envío</h4>
-                      <div className="text-sm text-gray-700">
-                        <div>
-                          {o.entrega?.tipo === 'envio' ? 'Envío' : 'Retiro en local'}
-                          {o.entrega?.tipo === 'envio' && o.entrega?.direccion ? ` · ${o.entrega.direccion}` : ''}
-                        </div>
-                        <div>
-                          {o.entrega?.fecha} {o.entrega?.hora ? `· ${o.entrega.hora}` : ''}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-gray-800">Productos</h4>
-                      <div className="space-y-1 max-h-40 overflow-auto pr-1">
-                        {o.items?.map((it, i) => (
-                          <div key={i} className="flex items-center justify-between text-sm">
-                            <div className="text-gray-700">
-                              <span className="font-medium">{it.nombre}</span>
-                              {it.variantLabel ? <span className="text-gray-500"> ({it.variantLabel})</span> : null}
-                              <span className="text-gray-500"> ×{it.cantidad}</span>
-                            </div>
-                            <div className="text-gray-800 font-semibold">${price(getItemSubtotal(it))}</div>
+                  <div className="space-y-2">
+                    <h4 className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                      Productos
+                    </h4>
+                    <div className="max-h-40 space-y-1 overflow-auto pr-1">
+                      {o.items?.map((it, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <div className="text-slate-300">
+                            <span className="font-medium text-white">{it.nombre}</span>
+                            {it.variantLabel ? (
+                              <span className="text-slate-500"> ({it.variantLabel})</span>
+                            ) : null}
+                            <span className="text-slate-500"> ×{it.cantidad}</span>
                           </div>
-                        ))}
-                      </div>
+                          <div className="font-bold text-white">${price(getItemSubtotal(it))}</div>
+                        </div>
+                      ))}
                     </div>
+                  </div>
 
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-gray-800">Pago</h4>
-                      <div className="text-sm text-gray-700">
-                        <div>Método: {o.pago?.metodoSeleccionado === 'mercadopago' ? 'MercadoPago' : 'Transferencia/Efectivo'}</div>
-                        <div>Total: <span className="font-semibold">${price(total)}</span></div>
+                  <div className="space-y-3">
+                    <h4 className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                      Pago
+                    </h4>
+                    <div className="space-y-1 text-sm text-slate-300">
+                      <div>
+                        Metodo:{' '}
+                        <span className="font-semibold text-white">
+                          {o.pago?.metodoSeleccionado === 'mercadopago'
+                            ? 'MercadoPago'
+                            : 'Transferencia/Efectivo'}
+                        </span>
+                      </div>
+                      <div>
+                        Total: <span className="font-bold text-pink-300">${price(total)}</span>
+                      </div>
 
-                        {o.pago?.metodoSeleccionado === 'transferencia' && (
-                          <>
-                            <div>Seña requerida: <span className="font-semibold">${price(senia)}</span></div>
-                            <div>Estado seña: {o.pago?.acreditado ? '✅ acreditada' : '⏳ pendiente'}</div>
-                          </>
-                        )}
+                      {o.pago?.metodoSeleccionado === 'transferencia' && (
+                        <>
+                          <div>
+                            Sena requerida:{' '}
+                            <span className="font-semibold text-white">${price(senia)}</span>
+                          </div>
+                          <div className="text-xs">
+                            Estado sena:{' '}
+                            {o.pago?.acreditado ? (
+                              <Badge tone="green">Acreditada</Badge>
+                            ) : (
+                              <Badge tone="amber">Pendiente</Badge>
+                            )}
+                          </div>
+                        </>
+                      )}
 
-                        {o.pago?.metodoSeleccionado === 'mercadopago' && (
-                          <>
-                            <div>Pago MP: {o.pago?.acreditado ? '✅ aprobado' : '⏳ pendiente'}</div>
+                      {o.pago?.metodoSeleccionado === 'mercadopago' && (
+                        <>
+                          <div className="text-xs">
+                            Pago MP:{' '}
+                            {o.pago?.acreditado ? (
+                              <Badge tone="green">Aprobado</Badge>
+                            ) : (
+                              <Badge tone="amber">Pendiente</Badge>
+                            )}
+                          </div>
 
-                            {o.pago.mercadopago && (
-                              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                <div className="text-xs space-y-1.5">
-                                  <div className="font-semibold text-blue-900 mb-2">💳 Detalles MercadoPago</div>
+                          {o.pago.mercadopago && (
+                            <div className="mt-3 rounded-lg border border-sky-400/20 bg-sky-400/[0.05] p-3">
+                              <div className="space-y-1.5 text-xs">
+                                <div className="mb-2 font-bold text-sky-200">
+                                  Detalles MercadoPago
+                                </div>
 
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">ID Operación:</span>
-                                    <button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(o.pago!.mercadopago!.paymentId || '');
-                                        showToast.success('ID copiado');
-                                      }}
-                                      className="font-mono text-blue-700 text-[11px] hover:text-blue-900 hover:underline cursor-pointer"
-                                      title="Click para copiar"
-                                    >
-                                      #{o.pago.mercadopago.paymentId}
-                                    </button>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">ID Operacion:</span>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(
+                                        o.pago!.mercadopago!.paymentId || ''
+                                      );
+                                      showToast.success('ID copiado');
+                                    }}
+                                    className="font-mono text-[11px] text-sky-200 hover:text-sky-100 hover:underline"
+                                    title="Click para copiar"
+                                  >
+                                    #{o.pago.mercadopago.paymentId}
+                                  </button>
+                                </div>
+
+                                {o.pago.mercadopago.transactionAmount && (
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400">Monto:</span>
+                                    <span className="font-semibold text-white">
+                                      ${price(o.pago.mercadopago.transactionAmount)}
+                                    </span>
                                   </div>
+                                )}
 
-                                  {o.pago.mercadopago.transactionAmount && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Monto:</span>
-                                      <span className="font-semibold">${price(o.pago.mercadopago.transactionAmount)}</span>
-                                    </div>
-                                  )}
+                                {o.pago.mercadopago.paymentMethodId && (
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400">Metodo:</span>
+                                    <span className="capitalize text-slate-200">
+                                      {o.pago.mercadopago.paymentMethodId}
+                                    </span>
+                                  </div>
+                                )}
 
-                                  {o.pago.mercadopago.paymentMethodId && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Método:</span>
-                                      <span className="capitalize">{o.pago.mercadopago.paymentMethodId}</span>
-                                    </div>
-                                  )}
+                                {o.pago.mercadopago.cardLastFourDigits && (
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400">Tarjeta:</span>
+                                    <span className="font-mono text-slate-200">
+                                      **** {o.pago.mercadopago.cardLastFourDigits}
+                                    </span>
+                                  </div>
+                                )}
 
-                                  {o.pago.mercadopago.cardLastFourDigits && (
+                                {o.pago.mercadopago.installments &&
+                                  o.pago.mercadopago.installments > 1 && (
                                     <div className="flex justify-between">
-                                      <span className="text-gray-600">Tarjeta:</span>
-                                      <span className="font-mono">**** {o.pago.mercadopago.cardLastFourDigits}</span>
-                                    </div>
-                                  )}
-
-                                  {o.pago.mercadopago.installments && o.pago.mercadopago.installments > 1 && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Cuotas:</span>
-                                      <span>{o.pago.mercadopago.installments}x</span>
-                                    </div>
-                                  )}
-
-                                  {o.pago.mercadopago.dateApproved && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Aprobado:</span>
-                                      <span className="text-[11px]">
-                                        {new Date(o.pago.mercadopago.dateApproved).toLocaleString('es-AR', {
-                                          day: '2-digit',
-                                          month: '2-digit',
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        })}
+                                      <span className="text-slate-400">Cuotas:</span>
+                                      <span className="text-slate-200">
+                                        {o.pago.mercadopago.installments}x
                                       </span>
                                     </div>
                                   )}
-                                </div>
+
+                                {o.pago.mercadopago.dateApproved && (
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400">Aprobado:</span>
+                                    <span className="text-[11px] text-slate-200">
+                                      {new Date(o.pago.mercadopago.dateApproved).toLocaleString(
+                                        'es-AR',
+                                        {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        }
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button
-                          disabled={!puedePreparacion}
-                          onClick={() => acreditarSeniaOPago(o)}
-                          className={[
-                            'px-3 py-2 rounded-lg text-sm font-semibold border transition-all',
-                            puedePreparacion
-                              ? 'bg-green-600 text-white hover:bg-green-700'
-                              : 'bg-gray-200 text-gray-500 cursor-not-allowed',
-                          ].join(' ')}
-                          title="Acreditar seña/pago y mover a Preparación"
-                        >
-                          Acreditar & Preparación
-                        </button>
-
-                        <button
-                          disabled={!puedeEntregar}
-                          onClick={() => marcarEntregado(o)}
-                          className={[
-                            'px-3 py-2 rounded-lg text-sm font-semibold border transition-all',
-                            puedeEntregar
-                              ? 'bg-blue-600 text-white hover:bg-blue-700'
-                              : 'bg-gray-200 text-gray-500 cursor-not-allowed',
-                          ].join(' ')}
-                          title="Marcar como entregado"
-                        >
-                          Marcar Entregado
-                        </button>
-
-                        <button
-                          onClick={() => cancelarPedido(o)}
-                          className="px-3 py-2 rounded-lg text-sm font-semibold border bg-red-50 text-red-700 hover:bg-red-100 col-span-1 sm:col-span-2"
-                          title="Cancelar pedido (no repone stock automáticamente)"
-                        >
-                          Cancelar
-                        </button>
-
-                        <button
-                          onClick={() => cancelarYReponer(o)}
-                          className="px-3 py-2 rounded-lg text-sm font-semibold border bg-white text-red-600 hover:bg-red-50 col-span-1 sm:col-span-2"
-                          title="Cancelar y reponer stock automáticamente"
-                        >
-                          Cancelar + Reponer stock
-                        </button>
-
-                        <button
-                          onClick={() => eliminarPedido(o)}
-                          className="px-3 py-2 rounded-lg text-sm font-semibold border bg-white text-red-600/80 hover:bg-red-50 col-span-1 sm:col-span-2"
-                          title="Eliminar definitivamente este pedido y revertir stock"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-
-                      {o.status === 'entregado' && (
-                        <p className="text-xs text-gray-500">
-                          Entregado el: <span className="font-medium">{fmtDateTime(o.deliveredAt ?? undefined)}</span>
-                        </p>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
+
+                    <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
+                      <AdminButton
+                        size="sm"
+                        variant="primary"
+                        disabled={!puedePreparacion}
+                        onClick={() => acreditarSeniaOPago(o)}
+                        iconLeft={<PackageCheck size={14} />}
+                        className={!puedePreparacion ? 'opacity-50' : ''}
+                      >
+                        Acreditar
+                      </AdminButton>
+
+                      <AdminButton
+                        size="sm"
+                        variant="secondary"
+                        disabled={!puedeEntregar}
+                        onClick={() => marcarEntregado(o)}
+                        iconLeft={<CheckCircle2 size={14} />}
+                      >
+                        Marcar entregado
+                      </AdminButton>
+
+                      <AdminButton
+                        size="sm"
+                        variant="danger"
+                        onClick={() => cancelarPedido(o)}
+                        className="sm:col-span-2"
+                      >
+                        Cancelar
+                      </AdminButton>
+
+                      <AdminButton
+                        size="sm"
+                        variant="danger"
+                        onClick={() => cancelarYReponer(o)}
+                        className="sm:col-span-2"
+                      >
+                        Cancelar + reponer stock
+                      </AdminButton>
+
+                      <AdminButton
+                        size="sm"
+                        variant="danger"
+                        onClick={() => eliminarPedido(o)}
+                        className="sm:col-span-2"
+                      >
+                        Eliminar pedido
+                      </AdminButton>
+                    </div>
+
+                    {o.status === 'entregado' && (
+                      <p className="text-xs text-slate-500">
+                        Entregado el:{' '}
+                        <span className="font-medium text-slate-300">
+                          {fmtDateTime(o.deliveredAt ?? undefined)}
+                        </span>
+                      </p>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="mt-8 text-center">
-          <Link
-            to="/admin"
-            className="inline-flex items-center px-5 py-2.5 bg-white border-2 border-pink-500 text-pink-500 font-semibold rounded-xl hover:bg-pink-50 transition-all"
-          >
-            ← Volver al Dashboard
-          </Link>
+              </AdminCard>
+            );
+          })}
         </div>
-      </div>
-    </div>
+      )}
+    </AdminPage>
   );
 };
 
 export default AdminOrders;
-
