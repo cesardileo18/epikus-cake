@@ -24,7 +24,6 @@ const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen]           = useState(false);
   const [scrolled, setScrolled]               = useState(false);
   const [mobileAccountOpen, setMobileAccountOpen] = useState(false);
-  const [mobileAdminOpen, setMobileAdminOpen] = useState(false);
 
   const redirect = encodeURIComponent((location.pathname + location.search) || '/');
 
@@ -133,28 +132,14 @@ const mobileOnlyItems: MenuItem[] = user
                 </Link>
               ))}
 
-              {/* Dropdown Admin */}
               {adminItems.length > 0 && (
-                <div className="relative group">
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 font-medium transition-colors duration-300"
-                    style={{ color: 'var(--color-text-primary)' }}
-                    aria-haspopup="menu"
-                  >
-                    Admin
-                    <ChevronIcon />
-                  </button>
-                  <div className="absolute right-0 mt-2 w-64 translate-y-1 opacity-0 invisible transition group-hover:translate-y-0 group-hover:opacity-100 group-hover:visible z-50">
-                    <div className="nav-dropdown">
-                      {adminItems.map((it) => (
-                        <Link key={it.to} to={it.to} className="nav-dropdown-item">
-                          {it.name}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <Link
+                  to="/admin"
+                  className="relative font-medium transition-colors duration-300"
+                  style={{ color: location.pathname.startsWith('/admin') ? 'var(--color-brand)' : 'var(--color-text-primary)' }}
+                >
+                  Admin
+                </Link>
               )}
 
               {/* Toggle dark mode */}
@@ -450,33 +435,22 @@ const mobileOnlyItems: MenuItem[] = user
 
             {/* Admin móvil */}
             {adminItems.length > 0 && (
-              <div className="mt-2">
-                <button
-                  onClick={() => setMobileAdminOpen(o => !o)}
-                  className="w-full flex items-center justify-between p-4 rounded-2xl mobile-menu-item transition-all"
-                  type="button"
-                  aria-expanded={mobileAdminOpen}
-                >
-                  <span className="font-bold">Admin</span>
-                  <svg className={`w-5 h-5 transition-transform ${mobileAdminOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
-                  </svg>
-                </button>
-                <div className={`grid transition-[grid-template-rows] duration-300 ${mobileAdminOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                  <div className="overflow-hidden">
-                    {adminItems.map((it) => (
-                      <Link
-                        key={it.to}
-                        to={it.to}
-                        onClick={closeMenu}
-                        className="block mt-2 px-4 py-3 rounded-xl mobile-menu-subitem transition-all"
-                      >
-                        {it.name}
-                      </Link>
-                    ))}
-                  </div>
+              <Link
+                to="/admin"
+                onClick={closeMenu}
+                className="group flex items-center space-x-4 rounded-2xl p-4 mobile-menu-item backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-lg font-black transition group-hover:scale-110">
+                  A
                 </div>
-              </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold">Admin</h3>
+                  <div className="h-0.5 w-0 bg-white transition-all duration-300 group-hover:w-full" />
+                </div>
+                <svg className="h-6 w-6 opacity-60 transition group-hover:translate-x-1 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             )}
 
             {/* Auth móvil — no logueado */}

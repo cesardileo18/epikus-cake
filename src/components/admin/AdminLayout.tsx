@@ -97,7 +97,7 @@ const AdminLayout: React.FC = () => {
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-black/45 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/45"
           aria-label="Cerrar menu admin"
           onClick={() => setSidebarOpen(false)}
         />
@@ -107,7 +107,6 @@ const AdminLayout: React.FC = () => {
         className={[
           'fixed left-4 top-24 z-40 flex max-h-[calc(100dvh-7rem)] w-[18rem] flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-900/98 p-3 shadow-2xl transition-transform duration-200',
           sidebarOpen ? 'translate-x-0' : '-translate-x-[120%]',
-          'lg:translate-x-0',
         ].join(' ')}
       >
         <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-1">
@@ -143,7 +142,7 @@ const AdminLayout: React.FC = () => {
         </div>
       </aside>
 
-      <section className="min-h-screen px-3 pb-12 pt-24 sm:px-8 sm:pt-28 lg:pl-[21rem]">
+      <section className="min-h-screen px-3 pb-12 pt-24 sm:px-8 sm:pt-28">
         <Outlet />
       </section>
     </main>
