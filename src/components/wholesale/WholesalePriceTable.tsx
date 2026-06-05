@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import type { WholesaleProduct, WholesaleTable } from '@/interfaces/WholesaleContent';
+import type { WholesaleProduct, WholesaleTable } from '@/interfaces/content/wholesale';
 
 interface WholesalePriceTableProps {
     products: WholesaleProduct[];
@@ -72,3 +72,4 @@ const WholesalePriceTable: React.FC<WholesalePriceTableProps> = ({ products, tab
 };
 
 export default WholesalePriceTable;
+

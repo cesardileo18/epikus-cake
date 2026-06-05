@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import termsJson from "@/content/terms.json";
-import type { TermsContent } from "@/interfaces/TermsContent";
+import type { TermsContent } from "@/interfaces/content/terms";
 
 const content: TermsContent = termsJson as TermsContent;
 
@@ -72,3 +72,4 @@ const TermsAndConditions: React.FC = () => {
 };
 
 export default TermsAndConditions;
+

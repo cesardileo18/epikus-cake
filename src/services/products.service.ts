@@ -12,7 +12,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import type { Product } from '@/interfaces/Product';
+import type { Product } from '@/interfaces/product';
 
 export type ProductWithId = Product & { id: string };
 

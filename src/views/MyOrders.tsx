@@ -21,7 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import myOrdersJson from '@/content/my-orders.json';
-import type { MyOrdersContent } from '@/interfaces/MyOrdersContent';
+import type { MyOrdersContent } from '@/interfaces/content/my-orders';
 const content: MyOrdersContent = myOrdersJson as MyOrdersContent;
 
 // === Soporte para ambos esquemas (viejo y nuevo) ===
@@ -428,3 +428,4 @@ const MyOrders: React.FC = () => {
 };
 
 export default MyOrders;
+

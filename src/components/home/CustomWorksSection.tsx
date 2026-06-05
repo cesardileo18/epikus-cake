@@ -3,7 +3,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
-import type { CustomWorkItem } from '@/interfaces/CustomWorks';
+import type { CustomWorkItem } from '@/interfaces/content/custom-works';
 
 interface CustomWorksSectionProps {
   title?: string;
@@ -174,3 +174,4 @@ const CustomWorksSection: React.FC<CustomWorksSectionProps> = ({ items }) => {
 };
 
 export default CustomWorksSection;
+

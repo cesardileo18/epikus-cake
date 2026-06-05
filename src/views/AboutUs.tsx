@@ -12,7 +12,7 @@ import { SectionHeader } from "@/components/aboutUs/SectionHeader";
 import { InstagramSection } from "@/components/aboutUs/InstagramSection";
 
 import aboutJson from "@/content/about-us.json";
-import type { AboutUsContent } from "@/interfaces/AboutUsContent";
+import type { AboutUsContent } from "@/interfaces/content/about-us";
 import GraduationVideoSection from "@/components/aboutUs/GraduationVideoSection";
 
 const content: AboutUsContent = aboutJson as AboutUsContent;
@@ -208,3 +208,4 @@ export default function AboutUs() {
     </main>
   );
 }
+

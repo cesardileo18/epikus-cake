@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartProvider';
 import { useAuth } from '@/context/AuthProvider';
 
 import checkoutJson from '@/content/checkout.json';
-import type { CheckoutContent } from '@/interfaces/CheckoutContent';
+import type { CheckoutContent } from '@/interfaces/content/checkout';
 
 const content: CheckoutContent = checkoutJson as CheckoutContent;
 const price = (n: number) => n.toLocaleString(content.i18n.price_locale);
@@ -177,3 +177,4 @@ const Checkout: React.FC = () => {
 };
 
 export default Checkout;
+

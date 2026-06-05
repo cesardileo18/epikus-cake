@@ -3,7 +3,7 @@ import type {
   WholesaleCategory,
   WholesaleContent,
   WholesaleProduct,
-} from '@/interfaces/WholesaleContent';
+} from '@/interfaces/content/wholesale';
 import wholesaleJson from '@/content/wholesale.json';
 import WholesaleProductCard from '@/components/wholesale/WholesaleProductCard';
 import WholesalePriceTable from '@/components/wholesale/WholesalePriceTable';
@@ -212,3 +212,4 @@ const WholesalePage: React.FC = () => {
 };
 
 export default WholesalePage;
+

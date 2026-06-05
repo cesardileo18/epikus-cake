@@ -1,7 +1,7 @@
 // src/views/admin/products/AdminProductForm.tsx
 import { useState } from "react";
 import { createProduct } from "@/services/products.service";
-import type { Product } from "@/interfaces/Product";
+import type { Product } from "@/interfaces/product";
 import { showToast } from "@/components/feedback/ToastProvider";
 
 const AdminProductForm = () => {
@@ -151,7 +151,7 @@ const AdminProductForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 px-4 pt-20 pb-10">
+    <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 px-4 py-6 text-slate-900">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -674,3 +674,4 @@ const AdminProductForm = () => {
 };
 
 export default AdminProductForm;
+

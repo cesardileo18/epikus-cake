@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import contentJson from "@/content/privacy.json";
-import type { PrivacyContent } from "@/interfaces/PrivacyContent";
+import type { PrivacyContent } from "@/interfaces/content/privacy";
 
 const content: PrivacyContent = contentJson as PrivacyContent;
 
@@ -84,3 +84,4 @@ const PrivacyPolicy: React.FC = () => {
 };
 
 export default PrivacyPolicy;
+

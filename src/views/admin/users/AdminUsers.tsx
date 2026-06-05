@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { subscribeToUsers, subscribeToOrdersForUsers } from "@/services/users.service";
 import UsersTable from "@/components/admin/UsersTable";
 import UserOrdersPanel from "@/components/admin/UserOrdersPanel";
-import type { Order, User } from "@/interfaces/admin/Users";
-import type { UserWithStats } from "@/interfaces/admin/UserWithStats";
+import type { Order, User } from "@/interfaces/user";
+import type { UserWithStats } from "@/interfaces/user";
 
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -71,9 +71,9 @@ const AdminUsers: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50">
+    <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 text-slate-900">
       {/* Header fijo con padding para el navbar */}
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-pink-50/95 via-white/95 to-rose-50/95 backdrop-blur-sm border-b border-gray-200/50 px-4 pt-20 pb-4">
+      <div className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm border-b border-gray-200/70 px-4 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Title */}
           <div className="mb-4">
@@ -187,3 +187,5 @@ const AdminUsers: React.FC = () => {
 };
 
 export default AdminUsers;
+
+

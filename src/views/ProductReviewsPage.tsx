@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import type { Product } from "@/interfaces/Product";
+import type { Product } from "@/interfaces/product";
 import { RatingStars } from "@/components/RatingStars/RatingStars";
 type ReviewDoc = {
   rating: number;

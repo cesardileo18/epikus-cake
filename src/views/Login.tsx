@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { sendEmailLink, signInWithGoogle } from '@/auth/auth';
 
 import loginJson from '@/content/login.json';
-import type { LoginContent } from '@/interfaces/LoginContent';
+import type { LoginContent } from '@/interfaces/content/login';
 const content: LoginContent = loginJson as LoginContent;
 
 // Util
@@ -204,3 +204,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+

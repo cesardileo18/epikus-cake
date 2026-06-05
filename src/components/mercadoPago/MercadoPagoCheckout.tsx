@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { showToast } from "@/components/feedback/ToastProvider";
-import type { MercadoPagoCheckoutProps } from "@/interfaces/mercadoPago/mercadoPago";
+import type { MercadoPagoCheckoutProps } from "@/interfaces/payment/mercado-pago";
 import { httpsCallable } from "firebase/functions";
 import { auth, functions } from "@/config/firebase";
 
@@ -111,3 +111,4 @@ const MercadoPagoCheckout: React.FC<MercadoPagoCheckoutProps> = ({
 };
 
 export default MercadoPagoCheckout;
+

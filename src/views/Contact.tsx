@@ -5,7 +5,7 @@ import { useRecaptcha } from '@/hooks/useRecaptcha';
 import ReCaptchaInvisible from '@/components/security/ReCaptchaInvisible';
 
 import contactJson from '@/content/contact.json';
-import type { ContactContent } from '@/interfaces/ContactContent';
+import type { ContactContent } from '@/interfaces/content/contact';
 
 
 const content: ContactContent = contactJson as ContactContent;
@@ -232,3 +232,4 @@ const Contact: React.FC = () => {
 };
 
 export default Contact;
+

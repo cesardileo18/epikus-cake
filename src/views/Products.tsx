@@ -2,7 +2,7 @@
 import React from 'react';
 import ProductGrid from '@/components/product/ProductGrid';
 import productsContent from '@/content/products.json';
-import type { ProductsTextContent } from '@/interfaces/ProductsContent';
+import type { ProductsTextContent } from '@/interfaces/content/products';
 import { useProductCatalog } from '@/hooks/useProductCatalog';
 
 const content: ProductsTextContent = productsContent as ProductsTextContent;

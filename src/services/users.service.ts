@@ -8,7 +8,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import type { User } from '@/interfaces/admin/Users';
+import type { User } from '@/interfaces/user';
 
 /**
  * Suscripción en tiempo real a la colección de usuarios.
@@ -74,3 +74,4 @@ export function subscribeToOrdersForUsers(
     }
   );
 }
+

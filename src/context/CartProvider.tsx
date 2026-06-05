@@ -8,7 +8,7 @@ import {
   useCallback,
 } from 'react';
 import type { ReactNode } from 'react';
-import type { Product } from '@/interfaces/Product';
+import type { Product } from '@/interfaces/product';
 
 export interface ProductWithId extends Product { id: string; }
 

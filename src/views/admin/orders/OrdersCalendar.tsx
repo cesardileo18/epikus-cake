@@ -165,7 +165,7 @@ const OrdersCalendar: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center px-4 pt-20">
+            <div className="min-h-[50vh] flex items-center justify-center px-4 text-slate-700">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                     <p className="text-gray-600">Cargando calendario...</p>
@@ -175,7 +175,7 @@ const OrdersCalendar: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 px-4 pt-22 pb-10">
+        <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 px-4 py-6 text-slate-900">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
@@ -468,3 +468,4 @@ const OrdersCalendar: React.FC = () => {
 };
 
 export default OrdersCalendar;
+

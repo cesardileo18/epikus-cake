@@ -1,4 +1,4 @@
-import type {UserWithStats} from "@/interfaces/admin/UserWithStats";
+import type {UserWithStats} from "@/interfaces/user";
 
 interface Props {
   user: UserWithStats | null;

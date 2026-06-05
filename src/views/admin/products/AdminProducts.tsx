@@ -304,7 +304,7 @@ const AdminProducts = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex items-center justify-center">
+      <div className="min-h-[50vh] flex items-center justify-center text-slate-700">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando productos...</p>
@@ -314,7 +314,7 @@ const AdminProducts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#ff7bab3a] pt-20 pb-10">
+    <div className="min-h-[calc(100vh-8rem)] rounded-xl border border-white/10 bg-slate-50 py-6 text-slate-900">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-4 md:mb-8">
@@ -849,3 +849,4 @@ const AdminProducts = () => {
 };
 
 export default AdminProducts;
+

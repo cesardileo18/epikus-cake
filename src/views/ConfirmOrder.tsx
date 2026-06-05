@@ -17,7 +17,7 @@ import { showToast } from '@/components/feedback/ToastProvider';
 import { httpsCallable } from 'firebase/functions';
 import ConsentimientoTyC from '@/components/buttons/ConsentimientoTyC';
 import transferenciaJson from "@/content/transfer.json"
-import type { TransferenciaData } from "@/interfaces/Transferencia";
+import type { TransferenciaData } from "@/interfaces/content/transfer";
 
 const transferencia = transferenciaJson as TransferenciaData;
 
@@ -854,3 +854,4 @@ const ConfirmOrder: React.FC = () => {
 };
 
 export default ConfirmOrder;
+

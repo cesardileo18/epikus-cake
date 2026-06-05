@@ -1,5 +1,5 @@
 import React from 'react';
-import type { WholesaleProduct, WholesaleCategory } from '@/interfaces/WholesaleContent';
+import type { WholesaleProduct, WholesaleCategory } from '@/interfaces/content/wholesale';
 
 interface WholesaleProductCardProps {
     product: WholesaleProduct;
@@ -73,3 +73,4 @@ const WholesaleProductCard: React.FC<WholesaleProductCardProps> = ({
 };
 
 export default WholesaleProductCard;
+
