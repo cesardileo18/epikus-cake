@@ -1,62 +1,64 @@
-// src/routes/AppRoutes.tsx
-import React, { lazy, Suspense } from "react";
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "@/context/AuthProvider";
+import React, { lazy, Suspense } from 'react';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { useAuth } from '@/context/AuthProvider';
+import PublicLayout from '@/components/layout/PublicLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
 
-// ====== lazy imports (code-splitting) ======
-const Home = lazy(() => import("@/views/Home"));
-const Products = lazy(() => import("@/views/Products"));
-const Dashboard = lazy(() => import("@/views/admin/dashboard/Dashboard"));
-const AddProduct = lazy(() => import("@/views/admin/products/AddProduct"));
-const ProductsList = lazy(() => import("@/views/admin/products/ProductsList"));
-const Login = lazy(() => import("@/views/Login"));
-const AuthCallback = lazy(() => import("@/views/AuthCallback"));
-const Checkout = lazy(() => import("@/views/Checkout"));
-const Contact = lazy(() => import("@/views/Contact"));
-const AboutUs = lazy(() => import("@/views/AboutUs"));
-const ProductDetail = lazy(() => import("@/views/ProductDetail"));
-const ConfirmOrder = lazy(() => import("@/views/ConfirmOrder"));
-const PrivacyPolicy = lazy(() => import("@/views/Privacidad"));
-const TermsAndConditions = lazy(() => import("@/views/TermsAndConditions"));
-const Profile = lazy(() => import("@/views/Profile"));
-const MyOrders = lazy(() => import("@/views/MyOrders"));
-const OrderSuccess = lazy(() => import("@/views/OrderSuccess"));
-const OrdersAdmin = lazy(() => import("@/views/admin/sells/OrdersAdmin"));
-const PaymentSuccess = lazy(() => import("@/views/payment/PaymentSuccess"));
-const AdminUsersPage = lazy(() => import("@/views/admin/users/AdminUsersPage"));
-const AnalyticsDashboard = lazy(() => import("@/views/admin/analyticsDashboard/AnalyticsDashboard"));
-const SalesDashboard = lazy(() => import("@/views/admin/sells/SalesDashboard"));
-const Favorites = lazy(() => import("@/views/Favorites"));
-const ProductReviewsPage = lazy(() => import("@/views/ProductReviewsPage"));
-const MyReviewsPage = lazy(() => import("@/views/MyReviewsPage"));
-const OrderCalendar = lazy(() => import("@/views/admin/sells/OrdersCalendar"));
-const WholesalePage = lazy(() => import("@/views/WholesalePage"));
-// ====== tipos de rol (mantener en sync con lo que guardás en Firestore) ======
-type Role = "admin" | "customer" | "viewer";
+const Home = lazy(() => import('@/views/Home'));
+const Products = lazy(() => import('@/views/Products'));
+const Dashboard = lazy(() => import('@/views/admin/dashboard/Dashboard'));
+const AddProduct = lazy(() => import('@/views/admin/products/AddProduct'));
+const ProductsList = lazy(() => import('@/views/admin/products/ProductsList'));
+const Login = lazy(() => import('@/views/Login'));
+const AuthCallback = lazy(() => import('@/views/AuthCallback'));
+const Checkout = lazy(() => import('@/views/Checkout'));
+const Contact = lazy(() => import('@/views/Contact'));
+const AboutUs = lazy(() => import('@/views/AboutUs'));
+const ProductDetail = lazy(() => import('@/views/ProductDetail'));
+const ConfirmOrder = lazy(() => import('@/views/ConfirmOrder'));
+const PrivacyPolicy = lazy(() => import('@/views/Privacidad'));
+const TermsAndConditions = lazy(() => import('@/views/TermsAndConditions'));
+const Profile = lazy(() => import('@/views/Profile'));
+const MyOrders = lazy(() => import('@/views/MyOrders'));
+const OrderSuccess = lazy(() => import('@/views/OrderSuccess'));
+const OrdersAdmin = lazy(() => import('@/views/admin/sells/OrdersAdmin'));
+const PaymentSuccess = lazy(() => import('@/views/payment/PaymentSuccess'));
+const AdminUsersPage = lazy(() => import('@/views/admin/users/AdminUsersPage'));
+const AnalyticsDashboard = lazy(() => import('@/views/admin/analyticsDashboard/AnalyticsDashboard'));
+const SalesDashboard = lazy(() => import('@/views/admin/sells/SalesDashboard'));
+const Favorites = lazy(() => import('@/views/Favorites'));
+const ProductReviewsPage = lazy(() => import('@/views/ProductReviewsPage'));
+const MyReviewsPage = lazy(() => import('@/views/MyReviewsPage'));
+const OrderCalendar = lazy(() => import('@/views/admin/sells/OrdersCalendar'));
+const WholesalePage = lazy(() => import('@/views/WholesalePage'));
 
-// ====== Loader simple ======
+type Role = 'admin' | 'customer' | 'viewer';
+
 const Loader = () => (
-  <div className="grid place-items-center min-h-[40vh]" style={{ background: 'var(--color-bg-page)' }}>
+  <div className="grid min-h-[40vh] place-items-center" style={{ background: 'var(--color-bg-page)' }}>
     <div
-      className="h-10 w-10 border-4 border-t-transparent rounded-full animate-spin"
+      className="h-10 w-10 animate-spin rounded-full border-4 border-t-transparent"
       style={{ borderColor: 'var(--color-brand)', borderTopColor: 'transparent' }}
     />
   </div>
 );
 
-// ====== Guard genérico ======
+const AdminLoader = () => (
+  <main className="grid min-h-screen place-items-center bg-slate-950 text-white">
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-pink-500 border-t-transparent" />
+  </main>
+);
+
 const ProtectedRoute: React.FC<{ requiredRole?: Role }> = ({ requiredRole }) => {
   const { user, role, loading } = useAuth();
 
-  if (loading) return <Loader />;
+  if (loading) return requiredRole === 'admin' ? <AdminLoader /> : <Loader />;
 
-  // no logueado -> al login con redirect
   if (!user) {
     const redirect = encodeURIComponent(window.location.pathname + window.location.search);
     return <Navigate to={`/login?redirect=${redirect}`} replace />;
   }
 
-  // sin rol requerido
   if (requiredRole && role !== requiredRole) {
     return <Navigate to="/" replace />;
   }
@@ -64,68 +66,31 @@ const ProtectedRoute: React.FC<{ requiredRole?: Role }> = ({ requiredRole }) => 
   return <Outlet />;
 };
 
-// ====== Layout admin mínimo (opcional para sidebar/header admin) ======
-const AdminLayout: React.FC = () => {
-  return (
-    <div className="min-h-screen">
-      {/* acá podrías poner <AdminSidebar/> o <AdminHeader/> */}
-      <div>
-        <Outlet />
-      </div>
-    </div>
-  );
-};
-
-// ====== 404 ======
 const NotFound = () => (
   <div
-    className="grid place-items-center min-h-[50vh] text-center px-4"
+    className="grid min-h-[50vh] place-items-center px-4 text-center"
     style={{ background: 'var(--color-bg-page)' }}
   >
     <div>
-      <div className="text-6xl mb-4">🎂</div>
-      <h1 className="text-5xl font-bold mb-2 text-brand-gradient">404</h1>
-      <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>La página que buscás no existe.</p>
-      <a
-        href="/"
-        className="btn-brand px-6 py-3 inline-block"
-      >
+      <div className="mb-4 text-6xl">🎂</div>
+      <h1 className="mb-2 text-5xl font-bold text-brand-gradient">404</h1>
+      <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+        La pagina que buscas no existe.
+      </p>
+      <a href="/" className="btn-brand inline-block px-6 py-3">
         Volver al inicio
       </a>
     </div>
   </div>
 );
 
-// ====== Rutas ======
 const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
-        {/* públicas */}
-        <Route path="/" element={<Home />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/about" element={<AboutUs />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/products/:id" element={<ProductDetail />} />
-        <Route path="/confirm-order" element={<ConfirmOrder />} />
-        <Route path="/privacidad" element={<PrivacyPolicy />} />
-        <Route path="/terminos" element={<TermsAndConditions />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/my-orders" element={<MyOrders />} />
-        <Route path="/order-success" element={<OrderSuccess />} />
-        <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/products/:id/opiniones" element={<ProductReviewsPage />} />
-        <Route path="/my-reviews" element={<MyReviewsPage />} />
-        <Route path="/wholesale" element={<WholesalePage />} />
-
-        {/* admin protegidas */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>
           <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<Dashboard />} />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={<Dashboard />} />
             <Route path="/admin/products" element={<ProductsList />} />
             <Route path="/admin/products/add" element={<AddProduct />} />
@@ -134,11 +99,32 @@ const AppRoutes: React.FC = () => {
             <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
             <Route path="/admin/sales-dashboard" element={<SalesDashboard />} />
             <Route path="/admin/sells/calendar" element={<OrderCalendar />} />
+            <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Route>
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/confirm-order" element={<ConfirmOrder />} />
+          <Route path="/privacidad" element={<PrivacyPolicy />} />
+          <Route path="/terminos" element={<TermsAndConditions />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/order-success" element={<OrderSuccess />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/products/:id/opiniones" element={<ProductReviewsPage />} />
+          <Route path="/my-reviews" element={<MyReviewsPage />} />
+          <Route path="/wholesale" element={<WholesalePage />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
       </Routes>
     </Suspense>
   );

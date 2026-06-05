@@ -37,6 +37,13 @@ export interface Product {
     "2"?: number;
     "1"?: number;
   };
+
+  // ===== CAMPOS OPCIONALES PARA MAYORISTAS =====
+  mayorista?: boolean;           // Si existe, permite filtrar productos para /wholesale
+  precioMayorista?: number;      // Precio unitario mayorista; si no existe usa precio normal
+  packMayorista?: number;        // Cantidad minima del pack mayorista
+  categoriaMayorista?: string;   // Categoria especifica para agrupar en /wholesale
+  ordenMayorista?: number;       // Orden opcional dentro del catalogo mayorista
 }
 
 // ⭐ Review de un producto (subcolección: "productos/{productId}/reviews/{reviewId}")

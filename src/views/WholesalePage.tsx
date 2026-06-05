@@ -1,22 +1,148 @@
 import React from 'react';
-import type { WholesaleContent } from '@/interfaces/WholesaleContent';
+import type {
+  WholesaleCategory,
+  WholesaleContent,
+  WholesaleProduct,
+} from '@/interfaces/WholesaleContent';
 import wholesaleJson from '@/content/wholesaleContent.json';
 import WholesaleProductCard from '@/components/wholesale/WholesaleProductCard';
 import WholesalePriceTable from '@/components/wholesale/WholesalePriceTable';
+import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
+import type { ProductWithId } from '@/services/products.service';
 
 const content = wholesaleJson as WholesaleContent;
 
-const WholesalePage: React.FC = () => {
-  const { page, categories, products } = content;
+const capitalize = (value: string): string =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 
-  // Mapa rápido para lookup O(1) por category_id
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
+const getWholesaleCategoryId = (product: ProductWithId): string =>
+  (product.categoriaMayorista || product.categoria || 'mayorista').trim().toLowerCase();
+
+const getWholesalePrice = (product: ProductWithId): number => {
+  const wholesalePrice = Number(product.precioMayorista);
+  if (wholesalePrice > 0) return wholesalePrice;
+
+  if (product.tieneVariantes && product.variantes?.length) {
+    const prices = product.variantes
+      .filter((variant) => variant.disponible !== false)
+      .map((variant) => variant.precio)
+      .filter((price) => price > 0);
+
+    return prices.length ? Math.min(...prices) : 0;
+  }
+
+  return product.precio ?? 0;
+};
+
+const getWholesalePackQty = (product: ProductWithId): number => {
+  const packQty = Number(product.packMayorista);
+  return packQty > 0 ? packQty : 1;
+};
+
+const mapProductToWholesale = (product: ProductWithId): WholesaleProduct => ({
+  id: product.id,
+  category_id: getWholesaleCategoryId(product),
+  name: product.nombre,
+  description: product.descripcion,
+  image: product.imagen,
+  price_per_unit: getWholesalePrice(product),
+  pack_qty: getWholesalePackQty(product),
+});
+
+const buildCategories = (
+  jsonCategories: WholesaleCategory[],
+  products: WholesaleProduct[]
+): WholesaleCategory[] => {
+  const usedCategoryIds = Array.from(new Set(products.map((product) => product.category_id)));
+
+  return usedCategoryIds.map((categoryId, index) => {
+    const jsonCategory = jsonCategories.find((category) => category.id === categoryId);
+    if (jsonCategory) return jsonCategory;
+
+    return {
+      id: categoryId,
+      label: capitalize(categoryId),
+      tag_variant: index % 2 === 0 ? 'rose' : 'gold',
+      title_prefix: 'Coleccion',
+      title_highlight: capitalize(categoryId),
+      subtitle: 'Productos disponibles para pedidos mayoristas',
+    };
+  });
+};
+
+const sortWholesaleProducts = (
+  products: WholesaleProduct[],
+  sourceProducts: ProductWithId[]
+): WholesaleProduct[] =>
+  [...products].sort((a, b) => {
+    const sourceA = sourceProducts.find((product) => product.id === a.id);
+    const sourceB = sourceProducts.find((product) => product.id === b.id);
+    const orderA = Number(sourceA?.ordenMayorista ?? Number.MAX_SAFE_INTEGER);
+    const orderB = Number(sourceB?.ordenMayorista ?? Number.MAX_SAFE_INTEGER);
+
+    return orderA - orderB || a.name.localeCompare(b.name);
+  });
+
+const WholesalePage: React.FC = () => {
+  const { page } = content;
+  const { products: dbProducts, loading, error } = useProductsLiveQuery({ onlyActive: true });
+
+  const products = sortWholesaleProducts(
+    dbProducts
+      .filter((product) => product.mayorista !== false)
+      .map(mapProductToWholesale)
+      .filter((product) => product.price_per_unit > 0),
+    dbProducts
+  );
+
+  const categories = buildCategories(content.categories, products);
+  const categoryMap = Object.fromEntries(categories.map((category) => [category.id, category]));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen section-brand-bg grid place-items-center px-4">
+        <div
+          className="h-10 w-10 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: 'var(--color-brand)', borderTopColor: 'transparent' }}
+        />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen section-brand-bg grid place-items-center px-4 text-center">
+        <div>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            No pudimos cargar el catalogo mayorista
+          </h1>
+          <p style={{ color: 'var(--color-text-secondary)' }}>
+            Intentalo nuevamente en unos minutos.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!products.length) {
+    return (
+      <div className="min-h-screen section-brand-bg grid place-items-center px-4 text-center">
+        <div>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+            Catalogo mayorista sin productos
+          </h1>
+          <p style={{ color: 'var(--color-text-secondary)' }}>
+            Carga productos activos con precio para mostrarlos en esta seccion.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen section-brand-bg">
-      {/* ── PRODUCTOS POR CATEGORÍA ── */}
       {categories.map((category, catIndex) => {
-        const categoryProducts = products.filter((p) => p.category_id === category.id);
+        const categoryProducts = products.filter((product) => product.category_id === category.id);
 
         return (
           <section
@@ -25,7 +151,6 @@ const WholesalePage: React.FC = () => {
               catIndex === 0 ? 'page-hero' : 'py-8'
             }`}
           >
-            {/* Section header */}
             <div className="text-center mb-8">
               <h2 className="text-3xl md:text-4xl font-light mb-3" style={{ color: 'var(--color-text-primary)' }}>
                 {category.title_prefix}{' '}
@@ -35,7 +160,7 @@ const WholesalePage: React.FC = () => {
               </h2>
               <p className="text-base md:text-lg" style={{ color: 'var(--color-text-secondary)' }}>{category.subtitle}</p>
             </div>
-            {/* Pack info callout — solo en primera categoría */}
+
             {category.id === categories[0].id && (
               <div className="flex items-start gap-4 bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 max-w-3xl mx-auto">
                 <span className="text-2xl">📦</span>
@@ -46,7 +171,6 @@ const WholesalePage: React.FC = () => {
               </div>
             )}
 
-            {/* Grid de cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {categoryProducts.map((product) => (
                 <WholesaleProductCard
@@ -61,13 +185,10 @@ const WholesalePage: React.FC = () => {
         );
       })}
 
-      {/* ── DIVIDER ── */}
       <div className="h-px bg-gradient-to-r from-transparent via-pink-200 to-transparent mx-8" />
 
-      {/* ── TABLA DE PRECIOS ── */}
       <WholesalePriceTable products={products} table={page.table} />
 
-      {/* ── CTA WHATSAPP ── */}
       <section className="section-alt-bg py-16 px-6 text-center">
         <h2 className="text-2xl md:text-3xl font-light mb-3" style={{ color: 'var(--color-text-primary)' }}>
           {page.cta.title}
@@ -86,7 +207,6 @@ const WholesalePage: React.FC = () => {
           {page.cta.whatsapp_label}
         </a>
       </section>
-
     </div>
   );
 };
