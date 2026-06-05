@@ -4,7 +4,7 @@ import type {
   WholesaleContent,
   WholesaleProduct,
 } from '@/interfaces/WholesaleContent';
-import wholesaleJson from '@/content/wholesaleContent.json';
+import wholesaleJson from '@/content/wholesale.json';
 import WholesaleProductCard from '@/components/wholesale/WholesaleProductCard';
 import WholesalePriceTable from '@/components/wholesale/WholesalePriceTable';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
@@ -89,7 +89,7 @@ const WholesalePage: React.FC = () => {
 
   const products = sortWholesaleProducts(
     dbProducts
-      .filter((product) => product.mayorista !== false)
+      .filter((product) => product.mayorista === true)
       .map(mapProductToWholesale)
       .filter((product) => product.price_per_unit > 0),
     dbProducts

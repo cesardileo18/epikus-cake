@@ -19,12 +19,12 @@ import { useAuth } from '@/context/AuthProvider';
 const NAV_ITEMS = [
   { to: '/admin/dashboard', label: 'Tablero global', icon: LayoutDashboard },
   { to: '/admin/products', label: 'Productos', icon: Boxes },
-  { to: '/admin/products/add', label: 'Agregar producto', icon: PackagePlus },
-  { to: '/admin/sells', label: 'Pedidos', icon: ReceiptText },
+  { to: '/admin/products/new', label: 'Agregar producto', icon: PackagePlus },
+  { to: '/admin/orders', label: 'Pedidos', icon: ReceiptText },
   { to: '/admin/users', label: 'Usuarios', icon: Users },
-  { to: '/admin/analytics', label: 'Visitas', icon: BarChart3 },
-  { to: '/admin/sales-dashboard', label: 'Ventas', icon: TrendingUp },
-  { to: '/admin/sells/calendar', label: 'Calendario', icon: CalendarDays },
+  { to: '/admin/metrics', label: 'Metricas', icon: BarChart3 },
+  { to: '/admin/sales', label: 'Ventas', icon: TrendingUp },
+  { to: '/admin/orders/calendar', label: 'Calendario', icon: CalendarDays },
 ];
 
 const AdminLayout: React.FC = () => {

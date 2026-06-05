@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import contentJson from "@/content/privacyContent.json";
+import contentJson from "@/content/privacy.json";
 import type { PrivacyContent } from "@/interfaces/PrivacyContent";
 
 const content: PrivacyContent = contentJson as PrivacyContent;

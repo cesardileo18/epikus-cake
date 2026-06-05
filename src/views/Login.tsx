@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { sendEmailLink, signInWithGoogle } from '@/auth/auth';
 
-import loginJson from '@/content/loginContent.json';
+import loginJson from '@/content/login.json';
 import type { LoginContent } from '@/interfaces/LoginContent';
 const content: LoginContent = loginJson as LoginContent;
 

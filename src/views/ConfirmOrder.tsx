@@ -16,7 +16,7 @@ import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/feedback/ToastProvider';
 import { httpsCallable } from 'firebase/functions';
 import ConsentimientoTyC from '@/components/buttons/ConsentimientoTyC';
-import transferenciaJson from "@/content/TransferenciaData.json"
+import transferenciaJson from "@/content/transfer.json"
 import type { TransferenciaData } from "@/interfaces/Transferencia";
 
 const transferencia = transferenciaJson as TransferenciaData;

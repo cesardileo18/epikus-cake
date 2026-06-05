@@ -363,7 +363,7 @@ const OrdersCalendar: React.FC = () => {
                                                         </h4>
                                                     </div>
                                                     <Link
-                                                        to={`/admin/sells`}
+                                                        to={`/admin/orders`}
                                                         className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white rounded-xl font-semibold hover:from-pink-600 hover:to-rose-500 transition-all shadow-lg text-sm"
                                                     >
                                                         Ver detalle
@@ -450,7 +450,7 @@ const OrdersCalendar: React.FC = () => {
                 {/* Botones de navegación */}
                 <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
                     <Link
-                        to="/admin/sells"
+                        to="/admin/orders"
                         className="px-6 py-3 bg-white border-2 border-pink-500 text-pink-500 font-semibold rounded-xl hover:bg-pink-50 transition-all text-center"
                     >
                         Ver lista de pedidos

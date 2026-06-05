@@ -12,6 +12,11 @@ const AdminProductForm = () => {
     imagen: "",
     activo: true,
     destacado: false,
+    mayorista: false,
+    precioMayorista: 0,
+    packMayorista: 1,
+    categoriaMayorista: "",
+    ordenMayorista: 0,
     tieneVariantes: false,
     precio: 0,
     stock: 0,
@@ -102,6 +107,13 @@ const AdminProductForm = () => {
 
     try {
       const datosLimpios: any = { ...form };
+      if (!form.mayorista) {
+        delete datosLimpios.precioMayorista;
+        delete datosLimpios.packMayorista;
+        delete datosLimpios.categoriaMayorista;
+        delete datosLimpios.ordenMayorista;
+      }
+
       if (form.tieneVariantes) {
         delete datosLimpios.precio;
         delete datosLimpios.stock;
@@ -120,6 +132,11 @@ const AdminProductForm = () => {
         imagen: "",
         activo: true,
         destacado: false,
+        mayorista: false,
+        precioMayorista: 0,
+        packMayorista: 1,
+        categoriaMayorista: "",
+        ordenMayorista: 0,
         tieneVariantes: false,
         precio: 0,
         stock: 0,
@@ -395,6 +412,93 @@ const AdminProductForm = () => {
                     )}
                   </div>
                 )}
+
+                {/* Mayoristas */}
+                <div className="bg-gradient-to-r from-amber-50/70 to-orange-50/70 rounded-xl p-6 space-y-4 border border-amber-200">
+                  <label className="flex items-center space-x-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      name="mayorista"
+                      checked={form.mayorista ?? false}
+                      onChange={handleChange}
+                      className="w-5 h-5 text-amber-600 border-amber-300 rounded focus:ring-amber-500 transition-all"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-bold text-amber-900 group-hover:text-amber-700 transition-colors">
+                        Disponible para catalogo mayorista
+                      </span>
+                      <p className="text-xs text-amber-700">
+                        Activalo para mostrar este producto en /wholesale con precio y pack propio.
+                      </p>
+                    </div>
+                  </label>
+
+                  {form.mayorista && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-800">
+                          Precio mayorista unitario
+                        </label>
+                        <input
+                          type="number"
+                          name="precioMayorista"
+                          value={form.precioMayorista || ""}
+                          onChange={handleChange}
+                          placeholder="80"
+                          className="w-full bg-white/70 border border-amber-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          min="0"
+                          step="1"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-800">
+                          Pack minimo
+                        </label>
+                        <input
+                          type="number"
+                          name="packMayorista"
+                          value={form.packMayorista || ""}
+                          onChange={handleChange}
+                          placeholder="20"
+                          className="w-full bg-white/70 border border-amber-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          min="1"
+                          step="1"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-800">
+                          Categoria mayorista
+                        </label>
+                        <input
+                          type="text"
+                          name="categoriaMayorista"
+                          value={form.categoriaMayorista || ""}
+                          onChange={handleChange}
+                          placeholder="pascua"
+                          className="w-full bg-white/70 border border-amber-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-800">
+                          Orden mayorista
+                        </label>
+                        <input
+                          type="number"
+                          name="ordenMayorista"
+                          value={form.ordenMayorista || ""}
+                          onChange={handleChange}
+                          placeholder="1"
+                          className="w-full bg-white/70 border border-amber-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                          min="0"
+                          step="1"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Configuración */}
                 <div className="bg-gradient-to-r from-pink-50/50 to-rose-50/50 rounded-xl p-6 space-y-4">

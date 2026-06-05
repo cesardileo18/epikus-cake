@@ -354,7 +354,7 @@ const AdminSales = () => {
             ← Volver al Dashboard
           </a>
           <a
-            href="/admin/sells"
+            href="/admin/orders"
             className="bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold py-3 px-6 rounded-xl hover:from-pink-600 hover:to-rose-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
           >
             Ver Pedidos →
@@ -366,3 +366,4 @@ const AdminSales = () => {
 };
 
 export default AdminSales;
+

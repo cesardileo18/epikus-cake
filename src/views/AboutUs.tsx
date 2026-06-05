@@ -11,7 +11,7 @@ import {
 import { SectionHeader } from "@/components/aboutUs/SectionHeader";
 import { InstagramSection } from "@/components/aboutUs/InstagramSection";
 
-import aboutJson from "@/content/aboutUsContent.json";
+import aboutJson from "@/content/about-us.json";
 import type { AboutUsContent } from "@/interfaces/AboutUsContent";
 import GraduationVideoSection from "@/components/aboutUs/GraduationVideoSection";
 

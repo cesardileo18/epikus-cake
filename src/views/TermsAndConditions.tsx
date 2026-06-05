@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import termsJson from "@/content/TermsContent.json";
+import termsJson from "@/content/terms.json";
 import type { TermsContent } from "@/interfaces/TermsContent";
 
 const content: TermsContent = termsJson as TermsContent;

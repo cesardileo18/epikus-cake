@@ -188,6 +188,13 @@ const AdminProducts = () => {
     try {
       const { id, ...datosProducto } = productoEditando;
       const datosLimpios: any = { ...datosProducto };
+      if (!productoEditando.mayorista) {
+        delete datosLimpios.precioMayorista;
+        delete datosLimpios.packMayorista;
+        delete datosLimpios.categoriaMayorista;
+        delete datosLimpios.ordenMayorista;
+      }
+
       if (productoEditando.tieneVariantes) {
         delete datosLimpios.precio;
         delete datosLimpios.stock;
@@ -401,6 +408,7 @@ const AdminProducts = () => {
                           📦 {getStockTotal(p)}
                         </Badge>
                         {p.destacado && <Badge tone="amber">⭐ Destacado</Badge>}
+                        {p.mayorista && <Badge tone="amber">Mayorista</Badge>}
                         {p.tieneVariantes && <Badge tone="purple">🎯 Variantes</Badge>}
                       </div>
                     </div>
@@ -474,6 +482,9 @@ const AdminProducts = () => {
                             }`}>{p.activo ? "✅ Activo" : "❌ Inactivo"}</span>
                           {p.destacado && (
                             <span className="block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">⭐ Destacado</span>
+                          )}
+                          {p.mayorista && (
+                            <span className="block px-2 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">Mayorista</span>
                           )}
                         </div>
                       </td>
@@ -726,6 +737,69 @@ const AdminProducts = () => {
                 )}
 
                 {/* Configuración */}
+                <div className="space-y-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="mayorista"
+                      checked={productoEditando.mayorista ?? false}
+                      onChange={handleCambioFormulario}
+                      className="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                    />
+                    <div>
+                      <span className="text-sm font-bold text-amber-900">Disponible para mayoristas</span>
+                      <p className="text-xs text-amber-700">Controla si aparece en /wholesale.</p>
+                    </div>
+                  </label>
+
+                  {productoEditando.mayorista && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Field label="Precio mayorista unitario">
+                        <input
+                          type="number"
+                          name="precioMayorista"
+                          value={productoEditando.precioMayorista || ""}
+                          onChange={handleCambioFormulario}
+                          min={0}
+                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                      </Field>
+
+                      <Field label="Pack minimo">
+                        <input
+                          type="number"
+                          name="packMayorista"
+                          value={productoEditando.packMayorista || ""}
+                          onChange={handleCambioFormulario}
+                          min={1}
+                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                      </Field>
+
+                      <Field label="Categoria mayorista">
+                        <input
+                          type="text"
+                          name="categoriaMayorista"
+                          value={productoEditando.categoriaMayorista || ""}
+                          onChange={handleCambioFormulario}
+                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                      </Field>
+
+                      <Field label="Orden mayorista">
+                        <input
+                          type="number"
+                          name="ordenMayorista"
+                          value={productoEditando.ordenMayorista || ""}
+                          onChange={handleCambioFormulario}
+                          min={0}
+                          className="w-full border border-amber-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                      </Field>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-900">Configuración</h3>
                   <label className="flex items-center gap-3 cursor-pointer">

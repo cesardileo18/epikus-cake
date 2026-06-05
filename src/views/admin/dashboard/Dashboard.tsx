@@ -143,7 +143,7 @@ const Dashboard = () => {
         {/* Accesos rápidos */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <a
-            href="/admin/products/add"
+            href="/admin/products/new"
             className="bg-gradient-to-r from-pink-500 to-rose-400 text-white rounded-2xl p-6 hover:from-pink-600 hover:to-rose-500 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 block text-center"
           >
             <div className="text-4xl mb-3">➕</div>
@@ -161,7 +161,7 @@ const Dashboard = () => {
           </a>
 
           <a
-            href="/admin/sells"
+            href="/admin/orders"
             className="bg-gradient-to-r from-green-500 to-emerald-400 text-white rounded-2xl p-6 hover:from-green-600 hover:to-emerald-500 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 block text-center"
           >
             <div className="text-4xl mb-3">🛒</div>
@@ -274,7 +274,7 @@ const Dashboard = () => {
             <h3 className="text-2xl font-bold text-blue-900 mb-2">¡Bienvenido a Epikus Cake!</h3>
             <p className="text-blue-800 mb-6">Comienza agregando tu primer producto para ver estadísticas aquí.</p>
             <a
-              href="/admin/products/add"
+              href="/admin/products/new"
               className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
             >
               Agregar mi primer producto
@@ -297,3 +297,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

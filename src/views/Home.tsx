@@ -11,18 +11,18 @@ import {
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import useFeaturedProducts from '@/hooks/useFeaturedProducts';
 import ProductGrid from '@/components/product/ProductGrid';
-import contentJson from '@/content/homeContent.json';
+import contentJson from '@/content/home.json';
 import type { HomeTextContent } from '@/interfaces/HomeContent';
 import HeroCarousel from '@/components/home/HeroCarousel';
 import { Badge } from '@/components/aboutUs/Badge';
 import { InstagramSection } from '@/components/aboutUs/InstagramSection';
-import aboutJson from "@/content/aboutUsContent.json";
-import customVideos from "@/content/customVideos.json";
+import aboutJson from "@/content/about-us.json";
+import customVideos from "@/content/custom-videos.json";
 import type { ReactionVideosSectionProps } from '@/interfaces/customVideos';
 import type { AboutUsContent } from "@/interfaces/AboutUsContent";
 import ReactionVideosSection from '@/components/reacciones/ReactionVideosSection';
 import CustomWorksSection from '@/components/home/CustomWorksSection';
-import customWorksJson from '@/content/customWorks.json';
+import customWorksJson from '@/content/custom-works.json';
 import type { CustomWorksContent } from '@/interfaces/CustomWorks';
 import GraduationBanner from '@/components/home/GraduationBanner';
 

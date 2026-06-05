@@ -4,7 +4,7 @@ import useContactForm from '@/hooks/useContactForm';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import ReCaptchaInvisible from '@/components/security/ReCaptchaInvisible';
 
-import contactJson from '@/content/contactContent.json';
+import contactJson from '@/content/contact.json';
 import type { ContactContent } from '@/interfaces/ContactContent';
 
 

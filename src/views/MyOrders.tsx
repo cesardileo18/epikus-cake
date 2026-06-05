@@ -20,7 +20,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-import myOrdersJson from '@/content/myOrdersContent.json';
+import myOrdersJson from '@/content/my-orders.json';
 import type { MyOrdersContent } from '@/interfaces/MyOrdersContent';
 const content: MyOrdersContent = myOrdersJson as MyOrdersContent;
 

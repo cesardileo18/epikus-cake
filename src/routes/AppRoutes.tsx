@@ -93,12 +93,17 @@ const AppRoutes: React.FC = () => {
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={<Dashboard />} />
             <Route path="/admin/products" element={<AdminProducts />} />
-            <Route path="/admin/products/add" element={<AdminProductForm />} />
-            <Route path="/admin/sells" element={<AdminOrders />} />
+            <Route path="/admin/products/new" element={<AdminProductForm />} />
+            <Route path="/admin/products/add" element={<Navigate to="/admin/products/new" replace />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/admin/sells" element={<Navigate to="/admin/orders" replace />} />
             <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/analytics" element={<AdminMetrics />} />
-            <Route path="/admin/sales-dashboard" element={<AdminSales />} />
-            <Route path="/admin/sells/calendar" element={<OrdersCalendar />} />
+            <Route path="/admin/metrics" element={<AdminMetrics />} />
+            <Route path="/admin/analytics" element={<Navigate to="/admin/metrics" replace />} />
+            <Route path="/admin/sales" element={<AdminSales />} />
+            <Route path="/admin/sales-dashboard" element={<Navigate to="/admin/sales" replace />} />
+            <Route path="/admin/orders/calendar" element={<OrdersCalendar />} />
+            <Route path="/admin/sells/calendar" element={<Navigate to="/admin/orders/calendar" replace />} />
             <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Route>

@@ -55,12 +55,12 @@ const mobileOnlyItems: MenuItem[] = user
   const adminItems: MenuItem[] = role === 'admin' ? [
     { name: 'Tablero Global',     to: '/admin/dashboard',       icon: '📊' },
     { name: 'Editar Productos',   to: '/admin/products',        icon: '📦' },
-    { name: 'Agregar Producto',   to: '/admin/products/add',    icon: '➕' },
-    { name: 'Pedidos',            to: '/admin/sells',           icon: '🧾' },
+    { name: 'Agregar Producto',   to: '/admin/products/new',    icon: '➕' },
+    { name: 'Pedidos',            to: '/admin/orders',           icon: '🧾' },
     { name: 'Usuarios',           to: '/admin/users',           icon: '👥' },
-    { name: 'Visitas a la página',to: '/admin/analytics',       icon: '📈' },
-    { name: 'Tablero Ventas',     to: '/admin/sales-dashboard', icon: '💰' },
-    { name: 'Calendario',         to: '/admin/sells/calendar',  icon: '📅' },
+    { name: 'Visitas a la página',to: '/admin/metrics',       icon: '📈' },
+    { name: 'Tablero Ventas',     to: '/admin/sales', icon: '💰' },
+    { name: 'Calendario',         to: '/admin/orders/calendar',  icon: '📅' },
   ] : [];
 
   const accountLabel = user?.displayName ?? user?.email ?? '';
@@ -510,3 +510,4 @@ const mobileOnlyItems: MenuItem[] = user
 };
 
 export default Navbar;
+

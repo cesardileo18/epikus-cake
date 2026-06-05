@@ -4,7 +4,7 @@ import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useCart } from '@/context/CartProvider';
 import { useAuth } from '@/context/AuthProvider';
 
-import checkoutJson from '@/content/checkoutContent.json';
+import checkoutJson from '@/content/checkout.json';
 import type { CheckoutContent } from '@/interfaces/CheckoutContent';
 
 const content: CheckoutContent = checkoutJson as CheckoutContent;

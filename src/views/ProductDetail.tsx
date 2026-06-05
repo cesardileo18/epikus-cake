@@ -7,7 +7,7 @@ import type { ProductWithId } from '@/hooks/useProductsLiveQuery';
 import { showToast } from '@/components/feedback/ToastProvider';
 import { useStoreStatus } from "@/context/StoreStatusContext";
 
-import contentJson from '@/content/ProductDetailContent.json';
+import contentJson from '@/content/product-detail.json';
 import type { ProductDetailContent } from '@/interfaces/ProductDetailContent';
 const content: ProductDetailContent = contentJson as ProductDetailContent;
 
