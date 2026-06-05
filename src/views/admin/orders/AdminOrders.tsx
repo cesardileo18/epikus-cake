@@ -6,7 +6,6 @@ import {
   subscribeToOrders,
   acreditarPago,
   marcarEntregado as marcarEntregadoService,
-  cancelarPedido as cancelarPedidoService,
   cancelarYReponerStock,
   eliminarPedidoYReponerStock,
   type Order,
@@ -17,25 +16,35 @@ import {
   Banknote,
   CheckCircle2,
   Clock,
+  Eye,
   Filter,
   PackageCheck,
   ReceiptText,
   Search,
+  Trash2,
   Truck as TruckIcon,
+  X,
   XCircle,
 } from 'lucide-react';
 import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/feedback/ToastProvider';
 import {
-  AdminButton,
   AdminCard,
   AdminHeader,
   AdminLoader,
+  AdminMobileList,
   AdminPage,
   AdminSelect,
+  AdminTable,
+  AdminTbody,
+  AdminTd,
+  AdminTh,
+  AdminThead,
+  AdminTr,
   Badge,
   type BadgeTone,
   EmptyState,
+  IconBtn,
 } from '@/components/admin/ui';
 
 const price = (n: number | undefined | null) => Number(n ?? 0).toLocaleString('es-AR');
@@ -65,6 +74,15 @@ const fmtDateTime = (ts?: Timestamp) =>
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+      })
+    : '—';
+
+const fmtDateShort = (ts?: Timestamp) =>
+  ts
+    ? ts.toDate().toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
       })
     : '—';
 
@@ -169,35 +187,10 @@ const mailEntregado = (o: Order) => ({
   text: `Pedido #${o.id} entregado. ¡Gracias por tu compra!`,
 });
 
-const eliminarPedido = async (o: Order) => {
-  const ok = await confirmToast(
-    `Eliminar definitivamente el pedido #${o.id}? Se devolvera el stock automaticamente.`
-  );
-  if (!ok) return;
-  try {
-    await eliminarPedidoYReponerStock(o);
-    showToast.success(`Pedido #${o.id} eliminado y stock revertido`);
-  } catch (error) {
-    console.error('Error:', error);
-    showToast.error('Error al eliminar el pedido');
-  }
-};
-
-const cancelarYReponer = async (o: Order) => {
-  const ok = await confirmToast(`Cancelar el pedido #${o.id} y reponer stock automaticamente?`);
-  if (!ok) return;
-  try {
-    await cancelarYReponerStock(o);
-    showToast.success(`Pedido #${o.id} cancelado y stock repuesto`);
-  } catch (error) {
-    console.error('Error:', error);
-    showToast.error('No se pudo cancelar/reponer');
-  }
-};
-
 const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [qText, setQText] = useState('');
   const [status, setStatus] = useState<'todos' | OrderStatus>('todos');
@@ -243,7 +236,12 @@ const AdminOrders: React.FC = () => {
     });
   }, [orders, qText, status, metodo]);
 
-  const acreditarSeniaOPago = async (o: Order) => {
+  const selectedOrder = useMemo(
+    () => filtered.find((o) => o.id === selectedId) ?? orders.find((o) => o.id === selectedId) ?? null,
+    [filtered, orders, selectedId]
+  );
+
+  const acreditar = async (o: Order) => {
     await acreditarPago(o.id);
     if (o.customer?.email) {
       const m = mailAcreditado(o);
@@ -251,9 +249,10 @@ const AdminOrders: React.FC = () => {
         console.error
       );
     }
+    showToast.success(`Pedido #${o.id} acreditado`);
   };
 
-  const marcarEntregado = async (o: Order) => {
+  const entregar = async (o: Order) => {
     await marcarEntregadoService(o.id);
     if (o.customer?.email) {
       const m = mailEntregado(o);
@@ -261,15 +260,56 @@ const AdminOrders: React.FC = () => {
         console.error
       );
     }
+    showToast.success(`Pedido #${o.id} entregado`);
   };
 
-  const cancelarPedido = async (o: Order) => {
+  const cancelar = async (o: Order) => {
     const ok = await confirmToast(
-      `Cancelar el pedido #${o.id}? Esto no repone stock automaticamente.`
+      `Cancelar el pedido #${o.id}? Se repone el stock automaticamente.`
     );
     if (!ok) return;
-    await cancelarPedidoService(o.id);
-    showToast.success(`Pedido #${o.id} cancelado`);
+    try {
+      await cancelarYReponerStock(o);
+      showToast.success(`Pedido #${o.id} cancelado y stock repuesto`);
+    } catch (error) {
+      console.error('Error:', error);
+      showToast.error('No se pudo cancelar el pedido');
+    }
+  };
+
+  const eliminar = async (o: Order) => {
+    const ok = await confirmToast(
+      `Eliminar definitivamente el pedido #${o.id}? Se devuelve el stock.`
+    );
+    if (!ok) return;
+    try {
+      await eliminarPedidoYReponerStock(o);
+      showToast.success(`Pedido #${o.id} eliminado y stock revertido`);
+      if (selectedId === o.id) setSelectedId(null);
+    } catch (error) {
+      console.error('Error:', error);
+      showToast.error('Error al eliminar el pedido');
+    }
+  };
+
+  const computePermisos = (o: Order) => {
+    const puedeAcreditar =
+      o.status === 'pendiente' &&
+      (o.pago?.metodoSeleccionado === 'transferencia' ||
+        o.pago?.metodoSeleccionado === 'mercadopago') &&
+      !o.pago?.acreditado;
+
+    const puedeEntregar = Boolean(
+      (o.status === 'en_proceso' &&
+        (o.pago?.metodoSeleccionado === 'transferencia' ? !!o.pago?.acreditado : true)) ||
+        (o.status === 'pendiente' &&
+          o.pago?.metodoSeleccionado === 'mercadopago' &&
+          o.pago?.acreditado)
+    );
+
+    const puedeCancelar = o.status !== 'cancelado' && o.status !== 'entregado';
+
+    return { puedeAcreditar, puedeEntregar, puedeCancelar };
   };
 
   return (
@@ -327,302 +367,502 @@ const AdminOrders: React.FC = () => {
           description="No hay pedidos con los filtros actuales."
         />
       ) : (
-        <div className="space-y-4">
-          {filtered.map((o) => {
-            const cfg = statusCfg(o.status);
-            const StatusIcon = cfg.Icon;
-            const total = getOrderTotal(o);
-            const senia = o.pago?.seniaMonto ?? Math.round(total * 0.5);
+        <>
+          {/* Mobile */}
+          <div className="lg:hidden">
+            <AdminMobileList>
+              {filtered.map((o) => {
+                const cfg = statusCfg(o.status);
+                const StatusIcon = cfg.Icon;
+                const total = getOrderTotal(o);
+                const { puedeAcreditar, puedeEntregar, puedeCancelar } = computePermisos(o);
 
-            const puedeAcreditar =
-              o.status === 'pendiente' &&
-              (o.pago?.metodoSeleccionado === 'transferencia' ||
-                o.pago?.metodoSeleccionado === 'mercadopago') &&
-              !o.pago?.acreditado;
-
-            const puedePreparacion = puedeAcreditar;
-
-            const puedeEntregar =
-              (o.status === 'en_proceso' &&
-                (o.pago?.metodoSeleccionado === 'transferencia'
-                  ? !!o.pago?.acreditado
-                  : true)) ||
-              (o.status === 'pendiente' &&
-                o.pago?.metodoSeleccionado === 'mercadopago' &&
-                o.pago?.acreditado);
-
-            const mpStatus = o.pago?.mercadopago?.status;
-            const mpRefunded =
-              mpStatus === 'refunded' || mpStatus === 'charged_back' || mpStatus === 'cancelled';
-
-            return (
-              <AdminCard key={o.id} className="!p-0">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <Badge tone={cfg.tone}>
-                      <StatusIcon size={12} />
-                      {cfg.label}
-                    </Badge>
-                    <span className="font-mono text-xs text-slate-400">#{o.id}</span>
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    Creado:{' '}
-                    <span className="font-semibold text-slate-200">{fmtDateTime(o.createdAt)}</span>
-                  </div>
-                </div>
-
-                {mpRefunded && (
-                  <div className="mx-5 mt-4 rounded-lg border border-rose-400/25 bg-rose-400/10 p-3 text-sm font-semibold text-rose-200">
-                    MercadoPago reporta estado <strong>{mpStatus}</strong>. Considera cancelar y
-                    reponer stock.
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-3">
-                  <div className="space-y-2">
-                    <h4 className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-                      Cliente
-                    </h4>
-                    <div className="text-sm text-slate-200">
-                      <div className="font-semibold text-white">{o.customer?.nombre ?? '—'}</div>
-                      {o.customer?.whatsapp && (
-                        <div className="text-slate-400">WhatsApp: {o.customer.whatsapp}</div>
-                      )}
-                      {o.customer?.email && (
-                        <div className="text-slate-400">Email: {o.customer.email}</div>
-                      )}
-                    </div>
-
-                    <h4 className="mt-4 text-[11px] font-black uppercase tracking-wide text-slate-500">
-                      Retiro / envio
-                    </h4>
-                    <div className="text-sm text-slate-300">
-                      <div>
-                        {o.entrega?.tipo === 'envio' ? 'Envio' : 'Retiro en local'}
-                        {o.entrega?.tipo === 'envio' && o.entrega?.direccion
-                          ? ` · ${o.entrega.direccion}`
-                          : ''}
-                      </div>
-                      <div className="text-slate-400">
-                        {o.entrega?.fecha} {o.entrega?.hora ? `· ${o.entrega.hora}` : ''}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-                      Productos
-                    </h4>
-                    <div className="max-h-40 space-y-1 overflow-auto pr-1">
-                      {o.items?.map((it, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm">
-                          <div className="text-slate-300">
-                            <span className="font-medium text-white">{it.nombre}</span>
-                            {it.variantLabel ? (
-                              <span className="text-slate-500"> ({it.variantLabel})</span>
-                            ) : null}
-                            <span className="text-slate-500"> ×{it.cantidad}</span>
-                          </div>
-                          <div className="font-bold text-white">${price(getItemSubtotal(it))}</div>
+                return (
+                  <div key={o.id} className="p-4">
+                    <div className="mb-3 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge tone={cfg.tone}>
+                            <StatusIcon size={11} />
+                            {cfg.label}
+                          </Badge>
+                          <span className="font-mono text-[11px] text-slate-500">#{o.id}</span>
                         </div>
-                      ))}
+                        <p className="mt-2 text-sm font-bold text-white">
+                          {o.customer?.nombre ?? '—'}
+                        </p>
+                        {o.customer?.whatsapp && (
+                          <p className="text-xs text-slate-400">{o.customer.whatsapp}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-base font-bold text-pink-300">${price(total)}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {o.entrega?.fecha} {o.entrega?.hora ? `· ${o.entrega.hora}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2">
+                      <IconBtn
+                        title="Ver detalle"
+                        onClick={() => setSelectedId(o.id)}
+                      >
+                        <Eye size={14} />
+                      </IconBtn>
+                      <IconBtn
+                        title="Acreditar"
+                        onClick={() => puedeAcreditar && acreditar(o)}
+                      >
+                        <PackageCheck size={14} />
+                      </IconBtn>
+                      <IconBtn
+                        title="Entregar"
+                        onClick={() => puedeEntregar && entregar(o)}
+                      >
+                        <CheckCircle2 size={14} />
+                      </IconBtn>
+                      <IconBtn
+                        title="Cancelar"
+                        tone="danger"
+                        onClick={() => puedeCancelar && cancelar(o)}
+                      >
+                        <XCircle size={14} />
+                      </IconBtn>
+                      <IconBtn title="Eliminar" tone="danger" onClick={() => eliminar(o)}>
+                        <Trash2 size={14} />
+                      </IconBtn>
                     </div>
                   </div>
+                );
+              })}
+            </AdminMobileList>
+          </div>
 
-                  <div className="space-y-3">
-                    <h4 className="text-[11px] font-black uppercase tracking-wide text-slate-500">
-                      Pago
-                    </h4>
-                    <div className="space-y-1 text-sm text-slate-300">
-                      <div>
-                        Metodo:{' '}
-                        <span className="font-semibold text-white">
+          {/* Desktop */}
+          <div className="hidden lg:block">
+            <AdminTable>
+              <AdminThead>
+                <AdminTh>Estado</AdminTh>
+                <AdminTh>Pedido</AdminTh>
+                <AdminTh>Cliente</AdminTh>
+                <AdminTh>Entrega</AdminTh>
+                <AdminTh>Pago</AdminTh>
+                <AdminTh align="right">Total</AdminTh>
+                <AdminTh align="right">Acciones</AdminTh>
+              </AdminThead>
+              <AdminTbody>
+                {filtered.map((o) => {
+                  const cfg = statusCfg(o.status);
+                  const StatusIcon = cfg.Icon;
+                  const total = getOrderTotal(o);
+                  const { puedeAcreditar, puedeEntregar, puedeCancelar } = computePermisos(o);
+
+                  return (
+                    <AdminTr
+                      key={o.id}
+                      active={selectedId === o.id}
+                      onClick={() => setSelectedId(o.id)}
+                    >
+                      <AdminTd>
+                        <Badge tone={cfg.tone}>
+                          <StatusIcon size={11} />
+                          {cfg.label}
+                        </Badge>
+                      </AdminTd>
+                      <AdminTd>
+                        <div className="font-mono text-xs text-white">#{o.id}</div>
+                        <div className="text-[11px] text-slate-500">
+                          {fmtDateShort(o.createdAt)}
+                        </div>
+                      </AdminTd>
+                      <AdminTd>
+                        <div className="text-sm font-bold text-white">
+                          {o.customer?.nombre ?? '—'}
+                        </div>
+                        {o.customer?.whatsapp && (
+                          <div className="text-[11px] text-slate-400">{o.customer.whatsapp}</div>
+                        )}
+                      </AdminTd>
+                      <AdminTd>
+                        <div className="text-sm text-slate-200">
+                          {o.entrega?.tipo === 'envio' ? 'Envio' : 'Retiro'}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {o.entrega?.fecha} {o.entrega?.hora ? `· ${o.entrega.hora}` : ''}
+                        </div>
+                      </AdminTd>
+                      <AdminTd>
+                        <div className="text-sm text-slate-200">
                           {o.pago?.metodoSeleccionado === 'mercadopago'
                             ? 'MercadoPago'
-                            : 'Transferencia/Efectivo'}
-                        </span>
-                      </div>
-                      <div>
-                        Total: <span className="font-bold text-pink-300">${price(total)}</span>
-                      </div>
-
-                      {o.pago?.metodoSeleccionado === 'transferencia' && (
-                        <>
-                          <div>
-                            Sena requerida:{' '}
-                            <span className="font-semibold text-white">${price(senia)}</span>
-                          </div>
-                          <div className="text-xs">
-                            Estado sena:{' '}
-                            {o.pago?.acreditado ? (
-                              <Badge tone="green">Acreditada</Badge>
-                            ) : (
-                              <Badge tone="amber">Pendiente</Badge>
-                            )}
-                          </div>
-                        </>
-                      )}
-
-                      {o.pago?.metodoSeleccionado === 'mercadopago' && (
-                        <>
-                          <div className="text-xs">
-                            Pago MP:{' '}
-                            {o.pago?.acreditado ? (
-                              <Badge tone="green">Aprobado</Badge>
-                            ) : (
-                              <Badge tone="amber">Pendiente</Badge>
-                            )}
-                          </div>
-
-                          {o.pago.mercadopago && (
-                            <div className="mt-3 rounded-lg border border-sky-400/20 bg-sky-400/[0.05] p-3">
-                              <div className="space-y-1.5 text-xs">
-                                <div className="mb-2 font-bold text-sky-200">
-                                  Detalles MercadoPago
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                  <span className="text-slate-400">ID Operacion:</span>
-                                  <button
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(
-                                        o.pago!.mercadopago!.paymentId || ''
-                                      );
-                                      showToast.success('ID copiado');
-                                    }}
-                                    className="font-mono text-[11px] text-sky-200 hover:text-sky-100 hover:underline"
-                                    title="Click para copiar"
-                                  >
-                                    #{o.pago.mercadopago.paymentId}
-                                  </button>
-                                </div>
-
-                                {o.pago.mercadopago.transactionAmount && (
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400">Monto:</span>
-                                    <span className="font-semibold text-white">
-                                      ${price(o.pago.mercadopago.transactionAmount)}
-                                    </span>
-                                  </div>
-                                )}
-
-                                {o.pago.mercadopago.paymentMethodId && (
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400">Metodo:</span>
-                                    <span className="capitalize text-slate-200">
-                                      {o.pago.mercadopago.paymentMethodId}
-                                    </span>
-                                  </div>
-                                )}
-
-                                {o.pago.mercadopago.cardLastFourDigits && (
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400">Tarjeta:</span>
-                                    <span className="font-mono text-slate-200">
-                                      **** {o.pago.mercadopago.cardLastFourDigits}
-                                    </span>
-                                  </div>
-                                )}
-
-                                {o.pago.mercadopago.installments &&
-                                  o.pago.mercadopago.installments > 1 && (
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-400">Cuotas:</span>
-                                      <span className="text-slate-200">
-                                        {o.pago.mercadopago.installments}x
-                                      </span>
-                                    </div>
-                                  )}
-
-                                {o.pago.mercadopago.dateApproved && (
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400">Aprobado:</span>
-                                    <span className="text-[11px] text-slate-200">
-                                      {new Date(o.pago.mercadopago.dateApproved).toLocaleString(
-                                        'es-AR',
-                                        {
-                                          day: '2-digit',
-                                          month: '2-digit',
-                                          hour: '2-digit',
-                                          minute: '2-digit',
-                                        }
-                                      )}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                            : 'Transferencia'}
+                        </div>
+                        <div className="mt-1">
+                          {o.pago?.acreditado ? (
+                            <Badge tone="green">Acreditado</Badge>
+                          ) : (
+                            <Badge tone="amber">Pendiente</Badge>
                           )}
-                        </>
-                      )}
-                    </div>
+                        </div>
+                      </AdminTd>
+                      <AdminTd align="right" className="text-sm font-bold text-pink-300">
+                        ${price(total)}
+                      </AdminTd>
+                      <AdminTd align="right">
+                        <div
+                          className="flex items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <IconBtn title="Ver detalle" onClick={() => setSelectedId(o.id)}>
+                            <Eye size={14} />
+                          </IconBtn>
+                          <IconBtn
+                            title={puedeAcreditar ? 'Acreditar' : 'No corresponde'}
+                            onClick={() => puedeAcreditar && acreditar(o)}
+                          >
+                            <PackageCheck size={14} />
+                          </IconBtn>
+                          <IconBtn
+                            title={puedeEntregar ? 'Marcar entregado' : 'No corresponde'}
+                            onClick={() => puedeEntregar && entregar(o)}
+                          >
+                            <CheckCircle2 size={14} />
+                          </IconBtn>
+                          <IconBtn
+                            title="Cancelar (repone stock)"
+                            tone="danger"
+                            onClick={() => puedeCancelar && cancelar(o)}
+                          >
+                            <XCircle size={14} />
+                          </IconBtn>
+                          <IconBtn title="Eliminar" tone="danger" onClick={() => eliminar(o)}>
+                            <Trash2 size={14} />
+                          </IconBtn>
+                        </div>
+                      </AdminTd>
+                    </AdminTr>
+                  );
+                })}
+              </AdminTbody>
+            </AdminTable>
+          </div>
+        </>
+      )}
 
-                    <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
-                      <AdminButton
-                        size="sm"
-                        variant="primary"
-                        disabled={!puedePreparacion}
-                        onClick={() => acreditarSeniaOPago(o)}
-                        iconLeft={<PackageCheck size={14} />}
-                        className={!puedePreparacion ? 'opacity-50' : ''}
-                      >
-                        Acreditar
-                      </AdminButton>
-
-                      <AdminButton
-                        size="sm"
-                        variant="secondary"
-                        disabled={!puedeEntregar}
-                        onClick={() => marcarEntregado(o)}
-                        iconLeft={<CheckCircle2 size={14} />}
-                      >
-                        Marcar entregado
-                      </AdminButton>
-
-                      <AdminButton
-                        size="sm"
-                        variant="danger"
-                        onClick={() => cancelarPedido(o)}
-                        className="sm:col-span-2"
-                      >
-                        Cancelar
-                      </AdminButton>
-
-                      <AdminButton
-                        size="sm"
-                        variant="danger"
-                        onClick={() => cancelarYReponer(o)}
-                        className="sm:col-span-2"
-                      >
-                        Cancelar + reponer stock
-                      </AdminButton>
-
-                      <AdminButton
-                        size="sm"
-                        variant="danger"
-                        onClick={() => eliminarPedido(o)}
-                        className="sm:col-span-2"
-                      >
-                        Eliminar pedido
-                      </AdminButton>
-                    </div>
-
-                    {o.status === 'entregado' && (
-                      <p className="text-xs text-slate-500">
-                        Entregado el:{' '}
-                        <span className="font-medium text-slate-300">
-                          {fmtDateTime(o.deliveredAt ?? undefined)}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </AdminCard>
-            );
-          })}
-        </div>
+      {/* Drawer detalle */}
+      {selectedOrder && (
+        <OrderDrawer
+          order={selectedOrder}
+          onClose={() => setSelectedId(null)}
+          onAcreditar={() => acreditar(selectedOrder)}
+          onEntregar={() => entregar(selectedOrder)}
+          onCancelar={() => cancelar(selectedOrder)}
+          onEliminar={() => eliminar(selectedOrder)}
+          permisos={computePermisos(selectedOrder)}
+        />
       )}
     </AdminPage>
+  );
+};
+
+/* ============================================================
+   Drawer con todo el detalle del pedido
+   ============================================================ */
+interface OrderDrawerProps {
+  order: Order;
+  onClose: () => void;
+  onAcreditar: () => void;
+  onEntregar: () => void;
+  onCancelar: () => void;
+  onEliminar: () => void;
+  permisos: { puedeAcreditar: boolean; puedeEntregar: boolean; puedeCancelar: boolean };
+}
+
+const OrderDrawer: React.FC<OrderDrawerProps> = ({
+  order,
+  onClose,
+  onAcreditar,
+  onEntregar,
+  onCancelar,
+  onEliminar,
+  permisos,
+}) => {
+  const cfg = statusCfg(order.status);
+  const StatusIcon = cfg.Icon;
+  const total = getOrderTotal(order);
+  const senia = order.pago?.seniaMonto ?? Math.round(total * 0.5);
+  const mpStatus = order.pago?.mercadopago?.status;
+  const mpRefunded =
+    mpStatus === 'refunded' || mpStatus === 'charged_back' || mpStatus === 'cancelled';
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col overflow-hidden border-l border-white/10 bg-[#0c0e1a] shadow-2xl sm:w-[36rem]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Badge tone={cfg.tone}>
+                <StatusIcon size={11} />
+                {cfg.label}
+              </Badge>
+              <span className="truncate font-mono text-xs text-slate-400">#{order.id}</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Creado: {fmtDateTime(order.createdAt)}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-lg text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+            aria-label="Cerrar"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-5 overflow-y-auto p-5">
+          {mpRefunded && (
+            <div className="rounded-lg border border-rose-400/25 bg-rose-400/10 p-3 text-sm font-semibold text-rose-200">
+              MercadoPago reporta estado <strong>{mpStatus}</strong>. Considera cancelar y reponer
+              stock.
+            </div>
+          )}
+
+          {/* Cliente */}
+          <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Cliente
+            </h4>
+            <div className="text-sm">
+              <div className="font-bold text-white">{order.customer?.nombre ?? '—'}</div>
+              {order.customer?.whatsapp && (
+                <div className="text-slate-400">WhatsApp: {order.customer.whatsapp}</div>
+              )}
+              {order.customer?.email && (
+                <div className="text-slate-400">Email: {order.customer.email}</div>
+              )}
+            </div>
+          </section>
+
+          {/* Entrega */}
+          <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Retiro / envio
+            </h4>
+            <div className="text-sm">
+              <div className="font-bold text-white">
+                {order.entrega?.tipo === 'envio' ? 'Envio' : 'Retiro en local'}
+              </div>
+              {order.entrega?.tipo === 'envio' && order.entrega?.direccion && (
+                <div className="text-slate-400">{order.entrega.direccion}</div>
+              )}
+              <div className="text-slate-400">
+                {order.entrega?.fecha} {order.entrega?.hora ? `· ${order.entrega.hora}` : ''}
+              </div>
+            </div>
+          </section>
+
+          {/* Productos */}
+          <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Productos
+            </h4>
+            <div className="space-y-2">
+              {order.items?.map((it, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-lg border border-white/5 bg-[#0c0e1a] p-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="font-bold text-white">{it.nombre}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {it.variantLabel ? `${it.variantLabel} · ` : ''}
+                      x{it.cantidad}
+                    </div>
+                  </div>
+                  <div className="font-bold text-white">${price(getItemSubtotal(it))}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Pago */}
+          <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Pago
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Metodo</span>
+                <span className="font-bold text-white">
+                  {order.pago?.metodoSeleccionado === 'mercadopago'
+                    ? 'MercadoPago'
+                    : 'Transferencia / Efectivo'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Total</span>
+                <span className="font-bold text-pink-300">${price(total)}</span>
+              </div>
+
+              {order.pago?.metodoSeleccionado === 'transferencia' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Sena requerida</span>
+                    <span className="font-bold text-white">${price(senia)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Estado sena</span>
+                    {order.pago?.acreditado ? (
+                      <Badge tone="green">Acreditada</Badge>
+                    ) : (
+                      <Badge tone="amber">Pendiente</Badge>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {order.pago?.metodoSeleccionado === 'mercadopago' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Estado pago</span>
+                    {order.pago?.acreditado ? (
+                      <Badge tone="green">Aprobado</Badge>
+                    ) : (
+                      <Badge tone="amber">Pendiente</Badge>
+                    )}
+                  </div>
+
+                  {order.pago.mercadopago && (
+                    <div className="mt-3 rounded-lg border border-sky-400/20 bg-sky-400/[0.05] p-3">
+                      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-sky-200">
+                        Detalles MercadoPago
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">ID Operacion</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                order.pago!.mercadopago!.paymentId || ''
+                              );
+                              showToast.success('ID copiado');
+                            }}
+                            className="font-mono text-sky-200 hover:text-sky-100 hover:underline"
+                            title="Click para copiar"
+                          >
+                            #{order.pago.mercadopago.paymentId}
+                          </button>
+                        </div>
+                        {order.pago.mercadopago.transactionAmount && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Monto</span>
+                            <span className="font-semibold text-white">
+                              ${price(order.pago.mercadopago.transactionAmount)}
+                            </span>
+                          </div>
+                        )}
+                        {order.pago.mercadopago.paymentMethodId && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Metodo</span>
+                            <span className="capitalize text-slate-200">
+                              {order.pago.mercadopago.paymentMethodId}
+                            </span>
+                          </div>
+                        )}
+                        {order.pago.mercadopago.cardLastFourDigits && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Tarjeta</span>
+                            <span className="font-mono text-slate-200">
+                              **** {order.pago.mercadopago.cardLastFourDigits}
+                            </span>
+                          </div>
+                        )}
+                        {order.pago.mercadopago.installments &&
+                          order.pago.mercadopago.installments > 1 && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Cuotas</span>
+                              <span className="text-slate-200">
+                                {order.pago.mercadopago.installments}x
+                              </span>
+                            </div>
+                          )}
+                        {order.pago.mercadopago.dateApproved && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Aprobado</span>
+                            <span className="text-slate-200">
+                              {new Date(order.pago.mercadopago.dateApproved).toLocaleString(
+                                'es-AR',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                }
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {order.status === 'entregado' && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Entregado el:{' '}
+                  <span className="font-medium text-slate-300">
+                    {fmtDateTime(order.deliveredAt ?? undefined)}
+                  </span>
+                </p>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* Acciones */}
+        <div className="grid grid-cols-2 gap-2 border-t border-white/10 p-4">
+          <button
+            onClick={onAcreditar}
+            disabled={!permisos.puedeAcreditar}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-pink-600 px-3 text-sm font-bold text-white transition-colors hover:bg-pink-500 disabled:cursor-not-allowed disabled:bg-pink-600/30"
+          >
+            <PackageCheck size={15} />
+            Acreditar
+          </button>
+          <button
+            onClick={onEntregar}
+            disabled={!permisos.puedeEntregar}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-sm font-bold text-slate-100 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <CheckCircle2 size={15} />
+            Marcar entregado
+          </button>
+          <button
+            onClick={onCancelar}
+            disabled={!permisos.puedeCancelar}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-400/25 bg-rose-500/15 px-3 text-sm font-bold text-rose-200 transition-colors hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <XCircle size={15} />
+            Cancelar
+          </button>
+          <button
+            onClick={onEliminar}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-400/25 bg-rose-500/15 px-3 text-sm font-bold text-rose-200 transition-colors hover:bg-rose-500/25"
+          >
+            <Trash2 size={15} />
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </>
   );
 };
 

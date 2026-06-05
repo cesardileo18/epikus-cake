@@ -81,6 +81,30 @@ const AdminProductForm = () => {
     }));
   };
 
+  const handleMayoristaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const mayorista = e.target.checked;
+    setForm((prev) => ({
+      ...prev,
+      mayorista,
+      // Al activar mayorista limpiamos precio/stock/variantes y la categoria
+      // regular: el producto se rige por sus campos mayoristas.
+      ...(mayorista
+        ? {
+            categoria: "",
+            tieneVariantes: false,
+            variantes: [],
+            precio: 0,
+            stock: 0,
+          }
+        : {
+            precioMayorista: 0,
+            packMayorista: 1,
+            categoriaMayorista: "",
+            ordenMayorista: 0,
+          }),
+    }));
+  };
+
   const agregarVariante = () => {
     if (!nuevaVariante.id || !nuevaVariante.label || nuevaVariante.precio <= 0) {
       showToast.error("Completa todos los campos de la variante");
@@ -110,32 +134,55 @@ const AdminProductForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (form.tieneVariantes && (!form.variantes || form.variantes.length === 0)) {
-      showToast.error("Debes agregar al menos una variante");
-      return;
-    }
+    if (form.mayorista) {
+      if (!form.precioMayorista || form.precioMayorista <= 0) {
+        showToast.error("Ingresa un precio mayorista valido");
+        return;
+      }
+      if (!form.packMayorista || form.packMayorista < 1) {
+        showToast.error("El pack minimo mayorista debe ser al menos 1");
+        return;
+      }
+      if (!form.categoriaMayorista?.trim()) {
+        showToast.error("Ingresa la categoria mayorista");
+        return;
+      }
+    } else {
+      if (form.tieneVariantes && (!form.variantes || form.variantes.length === 0)) {
+        showToast.error("Debes agregar al menos una variante");
+        return;
+      }
 
-    if (!form.tieneVariantes && (!form.precio || form.precio <= 0)) {
-      showToast.error("Debes ingresar un precio valido");
-      return;
+      if (!form.tieneVariantes && (!form.precio || form.precio <= 0)) {
+        showToast.error("Debes ingresar un precio valido");
+        return;
+      }
     }
 
     setLoading(true);
 
     try {
       const datosLimpios: any = { ...form };
-      if (!form.mayorista) {
+
+      if (form.mayorista) {
+        // Producto mayorista: no usa precio/stock/variantes ni categoria regular.
+        delete datosLimpios.precio;
+        delete datosLimpios.stock;
+        delete datosLimpios.variantes;
+        datosLimpios.tieneVariantes = false;
+        datosLimpios.categoria = form.categoriaMayorista?.trim() ?? "";
+      } else {
         delete datosLimpios.precioMayorista;
         delete datosLimpios.packMayorista;
         delete datosLimpios.categoriaMayorista;
         delete datosLimpios.ordenMayorista;
-      }
 
-      if (form.tieneVariantes) {
-        delete datosLimpios.precio;
-        delete datosLimpios.stock;
-      } else {
-        delete datosLimpios.variantes;
+        if (form.tieneVariantes) {
+          delete datosLimpios.precio;
+          delete datosLimpios.stock;
+        } else {
+          delete datosLimpios.variantes;
+        }
       }
 
       await createProduct(datosLimpios);
@@ -220,19 +267,26 @@ const AdminProductForm = () => {
                 </Field>
               </div>
 
-              <Field label="Categoria *">
-                <AdminSelect name="categoria" value={form.categoria} onChange={handleChange} required>
-                  <option value="">Seleccionar categoria</option>
-                  <option value="tortas">Tortas</option>
-                  <option value="porciones-torta">Porciones</option>
-                  <option value="cheesecakes">Cheesecakes</option>
-                  <option value="cupcakes">Cupcakes</option>
-                  <option value="panaderia">Panaderia</option>
-                  <option value="galletas">Galletas</option>
-                  <option value="helados">Helados</option>
-                  <option value="tortas-personalizadas">Tortas a medida</option>
-                </AdminSelect>
-              </Field>
+              {!form.mayorista && (
+                <Field label="Categoria *">
+                  <AdminSelect
+                    name="categoria"
+                    value={form.categoria}
+                    onChange={handleChange}
+                    required={!form.mayorista}
+                  >
+                    <option value="">Seleccionar categoria</option>
+                    <option value="tortas">Tortas</option>
+                    <option value="porciones-torta">Porciones</option>
+                    <option value="cheesecakes">Cheesecakes</option>
+                    <option value="cupcakes">Cupcakes</option>
+                    <option value="panaderia">Panaderia</option>
+                    <option value="galletas">Galletas</option>
+                    <option value="helados">Helados</option>
+                    <option value="tortas-personalizadas">Tortas a medida</option>
+                  </AdminSelect>
+                </Field>
+              )}
 
               <Field label="URL de la imagen *">
                 <AdminInput
@@ -247,17 +301,83 @@ const AdminProductForm = () => {
             </div>
           </AdminCard>
 
-          <AdminCard className="border-dashed border-violet-400/30 bg-violet-400/[0.04]">
+          {/* Mayorista (va ARRIBA del check de variantes) */}
+          <AdminCard className="border-amber-400/25 bg-amber-400/[0.05]">
             <AdminCheckbox
-              name="tieneVariantes"
-              checked={form.tieneVariantes}
-              onChange={handleTieneVariantesChange}
-              labelText="Este producto tiene variantes"
-              hint="Activar para tortas con diferentes porciones o productos con multiples tamanos."
+              name="mayorista"
+              checked={form.mayorista ?? false}
+              onChange={handleMayoristaChange}
+              labelText="Disponible para catalogo mayorista"
+              hint="Si esta activo el producto se rige por sus campos mayoristas (precio, pack y categoria propios) y no aparece como producto regular."
             />
+
+            {form.mayorista && (
+              <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <Field label="Precio mayorista unitario *">
+                  <AdminInput
+                    type="number"
+                    name="precioMayorista"
+                    value={form.precioMayorista || ""}
+                    onChange={handleChange}
+                    placeholder="80"
+                    min={0}
+                    step={1}
+                    required
+                  />
+                </Field>
+
+                <Field label="Pack minimo *">
+                  <AdminInput
+                    type="number"
+                    name="packMayorista"
+                    value={form.packMayorista || ""}
+                    onChange={handleChange}
+                    placeholder="20"
+                    min={1}
+                    step={1}
+                    required
+                  />
+                </Field>
+
+                <Field label="Categoria mayorista *">
+                  <AdminInput
+                    type="text"
+                    name="categoriaMayorista"
+                    value={form.categoriaMayorista || ""}
+                    onChange={handleChange}
+                    placeholder="pascua"
+                    required
+                  />
+                </Field>
+
+                <Field label="Orden mayorista">
+                  <AdminInput
+                    type="number"
+                    name="ordenMayorista"
+                    value={form.ordenMayorista || ""}
+                    onChange={handleChange}
+                    placeholder="1"
+                    min={0}
+                    step={1}
+                  />
+                </Field>
+              </div>
+            )}
           </AdminCard>
 
-          {!form.tieneVariantes && (
+          {!form.mayorista && (
+            <AdminCard className="border-dashed border-violet-400/30 bg-violet-400/[0.04]">
+              <AdminCheckbox
+                name="tieneVariantes"
+                checked={form.tieneVariantes}
+                onChange={handleTieneVariantesChange}
+                labelText="Este producto tiene variantes"
+                hint="Activar para tortas con diferentes porciones o productos con multiples tamanos."
+              />
+            </AdminCard>
+          )}
+
+          {!form.mayorista && !form.tieneVariantes && (
             <AdminCard>
               <SectionTitle title="Precio y stock" />
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -270,7 +390,7 @@ const AdminProductForm = () => {
                     placeholder="25000"
                     min={0}
                     step={100}
-                    required
+                    required={!form.mayorista}
                   />
                 </Field>
                 <Field label="Stock *">
@@ -281,14 +401,14 @@ const AdminProductForm = () => {
                     onChange={handleChange}
                     placeholder="10"
                     min={0}
-                    required
+                    required={!form.mayorista}
                   />
                 </Field>
               </div>
             </AdminCard>
           )}
 
-          {form.tieneVariantes && (
+          {!form.mayorista && form.tieneVariantes && (
             <>
               <AdminCard>
                 <SectionTitle title="Agregar variante" description="Una variante por porcion / tamano." />
@@ -385,66 +505,6 @@ const AdminProductForm = () => {
             </>
           )}
 
-          <AdminCard className="border-amber-400/25 bg-amber-400/[0.05]">
-            <AdminCheckbox
-              name="mayorista"
-              checked={form.mayorista ?? false}
-              onChange={handleChange}
-              labelText="Disponible para catalogo mayorista"
-              hint="Mostrar este producto en /wholesale con precio y pack propio."
-            />
-
-            {form.mayorista && (
-              <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <Field label="Precio mayorista unitario">
-                  <AdminInput
-                    type="number"
-                    name="precioMayorista"
-                    value={form.precioMayorista || ""}
-                    onChange={handleChange}
-                    placeholder="80"
-                    min={0}
-                    step={1}
-                  />
-                </Field>
-
-                <Field label="Pack minimo">
-                  <AdminInput
-                    type="number"
-                    name="packMayorista"
-                    value={form.packMayorista || ""}
-                    onChange={handleChange}
-                    placeholder="20"
-                    min={1}
-                    step={1}
-                  />
-                </Field>
-
-                <Field label="Categoria mayorista">
-                  <AdminInput
-                    type="text"
-                    name="categoriaMayorista"
-                    value={form.categoriaMayorista || ""}
-                    onChange={handleChange}
-                    placeholder="pascua"
-                  />
-                </Field>
-
-                <Field label="Orden mayorista">
-                  <AdminInput
-                    type="number"
-                    name="ordenMayorista"
-                    value={form.ordenMayorista || ""}
-                    onChange={handleChange}
-                    placeholder="1"
-                    min={0}
-                    step={1}
-                  />
-                </Field>
-              </div>
-            )}
-          </AdminCard>
-
           <AdminCard>
             <SectionTitle title="Configuracion" />
             <div className="mt-5 flex flex-col gap-4">
@@ -498,7 +558,21 @@ const AdminProductForm = () => {
                   {form.nombre || "Nombre del producto"}
                 </h4>
 
-                {!form.tieneVariantes ? (
+                {form.mayorista ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-pink-300">
+                        {formatPrice(form.precioMayorista || 0)}
+                      </span>
+                      {form.categoriaMayorista && (
+                        <Badge tone="pink">{form.categoriaMayorista}</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Pack minimo: <strong>{form.packMayorista || 1}</strong> unidades
+                    </p>
+                  </div>
+                ) : !form.tieneVariantes ? (
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-pink-300">
                       {formatPrice(form.precio || 0)}
@@ -535,7 +609,8 @@ const AdminProductForm = () => {
                 <div className="flex flex-wrap gap-1.5">
                   {form.activo && <Badge tone="green">Activo</Badge>}
                   {form.destacado && <Badge tone="amber">Destacado</Badge>}
-                  {!form.tieneVariantes && form.stock !== undefined && (
+                  {form.mayorista && <Badge tone="pink">Mayorista</Badge>}
+                  {!form.mayorista && !form.tieneVariantes && form.stock !== undefined && (
                     <Badge tone="blue">Stock: {form.stock}</Badge>
                   )}
                 </div>

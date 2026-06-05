@@ -408,6 +408,83 @@ export const AdminSelect = React.forwardRef<
 AdminSelect.displayName = "AdminSelect";
 
 /* ============================================================
+   Tabla — primitivas reusables (desktop)
+   Las vistas combinan AdminTable con cards mobile-only.
+   ============================================================ */
+type Align = "left" | "right" | "center";
+
+const alignMap: Record<Align, string> = {
+  left: "text-left",
+  right: "text-right",
+  center: "text-center",
+};
+
+export const AdminTable: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = "",
+}) => (
+  <AdminCard className={`!p-0 overflow-hidden ${className}`}>
+    <div className="overflow-x-auto">
+      <table className="w-full">{children}</table>
+    </div>
+  </AdminCard>
+);
+
+export const AdminThead: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <thead className="bg-white/[0.03]">
+    <tr>{children}</tr>
+  </thead>
+);
+
+export const AdminTh: React.FC<{
+  children: React.ReactNode;
+  align?: Align;
+  className?: string;
+}> = ({ children, align = "left", className = "" }) => (
+  <th
+    className={`px-5 py-3 ${alignMap[align]} text-[11px] font-black uppercase tracking-wide text-slate-500 ${className}`}
+  >
+    {children}
+  </th>
+);
+
+export const AdminTbody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <tbody className="divide-y divide-white/5">{children}</tbody>
+);
+
+export const AdminTr: React.FC<{
+  children: React.ReactNode;
+  onClick?: () => void;
+  active?: boolean;
+}> = ({ children, onClick, active }) => (
+  <tr
+    onClick={onClick}
+    className={[
+      "transition-colors",
+      onClick ? "cursor-pointer" : "",
+      active ? "bg-pink-500/[0.08]" : "hover:bg-white/[0.03]",
+    ].join(" ")}
+  >
+    {children}
+  </tr>
+);
+
+export const AdminTd: React.FC<{
+  children: React.ReactNode;
+  align?: Align;
+  className?: string;
+}> = ({ children, align = "left", className = "" }) => (
+  <td className={`px-5 py-3 align-top ${alignMap[align]} ${className}`}>{children}</td>
+);
+
+/* Lista mobile que envuelve los cards (mismo borde / fondo que la tabla). */
+export const AdminMobileList: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <AdminCard className="!p-0 overflow-hidden">
+    <div className="divide-y divide-white/5">{children}</div>
+  </AdminCard>
+);
+
+/* ============================================================
    Checkbox dark
    ============================================================ */
 export const AdminCheckbox: React.FC<

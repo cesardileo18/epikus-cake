@@ -1,6 +1,16 @@
 import { Eye } from "lucide-react";
 import type { UserWithStats } from "@/interfaces/user";
-import { AdminCard, Badge, EmptyState } from "@/components/admin/ui";
+import {
+  AdminMobileList,
+  AdminTable,
+  AdminTbody,
+  AdminTd,
+  AdminTh,
+  AdminThead,
+  AdminTr,
+  Badge,
+  EmptyState,
+} from "@/components/admin/ui";
 
 interface Props {
   users: UserWithStats[];
@@ -30,119 +40,103 @@ const UsersTable: React.FC<Props> = ({ users, selectedUserId, onSelectUser }) =>
   }
 
   return (
-    <AdminCard className="!p-0">
-      <div className="border-b border-white/10 px-5 py-3">
-        <h2 className="text-sm font-black uppercase tracking-wide text-white">
-          Usuarios registrados ({users.length})
-        </h2>
-      </div>
-
-      {/* Mobile cards */}
-      <div className="sm:hidden max-h-[600px] overflow-auto divide-y divide-white/5">
-        {users.map((user) => (
-          <div
-            key={user.id}
-            className={[
-              "p-4 transition-colors",
-              selectedUserId === user.id ? "bg-pink-500/[0.08]" : "bg-transparent",
-            ].join(" ")}
-          >
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">
-                  {user.username || "(sin nombre)"}
-                </p>
-                <p className="truncate text-xs text-slate-400">{user.email}</p>
-              </div>
-              <Badge tone="slate">{user.role || "customer"}</Badge>
-            </div>
-
-            <div className="mb-3 flex items-center gap-3 text-xs">
-              <div>
-                <span className="text-slate-500">Pedidos: </span>
-                <span className="font-bold text-white">{user.orderCount}</span>
-              </div>
-              <div className="h-3 w-px bg-white/10" />
-              <div>
-                <span className="text-slate-500">Total: </span>
-                <span className="font-bold text-pink-300">
-                  {formatCurrency(user.totalSpent)}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleSelect(user.id)}
+    <>
+      {/* Mobile */}
+      <div className="sm:hidden">
+        <AdminMobileList>
+          {users.map((user) => (
+            <div
+              key={user.id}
               className={[
-                "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors",
-                selectedUserId === user.id
-                  ? "bg-pink-600 text-white"
-                  : "border border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/15",
+                "p-4 transition-colors",
+                selectedUserId === user.id ? "bg-pink-500/[0.08]" : "bg-transparent",
               ].join(" ")}
             >
-              <Eye size={13} />
-              {selectedUserId === user.id ? "Ocultar detalle" : "Ver detalle"}
-            </button>
-          </div>
-        ))}
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-white">
+                    {user.username || "(sin nombre)"}
+                  </p>
+                  <p className="truncate text-xs text-slate-400">{user.email}</p>
+                </div>
+                <Badge tone="slate">{user.role || "customer"}</Badge>
+              </div>
+
+              <div className="mb-3 flex items-center gap-3 text-xs">
+                <div>
+                  <span className="text-slate-500">Pedidos: </span>
+                  <span className="font-bold text-white">{user.orderCount}</span>
+                </div>
+                <div className="h-3 w-px bg-white/10" />
+                <div>
+                  <span className="text-slate-500">Total: </span>
+                  <span className="font-bold text-pink-300">
+                    {formatCurrency(user.totalSpent)}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSelect(user.id)}
+                className={[
+                  "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors",
+                  selectedUserId === user.id
+                    ? "bg-pink-600 text-white"
+                    : "border border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/15",
+                ].join(" ")}
+              >
+                <Eye size={13} />
+                {selectedUserId === user.id ? "Ocultar detalle" : "Ver detalle"}
+              </button>
+            </div>
+          ))}
+        </AdminMobileList>
       </div>
 
-      {/* Desktop table */}
-      <div className="hidden sm:block max-h-[600px] overflow-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-white/[0.03]">
-            <tr>
-              <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
-                Usuario
-              </th>
-              <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
-                Rol
-              </th>
-              <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-wide text-slate-500">
-                Pedidos
-              </th>
-              <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-wide text-slate-500">
-                Total
-              </th>
-              <th className="px-5 py-3 text-center text-[11px] font-black uppercase tracking-wide text-slate-500">
-                Detalle
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
+      {/* Desktop */}
+      <div className="hidden sm:block">
+        <AdminTable>
+          <AdminThead>
+            <AdminTh>Usuario</AdminTh>
+            <AdminTh>Rol</AdminTh>
+            <AdminTh align="right">Pedidos</AdminTh>
+            <AdminTh align="right">Total</AdminTh>
+            <AdminTh align="center">Detalle</AdminTh>
+          </AdminThead>
+          <AdminTbody>
             {users.map((user) => (
-              <tr
+              <AdminTr
                 key={user.id}
-                className={
-                  selectedUserId === user.id
-                    ? "bg-pink-500/[0.08]"
-                    : "transition-colors hover:bg-white/[0.03]"
-                }
+                active={selectedUserId === user.id}
+                onClick={() => handleSelect(user.id)}
               >
-                <td className="px-5 py-3 align-top">
+                <AdminTd>
                   <div className="flex flex-col">
                     <span className="font-bold text-white">
                       {user.username || "(sin nombre)"}
                     </span>
                     <span className="text-xs text-slate-400">{user.email}</span>
                   </div>
-                </td>
-                <td className="px-5 py-3 align-top">
+                </AdminTd>
+                <AdminTd>
                   <Badge tone="slate">{user.role || "customer"}</Badge>
-                </td>
-                <td className="px-5 py-3 align-top text-right">
+                </AdminTd>
+                <AdminTd align="right">
                   <span className="font-bold text-white">{user.orderCount}</span>
-                </td>
-                <td className="px-5 py-3 align-top text-right">
+                </AdminTd>
+                <AdminTd align="right">
                   <span className="font-bold text-pink-300">
                     {formatCurrency(user.totalSpent)}
                   </span>
-                </td>
-                <td className="px-5 py-3 align-top text-center">
+                </AdminTd>
+                <AdminTd align="center">
                   <button
                     type="button"
-                    onClick={() => handleSelect(user.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(user.id);
+                    }}
                     className={[
                       "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors",
                       selectedUserId === user.id
@@ -154,13 +148,13 @@ const UsersTable: React.FC<Props> = ({ users, selectedUserId, onSelectUser }) =>
                     <Eye size={12} />
                     Detalle
                   </button>
-                </td>
-              </tr>
+                </AdminTd>
+              </AdminTr>
             ))}
-          </tbody>
-        </table>
+          </AdminTbody>
+        </AdminTable>
       </div>
-    </AdminCard>
+    </>
   );
 };
 

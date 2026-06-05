@@ -27,9 +27,16 @@ import {
   AdminHeader,
   AdminInput,
   AdminLoader,
+  AdminMobileList,
   AdminPage,
   AdminSelect,
+  AdminTable,
+  AdminTbody,
+  AdminTd,
   AdminTextarea,
+  AdminTh,
+  AdminThead,
+  AdminTr,
   Badge,
   Chip,
   EmptyState,
@@ -51,6 +58,7 @@ const AdminProducts = () => {
   const [guardando, setGuardando] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoria, setCategoria] = useState<string>("todas");
 
   const [nuevaVariante, setNuevaVariante] = useState({
     id: "",
@@ -136,6 +144,30 @@ const AdminProducts = () => {
     }
   };
 
+  const handleMayoristaChangeEdit = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!productoEditando) return;
+    const mayorista = e.target.checked;
+    resetVarianteForm();
+    setProductoEditando((prev) => ({
+      ...prev!,
+      mayorista,
+      ...(mayorista
+        ? {
+            categoria: "",
+            tieneVariantes: false,
+            variantes: [],
+            precio: 0,
+            stock: 0,
+          }
+        : {
+            precioMayorista: 0,
+            packMayorista: 1,
+            categoriaMayorista: "",
+            ordenMayorista: 0,
+          }),
+    }));
+  };
+
   const resetVarianteForm = () => {
     setNuevaVariante({ id: "", label: "", precio: 0, stock: 0, disponible: true });
     setEditIdx(null);
@@ -201,41 +233,63 @@ const AdminProducts = () => {
   const guardarCambios = async () => {
     if (!productoEditando) return;
 
-    if (
-      productoEditando.tieneVariantes &&
-      (!productoEditando.variantes || productoEditando.variantes.length === 0)
-    ) {
-      showToast.error("Debes agregar al menos una variante");
-      return;
-    }
-    if (
-      !productoEditando.tieneVariantes &&
-      (!productoEditando.precio || productoEditando.precio <= 0)
-    ) {
-      showToast.error("Debes ingresar un precio valido");
-      return;
+    if (productoEditando.mayorista) {
+      if (!productoEditando.precioMayorista || productoEditando.precioMayorista <= 0) {
+        showToast.error("Ingresa un precio mayorista valido");
+        return;
+      }
+      if (!productoEditando.packMayorista || productoEditando.packMayorista < 1) {
+        showToast.error("El pack minimo mayorista debe ser al menos 1");
+        return;
+      }
+      if (!productoEditando.categoriaMayorista?.trim()) {
+        showToast.error("Ingresa la categoria mayorista");
+        return;
+      }
+    } else {
+      if (
+        productoEditando.tieneVariantes &&
+        (!productoEditando.variantes || productoEditando.variantes.length === 0)
+      ) {
+        showToast.error("Debes agregar al menos una variante");
+        return;
+      }
+      if (
+        !productoEditando.tieneVariantes &&
+        (!productoEditando.precio || productoEditando.precio <= 0)
+      ) {
+        showToast.error("Debes ingresar un precio valido");
+        return;
+      }
     }
 
     setGuardando(true);
     try {
       const { id, ...datosProducto } = productoEditando;
       const datosLimpios: any = { ...datosProducto };
-      if (!productoEditando.mayorista) {
+
+      if (productoEditando.mayorista) {
+        delete datosLimpios.precio;
+        delete datosLimpios.stock;
+        delete datosLimpios.variantes;
+        datosLimpios.tieneVariantes = false;
+        datosLimpios.categoria = productoEditando.categoriaMayorista?.trim() ?? "";
+      } else {
         delete datosLimpios.precioMayorista;
         delete datosLimpios.packMayorista;
         delete datosLimpios.categoriaMayorista;
         delete datosLimpios.ordenMayorista;
-      }
 
-      if (productoEditando.tieneVariantes) {
-        delete datosLimpios.precio;
-        delete datosLimpios.stock;
-      } else {
-        delete datosLimpios.variantes;
+        if (productoEditando.tieneVariantes) {
+          delete datosLimpios.precio;
+          delete datosLimpios.stock;
+        } else {
+          delete datosLimpios.variantes;
+        }
       }
 
       await updateProduct(id, datosLimpios);
-      setProductos((prev) => prev.map((p) => (p.id === id ? productoEditando : p)));
+      setProductos((prev) => prev.map((p) => (p.id === id ? { ...productoEditando, ...datosLimpios } : p)));
       cerrarModal();
       showToast.success("Producto actualizado correctamente");
     } catch (error) {
@@ -298,6 +352,14 @@ const AdminProducts = () => {
   }).length;
   const out = productos.filter((p) => getStockTotal(p) === 0).length;
 
+  const categoriasDisponibles = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of productos) {
+      if (p.categoria) set.add(p.categoria);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [productos]);
+
   const productosFiltrados = useMemo(() => {
     let base = productos;
     switch (filter) {
@@ -317,16 +379,20 @@ const AdminProducts = () => {
         base = productos;
     }
 
+    if (categoria !== "todas") {
+      base = base.filter((p) => p.categoria === categoria);
+    }
+
     const term = searchTerm.trim().toLowerCase();
     if (!term) return base;
 
     return base.filter((p) => {
       const nombre = p.nombre?.toLowerCase() || "";
       const descripcion = p.descripcion?.toLowerCase() || "";
-      const categoria = p.categoria?.toLowerCase() || "";
-      return nombre.includes(term) || descripcion.includes(term) || categoria.includes(term);
+      const cat = p.categoria?.toLowerCase() || "";
+      return nombre.includes(term) || descripcion.includes(term) || cat.includes(term);
     });
-  }, [productos, filter, searchTerm]);
+  }, [productos, filter, categoria, searchTerm]);
 
   if (loading) {
     return <AdminLoader label="Cargando productos..." />;
@@ -368,7 +434,7 @@ const AdminProducts = () => {
 
       {/* Filtros + Buscador */}
       <AdminCard>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Chip active={filter === "all"} onClick={() => setFilter("all")}>
               Todos ({total})
@@ -384,27 +450,44 @@ const AdminProducts = () => {
             </Chip>
           </div>
 
-          <div className="relative w-full lg:w-80">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-            />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar nombre, descripcion o categoria..."
-              className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-10 text-sm font-semibold text-white outline-none transition-colors placeholder:text-slate-500 focus:border-pink-500/60 focus:bg-white/[0.06]"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="sm:w-56">
+              <AdminSelect
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                aria-label="Filtrar por categoria"
               >
-                <X size={14} />
-              </button>
-            )}
+                <option value="todas">Todas las categorias</option>
+                {categoriasDisponibles.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
+                ))}
+              </AdminSelect>
+            </div>
+
+            <div className="relative flex-1">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar nombre, descripcion o categoria..."
+                className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-10 text-sm font-semibold text-white outline-none transition-colors placeholder:text-slate-500 focus:border-pink-500/60 focus:bg-white/[0.06]"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </AdminCard>
@@ -417,102 +500,93 @@ const AdminProducts = () => {
           description="Proba cambiar el filtro o agrega tu primer producto."
         />
       ) : (
-        <AdminCard className="!p-0 overflow-hidden">
+        <>
           {/* Mobile */}
-          <div className="block lg:hidden divide-y divide-white/5">
-            {productosFiltrados.map((p) => (
-              <div key={p.id} className="p-4">
-                <div className="grid grid-cols-[64px_1fr_auto] gap-3">
-                  <img
-                    src={p.imagen}
-                    alt={p.nombre}
-                    className="h-16 w-16 rounded-lg object-cover ring-1 ring-white/10"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://via.placeholder.com/64x64/1f2937/9ca3af?text=No+img";
-                    }}
-                  />
-                  <div className="min-w-0">
-                    <h3 className="line-clamp-1 text-sm font-bold text-white">{p.nombre}</h3>
-                    <p className="line-clamp-2 text-xs text-slate-400">{p.descripcion}</p>
-                    <p className="mt-1 text-sm font-bold text-pink-300">{getPrecioDisplay(p)}</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <Badge tone={p.activo ? "green" : "red"}>
-                        {p.activo ? "Activo" : "Inactivo"}
-                      </Badge>
-                      <Badge
-                        tone={
-                          getStockTotal(p) === 0
-                            ? "red"
-                            : getStockTotal(p) <= 5
-                              ? "amber"
-                              : "blue"
-                        }
+          <div className="lg:hidden">
+            <AdminMobileList>
+              {productosFiltrados.map((p) => (
+                <div key={p.id} className="p-4">
+                  <div className="grid grid-cols-[64px_1fr_auto] gap-3">
+                    <img
+                      src={p.imagen}
+                      alt={p.nombre}
+                      className="h-16 w-16 rounded-lg object-cover ring-1 ring-white/10"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://via.placeholder.com/64x64/1f2937/9ca3af?text=No+img";
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <h3 className="line-clamp-1 text-sm font-bold text-white">{p.nombre}</h3>
+                      <p className="line-clamp-2 text-xs text-slate-400">{p.descripcion}</p>
+                      <p className="mt-1 text-sm font-bold text-pink-300">{getPrecioDisplay(p)}</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <Badge tone="pink">
+                          {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
+                        </Badge>
+                        <Badge tone={p.activo ? "green" : "red"}>
+                          {p.activo ? "Activo" : "Inactivo"}
+                        </Badge>
+                        <Badge
+                          tone={
+                            getStockTotal(p) === 0
+                              ? "red"
+                              : getStockTotal(p) <= 5
+                                ? "amber"
+                                : "blue"
+                          }
+                        >
+                          Stock {getStockTotal(p)}
+                        </Badge>
+                        {p.destacado && <Badge tone="amber">Destacado</Badge>}
+                        {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
+                        {p.tieneVariantes && <Badge tone="purple">Variantes</Badge>}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
+                        <Pencil size={14} />
+                      </IconBtn>
+                      <IconBtn
+                        title={p.activo ? "Desactivar" : "Activar"}
+                        onClick={() => toggleActivo(p)}
                       >
-                        Stock {getStockTotal(p)}
-                      </Badge>
-                      {p.destacado && <Badge tone="amber">Destacado</Badge>}
-                      {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
-                      {p.tieneVariantes && <Badge tone="purple">Variantes</Badge>}
+                        {p.activo ? <PowerOff size={14} /> : <Power size={14} />}
+                      </IconBtn>
+                      <IconBtn title="Eliminar" tone="danger" onClick={() => eliminarProducto(p)}>
+                        <Trash2 size={14} />
+                      </IconBtn>
                     </div>
                   </div>
-
-                  <div className="flex flex-col gap-2">
-                    <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
-                      <Pencil size={14} />
-                    </IconBtn>
-                    <IconBtn
-                      title={p.activo ? "Desactivar" : "Activar"}
-                      onClick={() => toggleActivo(p)}
-                    >
-                      {p.activo ? <PowerOff size={14} /> : <Power size={14} />}
-                    </IconBtn>
-                    <IconBtn title="Eliminar" tone="danger" onClick={() => eliminarProducto(p)}>
-                      <Trash2 size={14} />
-                    </IconBtn>
-                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </AdminMobileList>
           </div>
 
           {/* Desktop */}
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-white/[0.03] text-left">
-                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    Producto
-                  </th>
-                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    Categoria
-                  </th>
-                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    Precio
-                  </th>
-                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    Stock
-                  </th>
-                  <th className="px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    Estado
-                  </th>
-                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-wide text-slate-500">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
+          <div className="hidden lg:block">
+            <AdminTable>
+              <AdminThead>
+                <AdminTh>Producto</AdminTh>
+                <AdminTh>Categoria</AdminTh>
+                <AdminTh>Precio</AdminTh>
+                <AdminTh>Stock</AdminTh>
+                <AdminTh>Estado</AdminTh>
+                <AdminTh align="right">Acciones</AdminTh>
+              </AdminThead>
+              <AdminTbody>
                 {productosFiltrados.map((p) => (
-                  <tr key={p.id} className="transition-colors hover:bg-white/[0.02]">
-                    <td className="px-5 py-3">
+                  <AdminTr key={p.id}>
+                    <AdminTd>
                       <div className="flex items-center gap-3">
                         <img
                           src={p.imagen}
                           alt={p.nombre}
-                          className="h-14 w-14 rounded-lg object-cover ring-1 ring-white/10"
+                          className="h-12 w-12 rounded-lg object-cover ring-1 ring-white/10"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
-                              "https://via.placeholder.com/56x56/1f2937/9ca3af?text=No+img";
+                              "https://via.placeholder.com/48x48/1f2937/9ca3af?text=No+img";
                           }}
                         />
                         <div className="min-w-0">
@@ -525,16 +599,16 @@ const AdminProducts = () => {
                           )}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-5 py-3">
+                    </AdminTd>
+                    <AdminTd>
                       <Badge tone="pink">
                         {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
                       </Badge>
-                    </td>
-                    <td className="px-5 py-3 text-sm font-bold text-white">
+                    </AdminTd>
+                    <AdminTd className="text-sm font-bold text-white">
                       {getPrecioDisplay(p)}
-                    </td>
-                    <td className="px-5 py-3">
+                    </AdminTd>
+                    <AdminTd>
                       <Badge
                         tone={
                           getStockTotal(p) === 0
@@ -546,8 +620,8 @@ const AdminProducts = () => {
                       >
                         {getStockTotal(p)}
                       </Badge>
-                    </td>
-                    <td className="px-5 py-3">
+                    </AdminTd>
+                    <AdminTd>
                       <div className="flex flex-col items-start gap-1">
                         <Badge tone={p.activo ? "green" : "red"}>
                           {p.activo ? "Activo" : "Inactivo"}
@@ -555,8 +629,8 @@ const AdminProducts = () => {
                         {p.destacado && <Badge tone="amber">Destacado</Badge>}
                         {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
                       </div>
-                    </td>
-                    <td className="px-5 py-3">
+                    </AdminTd>
+                    <AdminTd align="right">
                       <div className="flex items-center justify-end gap-2">
                         <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
                           <Pencil size={14} />
@@ -575,13 +649,13 @@ const AdminProducts = () => {
                           <Trash2 size={14} />
                         </IconBtn>
                       </div>
-                    </td>
-                  </tr>
+                    </AdminTd>
+                  </AdminTr>
                 ))}
-              </tbody>
-            </table>
+              </AdminTbody>
+            </AdminTable>
           </div>
-        </AdminCard>
+        </>
       )}
 
       {/* Modal edicion */}
@@ -619,22 +693,24 @@ const AdminProducts = () => {
                 />
               </Field>
 
-              <Field label="Categoria *">
-                <AdminSelect
-                  name="categoria"
-                  value={productoEditando.categoria}
-                  onChange={handleCambioFormulario}
-                >
-                  <option value="">Seleccionar categoria</option>
-                  <option value="tortas">Tortas</option>
-                  <option value="porciones-torta">Porciones</option>
-                  <option value="cheesecakes">Cheesecakes</option>
-                  <option value="cupcakes">Cupcakes</option>
-                  <option value="panaderia">Panaderia</option>
-                  <option value="helados">Helados</option>
-                  <option value="tortas-personalizadas">Tortas a medida</option>
-                </AdminSelect>
-              </Field>
+              {!productoEditando.mayorista && (
+                <Field label="Categoria *">
+                  <AdminSelect
+                    name="categoria"
+                    value={productoEditando.categoria}
+                    onChange={handleCambioFormulario}
+                  >
+                    <option value="">Seleccionar categoria</option>
+                    <option value="tortas">Tortas</option>
+                    <option value="porciones-torta">Porciones</option>
+                    <option value="cheesecakes">Cheesecakes</option>
+                    <option value="cupcakes">Cupcakes</option>
+                    <option value="panaderia">Panaderia</option>
+                    <option value="helados">Helados</option>
+                    <option value="tortas-personalizadas">Tortas a medida</option>
+                  </AdminSelect>
+                </Field>
+              )}
 
               <Field label="URL de la imagen *">
                 <AdminInput
@@ -645,16 +721,69 @@ const AdminProducts = () => {
                 />
               </Field>
 
-              <div className="rounded-xl border border-violet-400/25 bg-violet-400/[0.05] p-4">
+              {/* Mayorista (va ARRIBA del check de variantes) */}
+              <div className="space-y-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.05] p-4">
                 <AdminCheckbox
-                  checked={productoEditando.tieneVariantes}
-                  onChange={handleTieneVariantesChange}
-                  labelText="Producto con variantes"
-                  hint="Para tortas con diferentes porciones o medidas."
+                  name="mayorista"
+                  checked={productoEditando.mayorista ?? false}
+                  onChange={handleMayoristaChangeEdit}
+                  labelText="Disponible para mayoristas"
+                  hint="Si esta activo el producto se rige por sus campos mayoristas (precio, pack y categoria propios)."
                 />
+
+                {productoEditando.mayorista && (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <Field label="Precio mayorista unitario *">
+                      <AdminInput
+                        type="number"
+                        name="precioMayorista"
+                        value={productoEditando.precioMayorista || ""}
+                        onChange={handleCambioFormulario}
+                        min={0}
+                      />
+                    </Field>
+                    <Field label="Pack minimo *">
+                      <AdminInput
+                        type="number"
+                        name="packMayorista"
+                        value={productoEditando.packMayorista || ""}
+                        onChange={handleCambioFormulario}
+                        min={1}
+                      />
+                    </Field>
+                    <Field label="Categoria mayorista *">
+                      <AdminInput
+                        type="text"
+                        name="categoriaMayorista"
+                        value={productoEditando.categoriaMayorista || ""}
+                        onChange={handleCambioFormulario}
+                      />
+                    </Field>
+                    <Field label="Orden mayorista">
+                      <AdminInput
+                        type="number"
+                        name="ordenMayorista"
+                        value={productoEditando.ordenMayorista || ""}
+                        onChange={handleCambioFormulario}
+                        min={0}
+                      />
+                    </Field>
+                  </div>
+                )}
               </div>
 
-              {!productoEditando.tieneVariantes && (
+              {!productoEditando.mayorista && (
+                <div className="rounded-xl border border-violet-400/25 bg-violet-400/[0.05] p-4">
+                  <AdminCheckbox
+                    checked={productoEditando.tieneVariantes}
+                    onChange={handleTieneVariantesChange}
+                    labelText="Producto con variantes"
+                    hint="Para tortas con diferentes porciones o medidas."
+                  />
+                </div>
+              )}
+
+              {!productoEditando.mayorista && !productoEditando.tieneVariantes && (
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Precio (ARS) *">
                     <AdminInput
@@ -677,7 +806,7 @@ const AdminProducts = () => {
                 </div>
               )}
 
-              {productoEditando.tieneVariantes && (
+              {!productoEditando.mayorista && productoEditando.tieneVariantes && (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                     <h4 className="mb-3 text-sm font-black uppercase tracking-wide text-white">
@@ -795,56 +924,6 @@ const AdminProducts = () => {
                   )}
                 </div>
               )}
-
-              <div className="space-y-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.05] p-4">
-                <AdminCheckbox
-                  name="mayorista"
-                  checked={productoEditando.mayorista ?? false}
-                  onChange={handleCambioFormulario}
-                  labelText="Disponible para mayoristas"
-                  hint="Controla si aparece en /wholesale."
-                />
-
-                {productoEditando.mayorista && (
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <Field label="Precio mayorista unitario">
-                      <AdminInput
-                        type="number"
-                        name="precioMayorista"
-                        value={productoEditando.precioMayorista || ""}
-                        onChange={handleCambioFormulario}
-                        min={0}
-                      />
-                    </Field>
-                    <Field label="Pack minimo">
-                      <AdminInput
-                        type="number"
-                        name="packMayorista"
-                        value={productoEditando.packMayorista || ""}
-                        onChange={handleCambioFormulario}
-                        min={1}
-                      />
-                    </Field>
-                    <Field label="Categoria mayorista">
-                      <AdminInput
-                        type="text"
-                        name="categoriaMayorista"
-                        value={productoEditando.categoriaMayorista || ""}
-                        onChange={handleCambioFormulario}
-                      />
-                    </Field>
-                    <Field label="Orden mayorista">
-                      <AdminInput
-                        type="number"
-                        name="ordenMayorista"
-                        value={productoEditando.ordenMayorista || ""}
-                        onChange={handleCambioFormulario}
-                        min={0}
-                      />
-                    </Field>
-                  </div>
-                )}
-              </div>
 
               <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
                 <h3 className="text-sm font-black uppercase tracking-wide text-white">
