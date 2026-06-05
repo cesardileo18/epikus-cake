@@ -26,6 +26,7 @@ const PaymentSuccess = lazy(() => import('@/views/payment/PaymentSuccess'));
 const AdminUsers = lazy(() => import('@/views/admin/users/AdminUsers'));
 const AdminMetrics = lazy(() => import('@/views/admin/metrics/AdminMetrics'));
 const AdminSales = lazy(() => import('@/views/admin/sales/AdminSales'));
+const AdminSettings = lazy(() => import('@/views/admin/settings/AdminSettings'));
 const Favorites = lazy(() => import('@/views/Favorites'));
 const ProductReviewsPage = lazy(() => import('@/views/ProductReviewsPage'));
 const MyReviewsPage = lazy(() => import('@/views/MyReviewsPage'));
@@ -102,6 +103,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/admin/analytics" element={<Navigate to="/admin/metrics" replace />} />
             <Route path="/admin/sales" element={<AdminSales />} />
             <Route path="/admin/sales-dashboard" element={<Navigate to="/admin/sales" replace />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/orders/calendar" element={<OrdersCalendar />} />
             <Route path="/admin/sells/calendar" element={<Navigate to="/admin/orders/calendar" replace />} />
             <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />

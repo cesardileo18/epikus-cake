@@ -18,11 +18,12 @@ import { httpsCallable } from 'firebase/functions';
 import ConsentimientoTyC from '@/components/buttons/ConsentimientoTyC';
 import transferenciaJson from "@/content/transfer.json"
 import type { TransferenciaData } from "@/interfaces/content/transfer";
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { DEFAULT_STORE_SETTINGS } from '@/services/settings.service';
 
 const transferencia = transferenciaJson as TransferenciaData;
 
 const price = (n: number) => n.toLocaleString('es-AR');
-const WA_PHONE = import.meta.env.VITE_WA_PHONE;
 const DESCUENTO_TRANSFERENCIA = 10;
 
 const ConfirmOrder: React.FC = () => {
@@ -30,6 +31,12 @@ const ConfirmOrder: React.FC = () => {
   const enviandoRef = useRef(false);
   const [errorRecaptcha, setErrorRecaptcha] = useState<string | null>(null);
   const { executeRecaptcha } = useRecaptcha(true);
+  const { settings } = useStoreSettings();
+  const whatsappPhone = settings?.whatsapp || DEFAULT_STORE_SETTINGS.whatsapp;
+  const contactEmail = settings?.contactEmail || DEFAULT_STORE_SETTINGS.contactEmail;
+  const bankAlias = settings?.bankAlias || transferencia.alias;
+  const bankCbu = settings?.bankCbu || transferencia.cvu;
+  const bankHolder = settings?.bankHolder || transferencia.titular;
   const CATEGORIAS_MISMO_DIA = [
     'porciones-torta',
     'galletas',
@@ -149,9 +156,9 @@ const ConfirmOrder: React.FC = () => {
     const transferenciaTexto =
       paymentMethod === "transferencia"
         ? `\n\n💳 *Datos para la seña (50%)*` +
-        `\nAlias: ${transferencia.alias}` +
-        `\nCVU: ${transferencia.cvu}` +
-        `\nTitular: ${transferencia.titular}` +
+        `\nAlias: ${bankAlias}` +
+        `\nCVU: ${bankCbu}` +
+        `\nTitular: ${bankHolder}` +
         `\nMonto seña: $${price(pricing.senia50)}`
         : '';
 
@@ -222,7 +229,7 @@ const ConfirmOrder: React.FC = () => {
       if (!orderId) throw new Error("No se pudo crear la orden.");
 
       const message = buildWaMessage(orderId);
-      const waHref = `https://api.whatsapp.com/send?phone=${WA_PHONE}&text=${encodeURIComponent(message)}`;
+      const waHref = `https://api.whatsapp.com/send?phone=${whatsappPhone}&text=${encodeURIComponent(message)}`;
       const a = document.createElement("a");
       a.href = waHref;
       a.target = "_blank";
@@ -260,9 +267,9 @@ const ConfirmOrder: React.FC = () => {
           <!-- 👇 ACÁ VAN LOS DATOS DE TRANSFERENCIA -->
           <div style="background:#f0fdf4;padding:15px;border-radius:8px;margin:20px 0">
             <h3 style="margin-top:0">💳 Datos para la seña (50%)</h3>
-            <p><strong>Alias:</strong> ${transferencia.alias}</p>
-            <p><strong>CVU:</strong> ${transferencia.cvu}</p>
-            <p><strong>Titular:</strong> ${transferencia.titular}</p>
+            <p><strong>Alias:</strong> ${bankAlias}</p>
+            <p><strong>CVU:</strong> ${bankCbu}</p>
+            <p><strong>Titular:</strong> ${bankHolder}</p>
             <p><strong>Monto a transferir:</strong> $${price(pricing.senia50)}</p>
           </div>
           `
@@ -290,7 +297,7 @@ const ConfirmOrder: React.FC = () => {
 
       tasks.push(
         sendEmail({
-          to: import.meta.env.VITE_CONTACT_EMAIL,
+          to: contactEmail,
           subject: `🛒 Nueva compra - Pedido #${orderId}`,
           html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

@@ -7,5 +7,6 @@ export * from './orders.service';
 export * from './favorites.service';
 export * from './users.service';
 export * from './analytics.service';
+export * from './settings.service';
 export * from './reviews';
 export * from './userReviews';

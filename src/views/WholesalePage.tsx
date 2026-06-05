@@ -8,6 +8,8 @@ import wholesaleJson from '@/content/wholesale.json';
 import WholesaleProductCard from '@/components/wholesale/WholesaleProductCard';
 import WholesalePriceTable from '@/components/wholesale/WholesalePriceTable';
 import useProductsLiveQuery from '@/hooks/useProductsLiveQuery';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { DEFAULT_STORE_SETTINGS } from '@/services/settings.service';
 import type { ProductWithId } from '@/services/products.service';
 
 const content = wholesaleJson as WholesaleContent;
@@ -86,6 +88,10 @@ const sortWholesaleProducts = (
 const WholesalePage: React.FC = () => {
   const { page } = content;
   const { products: dbProducts, loading, error } = useProductsLiveQuery({ onlyActive: true });
+  const { settings } = useStoreSettings();
+  const whatsappPhone = settings?.whatsapp || page.cta.whatsapp_number || DEFAULT_STORE_SETTINGS.whatsapp;
+  const whatsappMessage =
+    settings?.whatsappMessage || page.cta.whatsapp_message || DEFAULT_STORE_SETTINGS.whatsappMessage;
 
   const products = sortWholesaleProducts(
     dbProducts
@@ -195,7 +201,7 @@ const WholesalePage: React.FC = () => {
         </h2>
         <p className="mb-8 text-sm" style={{ color: 'var(--color-text-secondary)' }}>{page.cta.subtitle}</p>
         <a
-          href={`https://wa.me/${page.cta.whatsapp_number}?text=${encodeURIComponent(page.cta.whatsapp_message)}`}
+          href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(whatsappMessage)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 text-white font-bold px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"

@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { sendEmail } from '@/config/emailjs';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { DEFAULT_STORE_SETTINGS } from '@/services/settings.service';
 
 type OrderStatus = 'pendiente' | 'en_proceso' | 'entregado' | 'cancelado';
 
@@ -62,6 +64,8 @@ const getItemSubtotal = (it: any) =>
  *  - Flags en Firestore (idempotencia global)
  */
 export const useOrderStatusListener = (orderId: string | null) => {
+  const { settings } = useStoreSettings();
+  const contactEmail = settings?.contactEmail || DEFAULT_STORE_SETTINGS.contactEmail;
   const sentKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -152,7 +156,7 @@ export const useOrderStatusListener = (orderId: string | null) => {
 
           tasks.push(
             sendEmail({
-              to: import.meta.env.VITE_CONTACT_EMAIL,
+              to: contactEmail,
               subject: `✅ Pago acreditado - Pedido #${id}`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -239,7 +243,7 @@ export const useOrderStatusListener = (orderId: string | null) => {
 
           tasks.push(
             sendEmail({
-              to: import.meta.env.VITE_CONTACT_EMAIL,
+              to: contactEmail,
               subject: `❌ Pago rechazado - Pedido #${id}`,
               html: `
                 <div style="font-family: Arial, sans-serif;">
@@ -267,5 +271,5 @@ export const useOrderStatusListener = (orderId: string | null) => {
     });
 
     return () => unsubscribe();
-  }, [orderId]);
+  }, [contactEmail, orderId]);
 };

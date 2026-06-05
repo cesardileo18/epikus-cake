@@ -10,6 +10,7 @@ import {
   Menu,
   PackagePlus,
   ReceiptText,
+  Settings,
   TrendingUp,
   Users,
   X,
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { to: '/admin/metrics', label: 'Metricas', icon: BarChart3 },
   { to: '/admin/sales', label: 'Ventas', icon: TrendingUp },
   { to: '/admin/orders/calendar', label: 'Calendario', icon: CalendarDays },
+  { to: '/admin/settings', label: 'Configuracion', icon: Settings },
 ];
 
 const AdminLayout: React.FC = () => {

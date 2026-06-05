@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import useContactForm from '@/hooks/useContactForm';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import ReCaptchaInvisible from '@/components/security/ReCaptchaInvisible';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { DEFAULT_STORE_SETTINGS } from '@/services/settings.service';
 
 import contactJson from '@/content/contact.json';
 import type { ContactContent } from '@/interfaces/content/contact';
@@ -20,10 +22,20 @@ const mdText = (s: string) => {
   return m ? m[1] : s;
 };
 
+const formatSchedule = (settings = DEFAULT_STORE_SETTINGS): string => {
+  const entries = Object.entries(settings.weeklyAvailability)
+    .filter(([, day]) => day.enabled && day.slots.length)
+    .map(([, day]) => day.slots.map((slot) => `${slot.from} a ${slot.to}`).join(' / '));
+
+  return entries.length ? Array.from(new Set(entries)).join(' | ') : 'Horarios a coordinar';
+};
+
 const Contact: React.FC = () => {
   const {
     form, onChange, valid, submit, sending, status, whatsappLink, nameRef,
   } = useContactForm();
+  const { settings } = useStoreSettings();
+  const currentSettings = settings || DEFAULT_STORE_SETTINGS;
   const [errorRecaptcha, setErrorRecaptcha] = useState<string | null>(null);
   const { executeRecaptcha } = useRecaptcha(true);
 
@@ -193,7 +205,7 @@ const Contact: React.FC = () => {
               <div className="aspect-[4/3] sm:aspect-video w-full overflow-hidden rounded-2xl border border-pink-100 shadow">
                 <iframe
                   className="w-full h-full"
-                  src={mdHref(content.map_section.iframe_src)}
+                  src={currentSettings.mapEmbedUrl || mdHref(content.map_section.iframe_src)}
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
@@ -209,18 +221,18 @@ const Contact: React.FC = () => {
               <div className="grid sm:grid-cols-2 gap-4 text-sm" style={{ color: 'var(--color-text-primary)' }}>
                 <div className="rounded-xl p-4" style={{ background: 'var(--color-bg-card-inner)' }}>
                   <p className="font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{content.quick_info.email.label}</p>
-                  <p>{mdText(content.quick_info.email.value)}</p>
+                  <p>{currentSettings.contactEmail || mdText(content.quick_info.email.value)}</p>
                 </div>
                 <div className="rounded-xl p-4" style={{ background: 'var(--color-bg-card-inner)' }}>
                   <p className="font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{content.quick_info.schedule.label}</p>
-                  <p>{content.quick_info.schedule.value}</p>
+                  <p>{formatSchedule(currentSettings)}</p>
                   {content.quick_info.schedule.note && (
                     <p className="text-xs text-gray-500">{content.quick_info.schedule.note}</p>
                   )}
                 </div>
                 <div className="rounded-xl p-4 sm:col-span-2" style={{ background: 'var(--color-bg-card-inner)' }}>
                   <p className="font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>{content.quick_info.pickup_delivery.label}</p>
-                  <p>{content.quick_info.pickup_delivery.value}</p>
+                  <p>{currentSettings.shippingInfo || content.quick_info.pickup_delivery.value}</p>
                 </div>
               </div>
             </div>

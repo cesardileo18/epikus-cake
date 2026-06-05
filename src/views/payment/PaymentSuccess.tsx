@@ -20,6 +20,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useOrderStatusListener } from '@/hooks/mercadoPago/useOrderStatusListener';
 import ShareReceipt from '@/components/share/ShareReceipt';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { DEFAULT_STORE_SETTINGS } from '@/services/settings.service';
 
 type OrderStatus = 'pendiente' | 'en_proceso' | 'entregado' | 'cancelado';
 
@@ -137,7 +139,8 @@ const PaymentSuccess: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const WA_PHONE = import.meta.env.VITE_WA_PHONE;
+  const { settings } = useStoreSettings();
+  const whatsappPhone = settings?.whatsapp || DEFAULT_STORE_SETTINGS.whatsapp;
 
   // Cargar pedido + marcar en_proceso/acreditado si viene de MP y aún no estaba
   useEffect(() => {
@@ -494,7 +497,7 @@ const PaymentSuccess: React.FC = () => {
               {/* Botón WhatsApp solo para MercadoPago */}
               {order.pago?.metodoSeleccionado === 'mercadopago' && (
                 <a
-                  href={`https://api.whatsapp.com/send?phone=${WA_PHONE}&text=${encodeURIComponent(
+                  href={`https://api.whatsapp.com/send?phone=${whatsappPhone}&text=${encodeURIComponent(
                     buildWaMessageFromOrder()
                   )}`}
                   target="_blank"

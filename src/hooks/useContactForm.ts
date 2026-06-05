@@ -1,6 +1,7 @@
-// src/hooks/useContactForm.ts
 import { useMemo, useRef, useState } from 'react';
 import { sendEmail } from '@/config/emailjs';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { DEFAULT_STORE_SETTINGS } from '@/services/settings.service';
 
 export type ContactFormState = {
   name: string;
@@ -12,13 +13,14 @@ export type ContactFormState = {
 const INITIAL: ContactFormState = { name: '', email: '', phone: '', message: '' };
 
 export default function useContactForm() {
+  const { settings } = useStoreSettings();
   const [form, setForm] = useState<ContactFormState>(INITIAL);
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const valid = useMemo(() => {
     if (!form.name.trim()) return false;
@@ -27,39 +29,43 @@ export default function useContactForm() {
     return true;
   }, [form]);
 
-  const whatsappNumber = import.meta.env.VITE_WA_PHONE;
-  const whatsappLink = useMemo(() => {
-    const text = 'Hola Epikus Cake, me gustaría hacer un pedido.';
-    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
-  }, [whatsappNumber]);
+  const whatsappNumber = settings?.whatsapp || DEFAULT_STORE_SETTINGS.whatsapp;
+  const whatsappMessage = settings?.whatsappMessage || DEFAULT_STORE_SETTINGS.whatsappMessage;
+  const whatsappLink = useMemo(
+    () => `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`,
+    [whatsappMessage, whatsappNumber]
+  );
 
-const submit = async (e?: React.FormEvent, recipientEmail?: string) => {
+  const submit = async (e?: React.FormEvent, recipientEmail?: string) => {
     if (e) e.preventDefault();
     if (!valid || sending) return;
 
     setSending(true);
     setStatus(null);
+
     try {
-      // Variables alineadas con tu template de EmailJS (Subject usa {{from_name}} y Reply-To usa {{from_email}})
       await sendEmail({
-        to: recipientEmail || import.meta.env.VITE_CONTACT_EMAIL,
+        to: recipientEmail || settings?.contactEmail || DEFAULT_STORE_SETTINGS.contactEmail,
         subject: `Nuevo mensaje de ${form.name}`,
         html: `<p><strong>Nombre:</strong> ${form.name}</p>
          <p><strong>Email:</strong> ${form.email}</p>
-         <p><strong>Teléfono:</strong> ${form.phone}</p>
+         <p><strong>Telefono:</strong> ${form.phone}</p>
          <p><strong>Mensaje:</strong></p>
          <p>${form.message}</p>`,
-        text: `Nombre: ${form.name}\nEmail: ${form.email}\nTeléfono: ${form.phone}\n\nMensaje:\n${form.message}`
+        text: `Nombre: ${form.name}\nEmail: ${form.email}\nTelefono: ${form.phone}\n\nMensaje:\n${form.message}`,
       });
       setStatus({
         type: 'success',
-        msg: '¡Gracias! Tu mensaje fue enviado. Te respondemos a la brevedad.'
+        msg: 'Gracias! Tu mensaje fue enviado. Te respondemos a la brevedad.',
       });
       setForm(INITIAL);
       setTimeout(() => nameRef.current?.focus(), 0);
     } catch (err) {
       console.error(err);
-      setStatus({ type: 'error', msg: 'Ups, no pudimos enviar el mensaje. Intentá de nuevo en unos minutos.' });
+      setStatus({
+        type: 'error',
+        msg: 'Ups, no pudimos enviar el mensaje. Intenta de nuevo en unos minutos.',
+      });
     } finally {
       setSending(false);
       setTimeout(() => setStatus(null), 4000);

@@ -1,123 +1,157 @@
-// src/context/StoreStatusContext.tsx
-import React, { createContext, useContext, useEffect, useState } from "react";
-
-// ═══════════════════════════════════════════════════════════════
-// 🕐 CONFIGURACIÓN CENTRALIZADA DE HORARIOS
-// Modificar solo estos valores para cambiar horarios.
-// Los mensajes y la lógica de "próxima apertura" se actualizan solos.
-// ═══════════════════════════════════════════════════════════════
-const SCHEDULE = {
-  weekdays: { open: 9, close: 20 },  // Lunes a viernes
-  saturday: { open: 9, close: 19 },  // Sábado
-  sunday:   { open: 9, close: 19 },  // Domingo
-} as const;
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import type { StoreSettings, WeekdayKey, WeeklyAvailability } from '@/interfaces/settings';
+import {
+  DEFAULT_STORE_SETTINGS,
+  subscribeToStoreSettings,
+} from '@/services/settings.service';
 
 interface StoreStatusContextValue {
   isStoreOpen: boolean;
   nextOpeningTime: string;
   closedMessage: string | null;
+  settings: StoreSettings;
+  loadingSettings: boolean;
 }
 
 const StoreStatusContext = createContext<StoreStatusContextValue>({
   isStoreOpen: false,
-  nextOpeningTime: "",
+  nextOpeningTime: '',
   closedMessage: null,
+  settings: DEFAULT_STORE_SETTINGS,
+  loadingSettings: true,
 });
 
-// Devuelve { hour, day } en zona horaria de Argentina
-function getArgentinaTime(): { hour: number; day: number } {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    hour: "numeric",
-    hour12: false,
-    weekday: "short",
-  });
+const WEEKDAYS: WeekdayKey[] = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+];
 
-  const parts = formatter.formatToParts(now);
-  const hour = parseInt(parts.find(p => p.type === "hour")?.value || "0");
-  const weekday = parts.find(p => p.type === "weekday")?.value || "";
+const DAY_LABELS: Record<WeekdayKey, string> = {
+  monday: 'lunes',
+  tuesday: 'martes',
+  wednesday: 'miercoles',
+  thursday: 'jueves',
+  friday: 'viernes',
+  saturday: 'sabado',
+  sunday: 'domingo',
+};
 
-  const dayMap: Record<string, number> = {
-    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
-  };
+const toMinutes = (value: string): number | null => {
+  const [hours, minutes] = value.split(':').map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  return hours * 60 + minutes;
+};
 
-  return { hour, day: dayMap[weekday] ?? 0 };
-}
+const getArgentinaDate = (): Date =>
+  new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
 
-function isOpenNow(hour: number, day: number): boolean {
-  if (day >= 1 && day <= 5) return hour >= SCHEDULE.weekdays.open && hour < SCHEDULE.weekdays.close;
-  if (day === 6)             return hour >= SCHEDULE.saturday.open && hour < SCHEDULE.saturday.close;
-  if (day === 0)             return hour >= SCHEDULE.sunday.open   && hour < SCHEDULE.sunday.close;
-  return false;
-}
+function findNextOpening(availability: WeeklyAvailability, fromDate: Date): string {
+  for (let offset = 0; offset < 7; offset += 1) {
+    const candidate = new Date(fromDate);
+    candidate.setDate(fromDate.getDate() + offset);
+    const weekday = WEEKDAYS[candidate.getDay()];
+    const day = availability[weekday];
+    const firstSlot = day?.enabled ? day.slots.find((slot) => slot.from && slot.to) : null;
 
-function buildClosedMessage(day: number): string {
-  if (day === 6) return `Tienda cerrada. Horario sábado: ${SCHEDULE.saturday.open}:00 a ${SCHEDULE.saturday.close}:00`;
-  if (day === 0) return `Tienda cerrada. Horario domingo: ${SCHEDULE.sunday.open}:00 a ${SCHEDULE.sunday.close}:00`;
-  return `Tienda cerrada. Horario: ${SCHEDULE.weekdays.open}:00 a ${SCHEDULE.weekdays.close}:00`;
-}
+    if (!firstSlot) continue;
 
-function buildNextOpeningTime(hour: number, day: number): string {
-  const now = new Date();
-  const next = new Date(now);
+    const openMinutes = toMinutes(firstSlot.from);
+    const currentMinutes = fromDate.getHours() * 60 + fromDate.getMinutes();
+    if (openMinutes === null) continue;
+    if (offset === 0 && currentMinutes >= openMinutes) continue;
 
-  const closeHour =
-    day >= 1 && day <= 5 ? SCHEDULE.weekdays.close :
-    day === 6             ? SCHEDULE.saturday.close :
-                            SCHEDULE.sunday.close;
-
-  if (hour >= closeHour) {
-    next.setDate(now.getDate() + 1);
+    return offset === 0 ? firstSlot.from : `${DAY_LABELS[weekday]} ${firstSlot.from}`;
   }
-  next.setHours(9, 0, 0, 0);
 
-  return next.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  return '';
+}
+
+function resolveStoreStatus(settings: StoreSettings) {
+  const envFlag = (import.meta.env.VITE_FORCE_STORE_CLOSED ?? '').toString().trim().toLowerCase();
+  const customMessage = import.meta.env.VITE_STORE_CLOSED_MESSAGE || '';
+
+  if (envFlag === 'false') {
+    return { isStoreOpen: true, nextOpeningTime: '', closedMessage: null };
+  }
+
+  if (envFlag === 'true') {
+    return {
+      isStoreOpen: false,
+      nextOpeningTime: '',
+      closedMessage: customMessage || 'Tienda cerrada por mantenimiento.',
+    };
+  }
+
+  if (!settings.storeEnabled) {
+    return {
+      isStoreOpen: false,
+      nextOpeningTime: '',
+      closedMessage: settings.maintenanceMessage || 'Tienda cerrada temporalmente.',
+    };
+  }
+
+  const now = getArgentinaDate();
+  const weekday = WEEKDAYS[now.getDay()];
+  const day = settings.weeklyAvailability[weekday];
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const activeSlot = day?.enabled
+    ? day.slots.find((slot) => {
+        const from = toMinutes(slot.from);
+        const to = toMinutes(slot.to);
+        return from !== null && to !== null && currentMinutes >= from && currentMinutes < to;
+      })
+    : null;
+
+  if (activeSlot) {
+    return { isStoreOpen: true, nextOpeningTime: '', closedMessage: null };
+  }
+
+  const schedule =
+    day?.enabled && day.slots.length
+      ? day.slots.map((slot) => `${slot.from} a ${slot.to}`).join(' / ')
+      : 'cerrado';
+
+  const nextOpeningTime = findNextOpening(settings.weeklyAvailability, now);
+
+  return {
+    isStoreOpen: false,
+    nextOpeningTime,
+    closedMessage: `Tienda cerrada. Horario ${DAY_LABELS[weekday]}: ${schedule}.`,
+  };
 }
 
 export const StoreStatusProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isStoreOpen, setIsStoreOpen]       = useState(false);
-  const [nextOpeningTime, setNextOpeningTime] = useState("");
-  const [closedMessage, setClosedMessage]   = useState<string | null>(null);
-
-  const checkStoreStatus = () => {
-    const envFlag = (import.meta.env.VITE_FORCE_STORE_CLOSED ?? "").toString().trim().toLowerCase();
-    const customMessage = import.meta.env.VITE_STORE_CLOSED_MESSAGE || "";
-
-    // Flag explícito en .env para forzar estado
-    if (envFlag === "false") {
-      setIsStoreOpen(true);
-      setClosedMessage(null);
-      return;
-    }
-    if (envFlag === "true") {
-      setIsStoreOpen(false);
-      setClosedMessage(customMessage || "Tienda cerrada por mantenimiento");
-      return;
-    }
-
-    // Lógica normal de horarios
-    const { hour, day } = getArgentinaTime();
-    const open = isOpenNow(hour, day);
-
-    setIsStoreOpen(open);
-
-    if (!open) {
-      setClosedMessage(buildClosedMessage(day));
-      setNextOpeningTime(buildNextOpeningTime(hour, day));
-    } else {
-      setClosedMessage(null);
-    }
-  };
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    checkStoreStatus();
-    const interval = setInterval(checkStoreStatus, 60 * 1000);
-    return () => clearInterval(interval);
+    const unsub = subscribeToStoreSettings(
+      (next) => {
+        setSettings(next);
+        setLoadingSettings(false);
+      },
+      () => setLoadingSettings(false)
+    );
+
+    return unsub;
   }, []);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => setTick((value) => value + 1), 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const status = useMemo(() => resolveStoreStatus(settings), [settings, tick]);
+
   return (
-    <StoreStatusContext.Provider value={{ isStoreOpen, nextOpeningTime, closedMessage }}>
+    <StoreStatusContext.Provider value={{ ...status, settings, loadingSettings }}>
       {children}
     </StoreStatusContext.Provider>
   );
