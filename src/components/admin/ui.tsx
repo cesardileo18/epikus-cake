@@ -408,80 +408,110 @@ export const AdminSelect = React.forwardRef<
 AdminSelect.displayName = "AdminSelect";
 
 /* ============================================================
-   Tabla — primitivas reusables (desktop)
-   Las vistas combinan AdminTable con cards mobile-only.
+   Tabla con CSS Grid — patron monodepiedra
+   El wrapper hace scroll horizontal en mobile (no se transforma a
+   cards). El header y cada fila comparten el mismo `cols` para
+   alinear columnas perfectamente.
    ============================================================ */
-type Align = "left" | "right" | "center";
 
-const alignMap: Record<Align, string> = {
-  left: "text-left",
-  right: "text-right",
-  center: "text-center",
-};
-
-export const AdminTable: React.FC<{ children: React.ReactNode; className?: string }> = ({
-  children,
-  className = "",
-}) => (
-  <AdminCard className={`!p-0 overflow-hidden ${className}`}>
-    <div className="overflow-x-auto">
-      <table className="w-full">{children}</table>
-    </div>
-  </AdminCard>
-);
-
-export const AdminThead: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <thead className="bg-white/[0.03]">
-    <tr>{children}</tr>
-  </thead>
-);
-
-export const AdminTh: React.FC<{
+/** Ancho minimo del contenido (mobile fuerza scroll horizontal). */
+export const AdminGridTable: React.FC<{
+  minWidth?: string;
   children: React.ReactNode;
-  align?: Align;
   className?: string;
-}> = ({ children, align = "left", className = "" }) => (
-  <th
-    className={`px-5 py-3 ${alignMap[align]} text-[11px] font-black uppercase tracking-wide text-slate-500 ${className}`}
+}> = ({ minWidth = "min-w-[56rem]", children, className = "" }) => (
+  <div
+    className={`overflow-x-auto rounded-xl border border-white/10 bg-[#0c0e1a] shadow-xl ${className}`}
+  >
+    <div className={minWidth}>{children}</div>
+  </div>
+);
+
+export const AdminGridHeader: React.FC<{
+  cols: string;
+  children: React.ReactNode;
+}> = ({ cols, children }) => (
+  <div
+    className={`grid ${cols} border-b border-white/10 bg-white/[0.04] px-5 py-3 text-[11px] font-black uppercase tracking-wide text-slate-500`}
   >
     {children}
-  </th>
+  </div>
 );
 
-export const AdminTbody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <tbody className="divide-y divide-white/5">{children}</tbody>
-);
-
-export const AdminTr: React.FC<{
-  children: React.ReactNode;
+export const AdminGridRow: React.FC<{
+  cols: string;
   onClick?: () => void;
   active?: boolean;
-}> = ({ children, onClick, active }) => (
-  <tr
+  children: React.ReactNode;
+}> = ({ cols, onClick, active, children }) => {
+  const className = [
+    "grid",
+    cols,
+    "items-center border-b border-white/[0.06] px-5 py-3 text-left transition-colors last:border-b-0",
+    onClick ? "cursor-pointer hover:bg-white/[0.03]" : "",
+    active ? "bg-pink-500/[0.07]" : "",
+  ].join(" ");
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`w-full ${className}`}>
+        {children}
+      </button>
+    );
+  }
+  return <div className={className}>{children}</div>;
+};
+
+export const AdminGridEmpty: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="px-5 py-10 text-center text-sm font-medium text-slate-400">{children}</div>
+);
+
+/* Kebab popover anclado al boton — pattern de monodepiedra. Lo armamos
+   con createPortal-friendly inline style (left/top). */
+export interface KebabPosition {
+  left: number;
+  top: number;
+}
+
+export const AdminKebab: React.FC<{
+  position: KebabPosition;
+  onClose: () => void;
+  children: React.ReactNode;
+  width?: string;
+}> = ({ position, onClose, children, width = "w-48" }) => (
+  <>
+    <button
+      type="button"
+      aria-label="Cerrar menu"
+      className="fixed inset-0 z-40 cursor-default bg-transparent"
+      onClick={onClose}
+    />
+    <div
+      className={`fixed z-50 ${width} overflow-hidden rounded-lg border border-white/10 bg-[#111c2b] p-1 shadow-2xl`}
+      style={{ left: position.left, top: position.top }}
+    >
+      {children}
+    </div>
+  </>
+);
+
+export const AdminKebabItem: React.FC<{
+  onClick: () => void;
+  children: React.ReactNode;
+  tone?: "default" | "danger";
+}> = ({ onClick, children, tone = "default" }) => (
+  <button
+    type="button"
     onClick={onClick}
     className={[
-      "transition-colors",
-      onClick ? "cursor-pointer" : "",
-      active ? "bg-pink-500/[0.08]" : "hover:bg-white/[0.03]",
+      "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-bold transition-colors",
+      tone === "danger"
+        ? "text-rose-300 hover:bg-rose-400/15"
+        : "text-slate-200 hover:bg-white/10",
     ].join(" ")}
   >
     {children}
-  </tr>
-);
-
-export const AdminTd: React.FC<{
-  children: React.ReactNode;
-  align?: Align;
-  className?: string;
-}> = ({ children, align = "left", className = "" }) => (
-  <td className={`px-5 py-3 align-top ${alignMap[align]} ${className}`}>{children}</td>
-);
-
-/* Lista mobile que envuelve los cards (mismo borde / fondo que la tabla). */
-export const AdminMobileList: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <AdminCard className="!p-0 overflow-hidden">
-    <div className="divide-y divide-white/5">{children}</div>
-  </AdminCard>
+  </button>
 );
 
 /* ============================================================

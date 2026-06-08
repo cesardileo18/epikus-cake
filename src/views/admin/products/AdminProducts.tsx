@@ -24,19 +24,16 @@ import {
   AdminButton,
   AdminCard,
   AdminCheckbox,
+  AdminGridEmpty,
+  AdminGridHeader,
+  AdminGridRow,
+  AdminGridTable,
   AdminHeader,
   AdminInput,
   AdminLoader,
-  AdminMobileList,
   AdminPage,
   AdminSelect,
-  AdminTable,
-  AdminTbody,
-  AdminTd,
   AdminTextarea,
-  AdminTh,
-  AdminThead,
-  AdminTr,
   Badge,
   Chip,
   EmptyState,
@@ -49,6 +46,9 @@ import {
 type FilterKey = "all" | "active" | "low" | "out";
 
 const formatPrice = (n: number) => `$${n.toLocaleString("es-AR")}`;
+
+const PRODUCT_COLS =
+  "grid-cols-[minmax(260px,2fr)_140px_120px_100px_minmax(180px,1fr)_180px]";
 
 const AdminProducts = () => {
   const [productos, setProductos] = useState<ProductWithId[]>([]);
@@ -492,7 +492,7 @@ const AdminProducts = () => {
         </div>
       </AdminCard>
 
-      {/* Lista */}
+      {/* Tabla */}
       {productosFiltrados.length === 0 ? (
         <EmptyState
           icon={<Package size={28} />}
@@ -500,162 +500,92 @@ const AdminProducts = () => {
           description="Proba cambiar el filtro o agrega tu primer producto."
         />
       ) : (
-        <>
-          {/* Mobile */}
-          <div className="lg:hidden">
-            <AdminMobileList>
-              {productosFiltrados.map((p) => (
-                <div key={p.id} className="p-4">
-                  <div className="grid grid-cols-[64px_1fr_auto] gap-3">
-                    <img
-                      src={p.imagen}
-                      alt={p.nombre}
-                      className="h-16 w-16 rounded-lg object-cover ring-1 ring-white/10"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://via.placeholder.com/64x64/1f2937/9ca3af?text=No+img";
-                      }}
-                    />
-                    <div className="min-w-0">
-                      <h3 className="line-clamp-1 text-sm font-bold text-white">{p.nombre}</h3>
-                      <p className="line-clamp-2 text-xs text-slate-400">{p.descripcion}</p>
-                      <p className="mt-1 text-sm font-bold text-pink-300">{getPrecioDisplay(p)}</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge tone="pink">
-                          {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
-                        </Badge>
-                        <Badge tone={p.activo ? "green" : "red"}>
-                          {p.activo ? "Activo" : "Inactivo"}
-                        </Badge>
-                        <Badge
-                          tone={
-                            getStockTotal(p) === 0
-                              ? "red"
-                              : getStockTotal(p) <= 5
-                                ? "amber"
-                                : "blue"
-                          }
-                        >
-                          Stock {getStockTotal(p)}
-                        </Badge>
-                        {p.destacado && <Badge tone="amber">Destacado</Badge>}
-                        {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
-                        {p.tieneVariantes && <Badge tone="purple">Variantes</Badge>}
-                      </div>
-                    </div>
+        <AdminGridTable minWidth="min-w-[64rem]">
+          <AdminGridHeader cols={PRODUCT_COLS}>
+            <div>Producto</div>
+            <div>Categoria</div>
+            <div className="text-right">Precio</div>
+            <div className="text-right">Stock</div>
+            <div>Estado</div>
+            <div className="text-right">Acciones</div>
+          </AdminGridHeader>
 
-                    <div className="flex flex-col gap-2">
-                      <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
-                        <Pencil size={14} />
-                      </IconBtn>
-                      <IconBtn
-                        title={p.activo ? "Desactivar" : "Activar"}
-                        onClick={() => toggleActivo(p)}
-                      >
-                        {p.activo ? <PowerOff size={14} /> : <Power size={14} />}
-                      </IconBtn>
-                      <IconBtn title="Eliminar" tone="danger" onClick={() => eliminarProducto(p)}>
-                        <Trash2 size={14} />
-                      </IconBtn>
-                    </div>
-                  </div>
+          {productosFiltrados.map((p) => (
+            <AdminGridRow key={p.id} cols={PRODUCT_COLS} onClick={() => abrirModalEdicion(p)}>
+              <div className="flex min-w-0 items-center gap-3 pr-3">
+                <img
+                  src={p.imagen}
+                  alt={p.nombre}
+                  className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "https://via.placeholder.com/48x48/1f2937/9ca3af?text=No+img";
+                  }}
+                />
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-bold text-white">{p.nombre}</h3>
+                  <p className="truncate text-xs text-slate-400">{p.descripcion}</p>
                 </div>
-              ))}
-            </AdminMobileList>
-          </div>
+              </div>
 
-          {/* Desktop */}
-          <div className="hidden lg:block">
-            <AdminTable>
-              <AdminThead>
-                <AdminTh>Producto</AdminTh>
-                <AdminTh>Categoria</AdminTh>
-                <AdminTh>Precio</AdminTh>
-                <AdminTh>Stock</AdminTh>
-                <AdminTh>Estado</AdminTh>
-                <AdminTh align="right">Acciones</AdminTh>
-              </AdminThead>
-              <AdminTbody>
-                {productosFiltrados.map((p) => (
-                  <AdminTr key={p.id}>
-                    <AdminTd>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={p.imagen}
-                          alt={p.nombre}
-                          className="h-12 w-12 rounded-lg object-cover ring-1 ring-white/10"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://via.placeholder.com/48x48/1f2937/9ca3af?text=No+img";
-                          }}
-                        />
-                        <div className="min-w-0">
-                          <h3 className="line-clamp-1 text-sm font-bold text-white">{p.nombre}</h3>
-                          <p className="line-clamp-1 text-xs text-slate-400">{p.descripcion}</p>
-                          {p.tieneVariantes && (
-                            <Badge tone="purple" className="mt-1">
-                              Con variantes
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </AdminTd>
-                    <AdminTd>
-                      <Badge tone="pink">
-                        {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
-                      </Badge>
-                    </AdminTd>
-                    <AdminTd className="text-sm font-bold text-white">
-                      {getPrecioDisplay(p)}
-                    </AdminTd>
-                    <AdminTd>
-                      <Badge
-                        tone={
-                          getStockTotal(p) === 0
-                            ? "red"
-                            : getStockTotal(p) <= 5
-                              ? "amber"
-                              : "green"
-                        }
-                      >
-                        {getStockTotal(p)}
-                      </Badge>
-                    </AdminTd>
-                    <AdminTd>
-                      <div className="flex flex-col items-start gap-1">
-                        <Badge tone={p.activo ? "green" : "red"}>
-                          {p.activo ? "Activo" : "Inactivo"}
-                        </Badge>
-                        {p.destacado && <Badge tone="amber">Destacado</Badge>}
-                        {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
-                      </div>
-                    </AdminTd>
-                    <AdminTd align="right">
-                      <div className="flex items-center justify-end gap-2">
-                        <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
-                          <Pencil size={14} />
-                        </IconBtn>
-                        <IconBtn
-                          title={p.activo ? "Desactivar" : "Activar"}
-                          onClick={() => toggleActivo(p)}
-                        >
-                          {p.activo ? <PowerOff size={14} /> : <Power size={14} />}
-                        </IconBtn>
-                        <IconBtn
-                          title="Eliminar"
-                          tone="danger"
-                          onClick={() => eliminarProducto(p)}
-                        >
-                          <Trash2 size={14} />
-                        </IconBtn>
-                      </div>
-                    </AdminTd>
-                  </AdminTr>
-                ))}
-              </AdminTbody>
-            </AdminTable>
-          </div>
-        </>
+              <div className="min-w-0 pr-3">
+                <Badge tone="pink">
+                  {p.categoria.charAt(0).toUpperCase() + p.categoria.slice(1)}
+                </Badge>
+              </div>
+
+              <div className="pr-3 text-right text-sm font-bold text-white">
+                {getPrecioDisplay(p)}
+              </div>
+
+              <div className="pr-3 text-right">
+                <Badge
+                  tone={
+                    getStockTotal(p) === 0
+                      ? "red"
+                      : getStockTotal(p) <= 5
+                        ? "amber"
+                        : "green"
+                  }
+                >
+                  {getStockTotal(p)}
+                </Badge>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1">
+                <Badge tone={p.activo ? "green" : "red"}>
+                  {p.activo ? "Activo" : "Inactivo"}
+                </Badge>
+                {p.destacado && <Badge tone="amber">★</Badge>}
+                {p.mayorista && <Badge tone="pink">Mayorista</Badge>}
+                {p.tieneVariantes && <Badge tone="purple">Var</Badge>}
+              </div>
+
+              <div
+                className="flex items-center justify-end gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <IconBtn title="Editar" onClick={() => abrirModalEdicion(p)}>
+                  <Pencil size={14} />
+                </IconBtn>
+                <IconBtn
+                  title={p.activo ? "Desactivar" : "Activar"}
+                  onClick={() => toggleActivo(p)}
+                >
+                  {p.activo ? <PowerOff size={14} /> : <Power size={14} />}
+                </IconBtn>
+                <IconBtn title="Eliminar" tone="danger" onClick={() => eliminarProducto(p)}>
+                  <Trash2 size={14} />
+                </IconBtn>
+              </div>
+            </AdminGridRow>
+          ))}
+
+          {/* Fallback por las dudas */}
+          {productosFiltrados.length === 0 && (
+            <AdminGridEmpty>No hay productos con esos filtros.</AdminGridEmpty>
+          )}
+        </AdminGridTable>
       )}
 
       {/* Modal edicion */}

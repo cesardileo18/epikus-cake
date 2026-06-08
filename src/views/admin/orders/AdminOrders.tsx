@@ -1,5 +1,5 @@
 // src/views/admin/orders/AdminOrders.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import toast from 'react-hot-toast';
 import { type Timestamp } from 'firebase/firestore';
 import {
@@ -15,37 +15,35 @@ import {
 import {
   Banknote,
   CheckCircle2,
-  Clock,
-  Eye,
   Filter,
+  MessageCircle,
+  MoreVertical,
   PackageCheck,
   ReceiptText,
   Search,
-  Trash2,
-  Truck as TruckIcon,
   X,
-  XCircle,
 } from 'lucide-react';
 import { sendEmail } from '@/config/emailjs';
 import { showToast } from '@/components/feedback/ToastProvider';
 import {
-  AdminCard,
+  AdminGridEmpty,
+  AdminGridHeader,
+  AdminGridRow,
+  AdminGridTable,
   AdminHeader,
+  AdminKebab,
+  AdminKebabItem,
   AdminLoader,
-  AdminMobileList,
   AdminPage,
   AdminSelect,
-  AdminTable,
-  AdminTbody,
-  AdminTd,
-  AdminTh,
-  AdminThead,
-  AdminTr,
   Badge,
   type BadgeTone,
   EmptyState,
-  IconBtn,
+  MetricCard,
 } from '@/components/admin/ui';
+
+const COLS =
+  'grid-cols-[120px_140px_minmax(260px,1fr)_120px_130px_180px]';
 
 const price = (n: number | undefined | null) => Number(n ?? 0).toLocaleString('es-AR');
 
@@ -86,20 +84,18 @@ const fmtDateShort = (ts?: Timestamp) =>
       })
     : '—';
 
-interface StatusInfo {
-  label: string;
-  tone: BadgeTone;
-  Icon: React.ComponentType<any>;
-}
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  pendiente: 'Pendiente',
+  en_proceso: 'En proceso',
+  entregado: 'Entregado',
+  cancelado: 'Cancelado',
+};
 
-const statusCfg = (s: OrderStatus): StatusInfo => {
-  const map: Record<OrderStatus, StatusInfo> = {
-    pendiente: { label: 'Pendiente', tone: 'amber', Icon: Clock },
-    en_proceso: { label: 'Preparacion', tone: 'blue', Icon: TruckIcon },
-    entregado: { label: 'Entregado', tone: 'green', Icon: CheckCircle2 },
-    cancelado: { label: 'Cancelado', tone: 'red', Icon: XCircle },
-  };
-  return map[s] ?? map.pendiente;
+const STATUS_TONE: Record<OrderStatus, BadgeTone> = {
+  pendiente: 'amber',
+  en_proceso: 'blue',
+  entregado: 'green',
+  cancelado: 'red',
 };
 
 const confirmToast = (msg: string): Promise<boolean> =>
@@ -187,10 +183,17 @@ const mailEntregado = (o: Order) => ({
   text: `Pedido #${o.id} entregado. ¡Gracias por tu compra!`,
 });
 
+interface KebabState {
+  orderId: string;
+  left: number;
+  top: number;
+}
+
 const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [kebab, setKebab] = useState<KebabState | null>(null);
 
   const [qText, setQText] = useState('');
   const [status, setStatus] = useState<'todos' | OrderStatus>('todos');
@@ -209,6 +212,16 @@ const AdminOrders: React.FC = () => {
     );
     return () => unsub();
   }, []);
+
+  const stats = useMemo(
+    () => ({
+      pendiente: orders.filter((o) => o.status === 'pendiente').length,
+      en_proceso: orders.filter((o) => o.status === 'en_proceso').length,
+      entregado: orders.filter((o) => o.status === 'entregado').length,
+      cancelado: orders.filter((o) => o.status === 'cancelado').length,
+    }),
+    [orders]
+  );
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
@@ -237,8 +250,8 @@ const AdminOrders: React.FC = () => {
   }, [orders, qText, status, metodo]);
 
   const selectedOrder = useMemo(
-    () => filtered.find((o) => o.id === selectedId) ?? orders.find((o) => o.id === selectedId) ?? null,
-    [filtered, orders, selectedId]
+    () => orders.find((o) => o.id === selectedId) ?? null,
+    [orders, selectedId]
   );
 
   const acreditar = async (o: Order) => {
@@ -292,25 +305,70 @@ const AdminOrders: React.FC = () => {
     }
   };
 
-  const computePermisos = (o: Order) => {
+  const openKebab = (orderId: string, event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const itemHeight = 38;
+    const itemCount = 4;
+    const estimated = itemCount * itemHeight + 8;
+    const placeAbove = spaceBelow < estimated + 12;
+    const top = placeAbove ? Math.max(8, rect.top - estimated - 6) : rect.bottom + 6;
+    setKebab((current) =>
+      current?.orderId === orderId
+        ? null
+        : { orderId, left: Math.max(8, rect.right - 192), top }
+    );
+  };
+
+  const renderPrimaryAction = (o: Order) => {
     const puedeAcreditar =
       o.status === 'pendiente' &&
       (o.pago?.metodoSeleccionado === 'transferencia' ||
         o.pago?.metodoSeleccionado === 'mercadopago') &&
       !o.pago?.acreditado;
 
-    const puedeEntregar = Boolean(
+    const puedeEntregar =
       (o.status === 'en_proceso' &&
         (o.pago?.metodoSeleccionado === 'transferencia' ? !!o.pago?.acreditado : true)) ||
-        (o.status === 'pendiente' &&
-          o.pago?.metodoSeleccionado === 'mercadopago' &&
-          o.pago?.acreditado)
-    );
+      (o.status === 'pendiente' &&
+        o.pago?.metodoSeleccionado === 'mercadopago' &&
+        !!o.pago?.acreditado);
 
-    const puedeCancelar = o.status !== 'cancelado' && o.status !== 'entregado';
-
-    return { puedeAcreditar, puedeEntregar, puedeCancelar };
+    if (puedeAcreditar) {
+      return (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            void acreditar(o);
+          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-400/40 bg-emerald-400/10 px-3 text-xs font-bold text-emerald-200 transition-colors hover:bg-emerald-400/20"
+        >
+          <CheckCircle2 size={14} />
+          Acreditar
+        </button>
+      );
+    }
+    if (puedeEntregar) {
+      return (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            void entregar(o);
+          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-sky-400/40 bg-sky-400/10 px-3 text-xs font-bold text-sky-200 transition-colors hover:bg-sky-400/20"
+        >
+          <PackageCheck size={14} />
+          Entregar
+        </button>
+      );
+    }
+    return null;
   };
+
+  const kebabOrder = kebab ? orders.find((o) => o.id === kebab.orderId) : null;
 
   return (
     <AdminPage className="flex flex-col gap-5 sm:gap-7">
@@ -318,239 +376,186 @@ const AdminOrders: React.FC = () => {
         eyebrow="Operaciones"
         eyebrowIcon={<ReceiptText size={14} />}
         title="Pedidos"
-        description="Acredita senas, pasa a preparacion y marca entregas."
+        description="Acredita pagos, marca entregas y cancela cuando haga falta."
       />
 
-      <AdminCard>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div className="relative">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-            />
-            <input
-              className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm font-semibold text-white outline-none transition-colors placeholder:text-slate-500 focus:border-pink-500/60 focus:bg-white/[0.06]"
-              placeholder="Buscar por ID, nombre, WhatsApp, email, ID MP..."
-              value={qText}
-              onChange={(e) => setQText(e.target.value)}
-            />
-          </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <MetricCard value={stats.pendiente} label="Pendientes" tone="amber" />
+        <MetricCard value={stats.en_proceso} label="En proceso" tone="blue" />
+        <MetricCard value={stats.entregado} label="Entregados" tone="green" />
+        <MetricCard value={stats.cancelado} label="Cancelados" tone="red" />
+      </div>
 
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="shrink-0 text-slate-500" />
-            <AdminSelect value={status} onChange={(e) => setStatus(e.target.value as any)}>
-              <option value="todos">Todos los estados</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="en_proceso">Preparacion</option>
-              <option value="entregado">Entregado</option>
-              <option value="cancelado">Cancelado</option>
-            </AdminSelect>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Banknote size={16} className="shrink-0 text-slate-500" />
-            <AdminSelect value={metodo} onChange={(e) => setMetodo(e.target.value as any)}>
-              <option value="todos">Todos los metodos</option>
-              <option value="transferencia">Transferencia/Efectivo</option>
-              <option value="mercadopago">MercadoPago</option>
-            </AdminSelect>
-          </div>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem]">
+        <div className="relative">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+          <input
+            className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm font-semibold text-white outline-none transition-colors placeholder:text-slate-500 focus:border-pink-500/60 focus:bg-white/[0.06]"
+            placeholder="Buscar por ID, nombre, WhatsApp, email, ID MP..."
+            value={qText}
+            onChange={(e) => setQText(e.target.value)}
+          />
         </div>
-      </AdminCard>
+
+        <div className="relative">
+          <Filter
+            size={14}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+          <AdminSelect
+            value={status}
+            onChange={(e) => setStatus(e.target.value as any)}
+            className="pl-9"
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="entregado">Entregado</option>
+            <option value="cancelado">Cancelado</option>
+          </AdminSelect>
+        </div>
+
+        <div className="relative">
+          <Banknote
+            size={14}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+          <AdminSelect
+            value={metodo}
+            onChange={(e) => setMetodo(e.target.value as any)}
+            className="pl-9"
+          >
+            <option value="todos">Todos los metodos</option>
+            <option value="transferencia">Transferencia / Efectivo</option>
+            <option value="mercadopago">MercadoPago</option>
+          </AdminSelect>
+        </div>
+      </div>
 
       {loading ? (
         <AdminLoader label="Cargando pedidos..." />
-      ) : filtered.length === 0 ? (
+      ) : orders.length === 0 ? (
         <EmptyState
           icon={<ReceiptText size={28} />}
           title="Sin pedidos"
-          description="No hay pedidos con los filtros actuales."
+          description="Todavia no se registraron pedidos."
         />
       ) : (
-        <>
-          {/* Mobile */}
-          <div className="lg:hidden">
-            <AdminMobileList>
-              {filtered.map((o) => {
-                const cfg = statusCfg(o.status);
-                const StatusIcon = cfg.Icon;
-                const total = getOrderTotal(o);
-                const { puedeAcreditar, puedeEntregar, puedeCancelar } = computePermisos(o);
+        <AdminGridTable minWidth="min-w-[64rem]">
+          <AdminGridHeader cols={COLS}>
+            <div># Pedido</div>
+            <div>Fecha</div>
+            <div>Cliente</div>
+            <div className="text-right">Total</div>
+            <div>Estado</div>
+            <div className="text-right">Acciones</div>
+          </AdminGridHeader>
 
-                return (
-                  <div key={o.id} className="p-4">
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Badge tone={cfg.tone}>
-                            <StatusIcon size={11} />
-                            {cfg.label}
-                          </Badge>
-                          <span className="font-mono text-[11px] text-slate-500">#{o.id}</span>
-                        </div>
-                        <p className="mt-2 text-sm font-bold text-white">
-                          {o.customer?.nombre ?? '—'}
-                        </p>
-                        {o.customer?.whatsapp && (
-                          <p className="text-xs text-slate-400">{o.customer.whatsapp}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-base font-bold text-pink-300">${price(total)}</p>
-                        <p className="text-[11px] text-slate-500">
-                          {o.entrega?.fecha} {o.entrega?.hora ? `· ${o.entrega.hora}` : ''}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2">
-                      <IconBtn
-                        title="Ver detalle"
-                        onClick={() => setSelectedId(o.id)}
-                      >
-                        <Eye size={14} />
-                      </IconBtn>
-                      <IconBtn
-                        title="Acreditar"
-                        onClick={() => puedeAcreditar && acreditar(o)}
-                      >
-                        <PackageCheck size={14} />
-                      </IconBtn>
-                      <IconBtn
-                        title="Entregar"
-                        onClick={() => puedeEntregar && entregar(o)}
-                      >
-                        <CheckCircle2 size={14} />
-                      </IconBtn>
-                      <IconBtn
-                        title="Cancelar"
-                        tone="danger"
-                        onClick={() => puedeCancelar && cancelar(o)}
-                      >
-                        <XCircle size={14} />
-                      </IconBtn>
-                      <IconBtn title="Eliminar" tone="danger" onClick={() => eliminar(o)}>
-                        <Trash2 size={14} />
-                      </IconBtn>
-                    </div>
+          {filtered.length === 0 ? (
+            <AdminGridEmpty>No hay pedidos con esos filtros.</AdminGridEmpty>
+          ) : (
+            filtered.map((o) => {
+              const total = getOrderTotal(o);
+              return (
+                <AdminGridRow
+                  key={o.id}
+                  cols={COLS}
+                  active={selectedId === o.id}
+                  onClick={() => setSelectedId(o.id)}
+                >
+                  <div className="truncate pr-2 font-mono text-xs font-bold text-white">
+                    #{o.id.slice(0, 8)}
                   </div>
-                );
-              })}
-            </AdminMobileList>
-          </div>
 
-          {/* Desktop */}
-          <div className="hidden lg:block">
-            <AdminTable>
-              <AdminThead>
-                <AdminTh>Estado</AdminTh>
-                <AdminTh>Pedido</AdminTh>
-                <AdminTh>Cliente</AdminTh>
-                <AdminTh>Entrega</AdminTh>
-                <AdminTh>Pago</AdminTh>
-                <AdminTh align="right">Total</AdminTh>
-                <AdminTh align="right">Acciones</AdminTh>
-              </AdminThead>
-              <AdminTbody>
-                {filtered.map((o) => {
-                  const cfg = statusCfg(o.status);
-                  const StatusIcon = cfg.Icon;
-                  const total = getOrderTotal(o);
-                  const { puedeAcreditar, puedeEntregar, puedeCancelar } = computePermisos(o);
+                  <div className="pr-2 text-xs text-slate-400">
+                    {fmtDateShort(o.createdAt)}
+                  </div>
 
-                  return (
-                    <AdminTr
-                      key={o.id}
-                      active={selectedId === o.id}
-                      onClick={() => setSelectedId(o.id)}
+                  <div className="min-w-0 pr-3">
+                    <p className="truncate text-sm font-bold text-white">
+                      {o.customer?.nombre || 'Sin nombre'}
+                    </p>
+                    <p className="truncate text-[11px] text-slate-500">
+                      {o.customer?.email || o.customer?.whatsapp || '—'}
+                    </p>
+                  </div>
+
+                  <div className="pr-3 text-right text-sm font-bold text-pink-300">
+                    ${price(total)}
+                  </div>
+
+                  <div>
+                    <Badge tone={STATUS_TONE[o.status]}>{STATUS_LABEL[o.status]}</Badge>
+                  </div>
+
+                  <div
+                    className="flex items-center justify-end gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {renderPrimaryAction(o)}
+                    <button
+                      type="button"
+                      onClick={(e) => openKebab(o.id, e)}
+                      aria-label="Mas acciones"
+                      className="grid h-9 w-9 place-items-center rounded-md border border-white/15 bg-white/[0.04] text-slate-200 transition-colors hover:border-pink-500/60 hover:bg-white/[0.08]"
                     >
-                      <AdminTd>
-                        <Badge tone={cfg.tone}>
-                          <StatusIcon size={11} />
-                          {cfg.label}
-                        </Badge>
-                      </AdminTd>
-                      <AdminTd>
-                        <div className="font-mono text-xs text-white">#{o.id}</div>
-                        <div className="text-[11px] text-slate-500">
-                          {fmtDateShort(o.createdAt)}
-                        </div>
-                      </AdminTd>
-                      <AdminTd>
-                        <div className="text-sm font-bold text-white">
-                          {o.customer?.nombre ?? '—'}
-                        </div>
-                        {o.customer?.whatsapp && (
-                          <div className="text-[11px] text-slate-400">{o.customer.whatsapp}</div>
-                        )}
-                      </AdminTd>
-                      <AdminTd>
-                        <div className="text-sm text-slate-200">
-                          {o.entrega?.tipo === 'envio' ? 'Envio' : 'Retiro'}
-                        </div>
-                        <div className="text-[11px] text-slate-500">
-                          {o.entrega?.fecha} {o.entrega?.hora ? `· ${o.entrega.hora}` : ''}
-                        </div>
-                      </AdminTd>
-                      <AdminTd>
-                        <div className="text-sm text-slate-200">
-                          {o.pago?.metodoSeleccionado === 'mercadopago'
-                            ? 'MercadoPago'
-                            : 'Transferencia'}
-                        </div>
-                        <div className="mt-1">
-                          {o.pago?.acreditado ? (
-                            <Badge tone="green">Acreditado</Badge>
-                          ) : (
-                            <Badge tone="amber">Pendiente</Badge>
-                          )}
-                        </div>
-                      </AdminTd>
-                      <AdminTd align="right" className="text-sm font-bold text-pink-300">
-                        ${price(total)}
-                      </AdminTd>
-                      <AdminTd align="right">
-                        <div
-                          className="flex items-center justify-end gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <IconBtn title="Ver detalle" onClick={() => setSelectedId(o.id)}>
-                            <Eye size={14} />
-                          </IconBtn>
-                          <IconBtn
-                            title={puedeAcreditar ? 'Acreditar' : 'No corresponde'}
-                            onClick={() => puedeAcreditar && acreditar(o)}
-                          >
-                            <PackageCheck size={14} />
-                          </IconBtn>
-                          <IconBtn
-                            title={puedeEntregar ? 'Marcar entregado' : 'No corresponde'}
-                            onClick={() => puedeEntregar && entregar(o)}
-                          >
-                            <CheckCircle2 size={14} />
-                          </IconBtn>
-                          <IconBtn
-                            title="Cancelar (repone stock)"
-                            tone="danger"
-                            onClick={() => puedeCancelar && cancelar(o)}
-                          >
-                            <XCircle size={14} />
-                          </IconBtn>
-                          <IconBtn title="Eliminar" tone="danger" onClick={() => eliminar(o)}>
-                            <Trash2 size={14} />
-                          </IconBtn>
-                        </div>
-                      </AdminTd>
-                    </AdminTr>
-                  );
-                })}
-              </AdminTbody>
-            </AdminTable>
-          </div>
-        </>
+                      <MoreVertical size={15} />
+                    </button>
+                  </div>
+                </AdminGridRow>
+              );
+            })
+          )}
+        </AdminGridTable>
       )}
 
-      {/* Drawer detalle */}
+      {kebab && kebabOrder && (
+        <AdminKebab position={{ left: kebab.left, top: kebab.top }} onClose={() => setKebab(null)}>
+          {kebabOrder.customer?.whatsapp && (
+            <AdminKebabItem
+              onClick={() => {
+                const num = kebabOrder.customer!.whatsapp!.replace(/\D/g, '');
+                window.open(`https://api.whatsapp.com/send?phone=${num}`, '_blank');
+                setKebab(null);
+              }}
+            >
+              <MessageCircle size={14} />
+              Abrir WhatsApp
+            </AdminKebabItem>
+          )}
+          <AdminKebabItem
+            onClick={() => {
+              setKebab(null);
+              setSelectedId(kebabOrder.id);
+            }}
+          >
+            <ReceiptText size={14} />
+            Ver detalle
+          </AdminKebabItem>
+          <AdminKebabItem
+            tone="danger"
+            onClick={() => {
+              setKebab(null);
+              void cancelar(kebabOrder);
+            }}
+          >
+            Cancelar pedido
+          </AdminKebabItem>
+          <AdminKebabItem
+            tone="danger"
+            onClick={() => {
+              setKebab(null);
+              void eliminar(kebabOrder);
+            }}
+          >
+            Eliminar pedido
+          </AdminKebabItem>
+        </AdminKebab>
+      )}
+
       {selectedOrder && (
         <OrderDrawer
           order={selectedOrder}
@@ -559,7 +564,6 @@ const AdminOrders: React.FC = () => {
           onEntregar={() => entregar(selectedOrder)}
           onCancelar={() => cancelar(selectedOrder)}
           onEliminar={() => eliminar(selectedOrder)}
-          permisos={computePermisos(selectedOrder)}
         />
       )}
     </AdminPage>
@@ -576,7 +580,6 @@ interface OrderDrawerProps {
   onEntregar: () => void;
   onCancelar: () => void;
   onEliminar: () => void;
-  permisos: { puedeAcreditar: boolean; puedeEntregar: boolean; puedeCancelar: boolean };
 }
 
 const OrderDrawer: React.FC<OrderDrawerProps> = ({
@@ -586,15 +589,30 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   onEntregar,
   onCancelar,
   onEliminar,
-  permisos,
 }) => {
-  const cfg = statusCfg(order.status);
-  const StatusIcon = cfg.Icon;
   const total = getOrderTotal(order);
   const senia = order.pago?.seniaMonto ?? Math.round(total * 0.5);
   const mpStatus = order.pago?.mercadopago?.status;
   const mpRefunded =
     mpStatus === 'refunded' || mpStatus === 'charged_back' || mpStatus === 'cancelled';
+
+  const puedeAcreditar =
+    order.status === 'pendiente' &&
+    (order.pago?.metodoSeleccionado === 'transferencia' ||
+      order.pago?.metodoSeleccionado === 'mercadopago') &&
+    !order.pago?.acreditado;
+
+  const puedeEntregar = Boolean(
+    (order.status === 'en_proceso' &&
+      (order.pago?.metodoSeleccionado === 'transferencia'
+        ? !!order.pago?.acreditado
+        : true)) ||
+      (order.status === 'pendiente' &&
+        order.pago?.metodoSeleccionado === 'mercadopago' &&
+        order.pago?.acreditado)
+  );
+
+  const puedeCancelar = order.status !== 'cancelado' && order.status !== 'entregado';
 
   return (
     <>
@@ -607,10 +625,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Badge tone={cfg.tone}>
-                <StatusIcon size={11} />
-                {cfg.label}
-              </Badge>
+              <Badge tone={STATUS_TONE[order.status]}>{STATUS_LABEL[order.status]}</Badge>
               <span className="truncate font-mono text-xs text-slate-400">#{order.id}</span>
             </div>
             <p className="mt-1 text-[11px] text-slate-500">
@@ -634,7 +649,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             </div>
           )}
 
-          {/* Cliente */}
           <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
             <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
               Cliente
@@ -650,7 +664,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             </div>
           </section>
 
-          {/* Entrega */}
           <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
             <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
               Retiro / envio
@@ -668,7 +681,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             </div>
           </section>
 
-          {/* Productos */}
           <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
             <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
               Productos
@@ -692,7 +704,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             </div>
           </section>
 
-          {/* Pago */}
           <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
             <h4 className="mb-3 text-[11px] font-black uppercase tracking-wide text-slate-500">
               Pago
@@ -827,37 +838,34 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           </section>
         </div>
 
-        {/* Acciones */}
         <div className="grid grid-cols-2 gap-2 border-t border-white/10 p-4">
           <button
             onClick={onAcreditar}
-            disabled={!permisos.puedeAcreditar}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-pink-600 px-3 text-sm font-bold text-white transition-colors hover:bg-pink-500 disabled:cursor-not-allowed disabled:bg-pink-600/30"
+            disabled={!puedeAcreditar}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 text-sm font-bold text-emerald-200 transition-colors hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <PackageCheck size={15} />
+            <CheckCircle2 size={15} />
             Acreditar
           </button>
           <button
             onClick={onEntregar}
-            disabled={!permisos.puedeEntregar}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-sm font-bold text-slate-100 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!puedeEntregar}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-400/40 bg-sky-400/10 px-3 text-sm font-bold text-sky-200 transition-colors hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <CheckCircle2 size={15} />
-            Marcar entregado
+            <PackageCheck size={15} />
+            Entregar
           </button>
           <button
             onClick={onCancelar}
-            disabled={!permisos.puedeCancelar}
+            disabled={!puedeCancelar}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-400/25 bg-rose-500/15 px-3 text-sm font-bold text-rose-200 transition-colors hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <XCircle size={15} />
             Cancelar
           </button>
           <button
             onClick={onEliminar}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-400/25 bg-rose-500/15 px-3 text-sm font-bold text-rose-200 transition-colors hover:bg-rose-500/25"
           >
-            <Trash2 size={15} />
             Eliminar
           </button>
         </div>

@@ -18,8 +18,14 @@ export function useProductCatalog() {
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [procesando, setProcesando] = useState<Set<string>>(new Set());
 
-  const { products, loading, categories, error } = useProductsLiveQuery({ onlyActive: true });
+  const { products: allProducts, loading, error } = useProductsLiveQuery({ onlyActive: true });
   const { items, add, updateQty, openCart } = useCart();
+
+  // Los productos mayoristas tienen su propia vista en /wholesale.
+  const products = useMemo(
+    () => allProducts.filter((p) => !p.mayorista),
+    [allProducts]
+  );
 
   // Cierra el dropdown al hacer click fuera
   useEffect(() => {
@@ -47,8 +53,13 @@ export function useProductCatalog() {
     });
   }, [products, selectedCategory, searchTerm]);
 
-  // Garantiza que siempre haya al menos la opción 'todos'
-  const availableCategories = categories.length ? categories : ['todos'];
+  // Categorias derivadas SOLO de los productos no mayoristas.
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of products) if (p.categoria) set.add(p.categoria);
+    const sorted = Array.from(set).sort((a, b) => a.localeCompare(b));
+    return ['todos', ...sorted];
+  }, [products]);
 
   const addToCart = useCallback(
     async (product: ProductWithId, variantId?: string): Promise<void> => {
